@@ -1,28 +1,77 @@
 # factsage-compound-parser
 
-Knowledge base and binary-format specification for implementing a Rust parser for FactSage Compound Database (`.CDB`) files.
+Native Rust parsing foundations and binary-format documentation for FactSage Compound Database (.CDB) files.
 
-This repository is derived from two earlier projects:
+The repository is derived from two earlier projects:
 
-- `evnekdev/factsage-compound`: the completed Python/NumPy parser and semantic model.
-- `evnekdev/factsage-compound-docs`: the unfinished explanatory wiki and initial Kaitai draft.
+- evnekdev/factsage-compound: the completed Python/NumPy parser and semantic model.
+- evnekdev/factsage-compound-docs: the unfinished explanatory wiki and initial Kaitai draft.
 
-The Python implementation is treated as the executable reference whenever it disagrees with the older wiki draft.
+The validated Kaitai schema remains the primary physical-layout specification.
 
 ## Contents
 
-- [`docs/format-overview.md`](docs/format-overview.md) — file organisation, chunk ordering, endianness, and parser invariants.
-- [`docs/chunk-layouts.md`](docs/chunk-layouts.md) — byte-accurate layouts for every known 256-byte chunk.
-- [`docs/parsing-model.md`](docs/parsing-model.md) — reconstruction of compounds, phases, ranges, comments, and physical-property records.
-- [`docs/semantic-rules.md`](docs/semantic-rules.md) — unit conversion, phase identifiers, strings, dates, density encoding, and unresolved fields.
-- [`schemas/factsage_compound.ksy`](schemas/factsage_compound.ksy) — Kaitai Struct YAML schema for the binary layout.
+- [docs/format-overview.md](docs/format-overview.md) - file organisation, chunk ordering, endianness, and parser invariants.
+- [docs/chunk-layouts.md](docs/chunk-layouts.md) - byte-accurate layouts for every known 256-byte chunk.
+- [docs/parsing-model.md](docs/parsing-model.md) - future reconstruction of compounds, phases, ranges, comments, and physical-property records.
+- [docs/semantic-rules.md](docs/semantic-rules.md) - future unit conversion, phase identifiers, strings, dates, density encoding, and unresolved fields.
+- [docs/schema-validation.md](docs/schema-validation.md) - Kaitai validation results against the private local fixture.
+- [schemas/factsage_compound.ksy](schemas/factsage_compound.ksy) - Kaitai Struct YAML schema.
+- [src/raw](src/raw) - native lossless raw-record parser.
 
-## Kaitai Struct
+## Current status
 
-[Kaitai Struct](https://kaitai.io/) is a declarative language and compiler for binary formats. A `.ksy` YAML file describes byte order, primitive fields, arrays, conditional/switch-based records, nested types, and validation rules. The Kaitai compiler can turn the schema into parsers for Rust and many other languages, and the Kaitai visualizer can inspect a `.CDB` file against the same schema.
+The first native Rust milestone is implemented:
 
-The schema in this repository models the **physical binary layout**. It deliberately does not attempt to reconstruct the higher-level compound hierarchy inside Kaitai; that association logic belongs in the Rust domain layer and is documented separately.
+- parses a flat sequence of exact 256-byte chunks;
+- validates non-empty input, chunk alignment, first ID 9, and CMPD magic;
+- decodes every known chunk ID into a typed raw representation;
+- preserves unknown, reserved, padding, and fixed-width text bytes;
+- preserves the original heat-capacity IDs 2 through 6;
+- provides safe Windows-1252 comment decoding helpers;
+- exposes byte-slice, reader, and path-based parsing APIs.
 
-## Status
+The high-level semantic model is intentionally not implemented yet. Compound ownership, phase/range linking, thermodynamic evaluation, unit conversion, OLE date conversion, and interpretation of unknown fields remain future work.
 
-The layout is reconstructed from the finished Python parser. Known unknown/reserved fields are preserved as raw bytes. Before publishing a Rust crate, validate the schema and parser against representative official and user-created `.CDB` files, especially files containing transition phases, all five heat-capacity chunk IDs, aqueous phases, and extended physical-property chunks.
+Writing and round-trip serialization are not implemented.
+
+## Minimal parsing example
+
+~~~rust
+use factsage_compound_parser::{RawChunk, RawDatabase};
+
+fn inspect(path: &std::path::Path) -> Result<(), factsage_compound_parser::ParseError> {
+    let database = RawDatabase::from_path(path)?;
+
+    for chunk in &database.chunks {
+        match chunk {
+            RawChunk::Compound(compound) => {
+                println!("compound bytes: {}", compound.compound_name.len());
+            }
+            RawChunk::HeatCapacity { kind, chunk } => {
+                println!("CP ID {} has {} coefficients", kind.id(), chunk.coefficients.len());
+            }
+            RawChunk::Unknown { id, body } => {
+                println!("preserved unknown ID {} with {} body bytes", id, body.len());
+            }
+            _ => {}
+        }
+    }
+
+    Ok(())
+}
+~~~
+
+The parser keeps raw fields available for later reinterpretation. Text helpers are convenience views over the preserved bytes and do not replace the raw representation.
+
+## Validation
+
+The ignored local fixture examples/MS16BASE.CDB is used only when it exists locally. It is never required for public CI and must not be staged, copied, encoded, or uploaded.
+
+Run the native tests with:
+
+~~~text
+cargo test --all-targets
+~~~
+
+Run the schema validator separately after generating its ignored Python output as described in docs/schema-validation.md.
