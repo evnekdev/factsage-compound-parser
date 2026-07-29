@@ -4,7 +4,7 @@ meta:
   application: FactSage Compound module
   file-extension: cdb
   endian: le
-  ks-version: 0.10
+  ks-version: '0.10'
   license: MIT
 
 doc: |
@@ -242,7 +242,7 @@ types:
       - id: comment
         type: str
         size: 80
-        encoding: ASCII
+        encoding: windows-1252
         pad-right: 0
       - id: padding_remaining
         size: 144
