@@ -9,9 +9,9 @@ permissions:
   contents: read
 
 jobs:
-  quality-linux:
-    name: Stable Linux quality
-    runs-on: ubuntu-latest
+  quality-windows:
+    name: Stable Windows quality
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -34,9 +34,9 @@ jobs:
       - name: Package crate
         run: cargo package
 
-  msrv:
-    name: MSRV 1.85.0
-    runs-on: ubuntu-latest
+  msrv-windows:
+    name: Windows MSRV 1.85.0
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@1.85.0
@@ -45,13 +45,13 @@ jobs:
       - name: Run library tests at the MSRV
         run: cargo test --lib --all-features
 
-  cross-platform:
-    name: Tests (${{ matrix.os }})
+  portability:
+    name: Secondary portability tests (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest]
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable

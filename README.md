@@ -1,21 +1,21 @@
 # factsage-compound-parser
 
-A safe native Rust foundation for inspecting, grouping, evaluating, editing selected fields, and losslessly serializing FactSage Compound Database (`.CDB`) files.
+A safe native Rust foundation for inspecting, grouping, evaluating established fields, editing selected fields, and losslessly serializing FactSage Compound Database (`.CDB`) files.
 
-The crate is based on a validated Kaitai layout, the companion Python parser, and aggregate-only validation against a local private fixture. It does not contain proprietary CDB data.
+Windows is the primary validated platform because FactSage and the reference databases are Windows-based. The Rust implementation remains portable where straightforward and CI also performs secondary Linux and macOS checks. The crate contains no proprietary CDB data.
 
 ## Ownership and API layers
 
 The crate uses owned raw parsing and zero-duplication semantic views:
 
-- `raw::RawDatabase` owns the contiguous, authoritative physical chunk stream. It preserves known and unknown chunks, reserved fields, padding, text bytes, and original CP IDs 2 through 6.
+- `raw::RawDatabase` owns the contiguous authoritative physical chunk stream. It preserves known and unknown chunks, reserved fields, padding, text bytes, and original CP IDs 2 through 6.
 - `domain::DomainIndex` stores only chunk indexes, semantic relationships, and diagnostics for one raw-stream generation.
-- `domain::DatabaseView<'_>` borrows a matching `RawDatabase` and `DomainIndex` to expose header, compounds, phases, CP/kappa ranges, comments, and diagnostics without cloning raw records.
-- `domain::Database` is a read-only owner of one raw stream and its index. Call `Database::view` for semantic traversal.
+- `domain::DatabaseView<'_>` borrows matching raw storage and an index to expose header, compounds, phases, CP ranges, structurally linked ID-11 records, comments, and diagnostics without cloning raw records.
+- `domain::Database` is a read-only owner of one raw stream plus its index. Call `Database::view` for semantic traversal.
 - `edit::DatabaseEditor` owns one mutable raw stream, lazily rebuilds its index after structural changes, and returns borrowed semantic views.
 - `thermo` exposes established unit conversion, OLE Automation dates, provisional density decoding, and stored CP-expression evaluation.
 
-`RawDatabase` is the only serialization authority. Low-level raw insertion or removal can create a temporarily invalid semantic stream; rebuild an index or request an editor view to validate ordering.
+`RawDatabase` is the only serialization authority. Low-level raw insertion or removal can create a temporarily invalid semantic stream; rebuilding an index validates grouping. Path APIs accept `AsRef<Path>` and preserve the path plus underlying OS error for open/read/write failures.
 
 ## Minimal examples
 
@@ -37,7 +37,7 @@ fn list_phases(path: &std::path::Path) -> Result<(), Box<dyn std::error::Error>>
 }
 ```
 
-Evaluate stored CP for the first phase of the first compound. The API uses the compound's established energy-unit code and reports gaps or true overlaps as typed errors.
+Evaluate stored CP for the first phase of the first compound. The API derives the compound energy unit and reports gaps or true overlaps as typed errors.
 
 ```rust
 use factsage_compound_parser::domain::Database;
@@ -53,20 +53,7 @@ fn heat_capacity(path: &std::path::Path) -> Result<f64, Box<dyn std::error::Erro
 }
 ```
 
-Edit a documented field and serialize to a caller-selected output path:
-
-```rust
-use factsage_compound_parser::edit::DatabaseEditor;
-
-fn rename(path: &std::path::Path, output: &std::path::Path) -> Result<(), Box<dyn std::error::Error>> {
-    let mut editor = DatabaseEditor::from_path(path)?;
-    editor.set_compound_name(0, "Example")?;
-    editor.write_to_path(output)?;
-    Ok(())
-}
-```
-
-## Lossless raw serialization
+## Lossless raw serialization and controlled edits
 
 For unmodified input accepted by the raw parser:
 
@@ -74,22 +61,33 @@ For unmodified input accepted by the raw parser:
 input == RawDatabase::from_bytes(input)?.to_bytes()?
 ```
 
-The guarantee covers original chunk order and IDs, unknown chunks, reserved/padding bytes, fixed-width text, and parsed IEEE-754 bit patterns. `from_reader` reads exact 256-byte records without retaining a second full-file buffer; `write_to` streams records without building a full output buffer.
+The guarantee covers chunk order and IDs, unknown chunks, reserved/padding bytes, fixed-width text, and parsed IEEE-754 bit patterns. `from_reader` consumes exact 256-byte records without retaining a second full-file input buffer; `write_to` streams records without creating a full output vector.
 
-## Diagnostics and editing policy
+The editor supports only well-established fields. Names require strict ASCII and finite numeric setters retain a valid index. Structural raw edits invalidate the cached index. The editor deliberately does not change CP anchors when ordinary phase enthalpy or entropy changes, because the anchor convention remains unresolved.
 
-Invalid known-chunk ordering is fatal during index construction. The index retains non-fatal issues such as unknown chunks inside a compound group, duplicate phase IDs, ambiguous/missing range links, invalid ASCII, questionable phase indexes, and CP-bound problems.
+ID-11 records are structurally parsed, preserved, and linked by exact raw phase ID within their compound. Their physical equation, units, and coefficient meanings are not established and are not evaluated.
 
-The editor supports only well-established fields. Names must fit strict ASCII fixed-width destinations; setters reject non-finite numeric values and unknown energy units. Structural raw edits invalidate the cached index. The editor deliberately does not change CP anchors when ordinary phase enthalpy or entropy changes, because the anchor convention remains unresolved.
+## Windows validation and private-data policy
 
-## Format knowledge and unsupported semantics
+The ignored local `examples/MS16BASE.CDB` fixture and the installed FactSage corpus are proprietary. They are never staged, copied, encoded, uploaded, printed, used as fuzz seeds, or modified. Corpus validation opens source files read-only, canonicalizes every path under the configured root, serializes only to memory, and writes its aggregate local report only to `target/factsage-corpus-report.txt`.
 
-Implemented read-only thermo features include calorie/joule handling, OLE Automation date conversion, provisional density remainder decoding, and eight-term CP evaluation. CP integration, arbitrary-temperature enthalpy/entropy/Gibbs calculations, phase-transition path traversal, advanced kappa evaluation, density units, mutation outside the documented editor fields, and all inferred meanings for unknown data remain out of scope.
+```powershell
+$env:FACTSAGE_FACTDATA_ROOT = 'C:\FactSage73_0040_standalone\FACTDATA'
+cargo test --test factsage_corpus -- --ignored --nocapture
+```
+
+The latest local Windows validation scanned 13 `.CDB` candidates (15,345,664 bytes): 12 parsed Compound Databases, all with exact in-memory round trips and deterministic domain indexes. The remaining candidate begins with ID 0 rather than the required Compound Database header and is reported as an unsupported format candidate, not reinterpreted.
+
+## Release status
+
+**Recommendation: Ready to publish experimental 0.1.0.**
+
+This is not a production-readiness claim. The implementation has broad Windows corpus validation, lossless round trips, typed I/O errors, synthetic corruption tests, and complete Rustdoc. Production use still requires acceptance of reverse-engineered limitations: ID-11 physics, kappa units, CP integration conventions, density units, unknown fields, and extended fuzzing remain unresolved.
 
 ## Documentation
 
 - [Architecture and API migration](docs/architecture.md)
-- [Performance measurements](docs/performance.md)
+- [Windows and synthetic performance measurements](docs/performance.md)
 - [Fuzzing](docs/fuzzing.md)
 - [Format overview](docs/format-overview.md)
 - [Chunk layouts](docs/chunk-layouts.md)
@@ -101,26 +99,8 @@ Implemented read-only thermo features include calorie/joule handling, OLE Automa
 - [Validation status](docs/validation-status.md)
 - [Release-readiness review](docs/release-readiness.md)
 
-## Validation and fixture policy
-
-`examples/MS16BASE.CDB` is proprietary, intentionally ignored, and optional. Tests skip cleanly when it is unavailable. It must never be staged, copied, encoded, uploaded, printed, used as a fuzz seed, or used as a benchmark input.
-
-Run the public checks:
-
-```text
-cargo fmt --check
-cargo clippy --all-targets --all-features -- -D warnings
-cargo test --all-targets --all-features
-cargo test --doc
-cargo check --examples
-RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --all-features
-cargo package
-```
-
 ## Licensing and toolchain
 
-This crate is dual-licensed under [MIT](LICENSE-MIT) or [Apache-2.0](LICENSE-APACHE). The declared minimum supported Rust version is 1.85.0, required for edition 2024 and verified with the MSRV checks.
+This crate is dual-licensed under [MIT](LICENSE-MIT) or [Apache-2.0](LICENSE-APACHE). The declared minimum supported Rust version is 1.85.0, required for edition 2024 and verified on Windows.
 
-GitHub Actions runs formatting, Clippy, tests, documentation tests, example checks, rustdoc warnings, and packaging on stable Linux; library checks on Rust 1.85.0; and all-target tests on Windows and macOS. Dependabot tracks Cargo and GitHub Actions updates. A scheduled security workflow runs `cargo audit` and dependency review runs for pull requests.
-
-The crate is ready for a robustness-testing pass, not a production-ready release. The property suite and fuzz targets now provide a foundation, but longer Linux sanitizer runs, broader malformed-input corpus work, and a final API-stability review remain necessary.
+GitHub Actions makes Windows stable the primary quality job: formatting, Clippy, tests, doctests, examples, strict rustdoc, and packaging. Windows Rust 1.85.0 validates the MSRV. Linux/macOS checks remain secondary portability coverage; a scheduled security workflow runs `cargo audit` and pull requests receive dependency review.
