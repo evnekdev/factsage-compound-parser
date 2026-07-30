@@ -192,7 +192,11 @@ impl<'a> PhaseView<'a> {
             })
     }
 
-    /// Iterates kappa records linked by exact stored phase ID in stream order.
+    /// Iterates structurally parsed ID-11 records linked by exact stored phase ID.
+    ///
+    /// Iteration preserves physical stream order and does not copy raw records.
+    /// The link is established, while ID-11 physical equations and units remain
+    /// unverified and are intentionally not evaluated by this API.
     pub fn physical_property_ranges(
         self,
     ) -> impl Iterator<Item = PhysicalPropertyRangeView<'a>> + 'a {
@@ -212,7 +216,7 @@ impl<'a> PhaseView<'a> {
         self.index.heat_capacity_chunks.len()
     }
 
-    /// Returns the number of kappa ranges linked to this phase.
+    /// Returns the number of structurally linked ID-11 records for this phase.
     pub fn physical_property_range_count(self) -> usize {
         self.index.kappa_chunks.len()
     }

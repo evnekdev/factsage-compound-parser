@@ -1,30 +1,35 @@
 use super::{Cursor, common_header};
 use crate::error::ParseError;
 
-/// The ID-11 extended physical-property/kappa body.
+/// The losslessly parsed ID-11 extended physical-property record.
+///
+/// ID 11 is structurally validated and retained exactly. Its phase-ID link is
+/// established by the domain layer, but its physical equation, units, and the
+/// semantic role of the coefficient arrays remain unverified. The raw fields
+/// below are authoritative and must not be treated as evaluated kappa values.
 #[derive(Debug, Clone, PartialEq)]
 pub struct RawKappaChunk {
     /// The shared non-database header.
     pub header: super::RawCommonHeader,
-    /// The lower temperature bound.
+    /// The stored lower temperature bound; its physical interpretation is unverified.
     pub temperature_min: f64,
-    /// The upper temperature bound.
+    /// The stored upper temperature bound; its physical interpretation is unverified.
     pub temperature_max: f64,
-    /// The referenced phase identifier.
+    /// The stored raw phase identifier used for exact in-compound linking.
     pub phase_id_raw: i32,
     /// Four uninterpreted bytes.
     pub unknown_1: [u8; 4],
-    /// Ten f1 temperature coefficients.
+    /// Ten preserved f64 slots from the first ID-11 coefficient block.
     pub f1_temperature_coefficients: [f64; 10],
-    /// Eight f1 temperature powers.
+    /// Eight preserved f32 slots from the first ID-11 power block.
     pub f1_temperature_powers: [f32; 8],
-    /// Three f2 pressure coefficients.
+    /// Three preserved f64 slots from the second ID-11 coefficient block.
     pub f2_pressure_coefficients: [f64; 3],
-    /// Two f2 pressure powers.
+    /// Two preserved f32 slots from the second ID-11 power block.
     pub f2_pressure_powers: [f32; 2],
-    /// Five f3 temperature coefficients.
+    /// Five preserved f64 slots from the third ID-11 coefficient block.
     pub f3_temperature_coefficients: [f64; 5],
-    /// Three f3 temperature powers.
+    /// Three preserved f32 slots from the third ID-11 power block.
     pub f3_temperature_powers: [f32; 3],
     /// Final padding bytes.
     pub padding_remaining: [u8; 4],

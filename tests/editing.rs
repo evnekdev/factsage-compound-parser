@@ -161,3 +161,77 @@ fn validates_edit_inputs_and_exposes_raw_stream() {
         EnergyUnit::Joules
     );
 }
+#[test]
+fn structural_and_non_structural_edits_preserve_linked_kappa_bytes() {
+    let mut kappa = [0x5a; CHUNK_SIZE];
+    kappa[0] = 11;
+    put_i32(&mut kappa, 48, 101);
+    kappa[252..256].copy_from_slice(&[0x11, 0x22, 0x33, 0x44]);
+    let input = [header(), compound(1), ordinary(), kappa]
+        .into_iter()
+        .flatten()
+        .collect::<Vec<_>>();
+    let kappa_range = 3 * CHUNK_SIZE..4 * CHUNK_SIZE;
+    let mut editor = DatabaseEditor::from_bytes(&input).unwrap();
+    assert_eq!(
+        editor
+            .view()
+            .unwrap()
+            .compounds()
+            .next()
+            .unwrap()
+            .phases()
+            .next()
+            .unwrap()
+            .physical_property_range_count(),
+        1
+    );
+
+    editor.set_phase_name(0, 0, "edited").unwrap();
+    assert_eq!(
+        &editor.to_bytes().unwrap()[kappa_range.clone()],
+        &input[kappa_range.clone()]
+    );
+
+    editor
+        .insert_chunk(
+            3,
+            RawChunk::Unknown {
+                id: 250,
+                body: [0x7f; 255],
+            },
+        )
+        .unwrap();
+    assert_eq!(
+        editor
+            .view()
+            .unwrap()
+            .compounds()
+            .next()
+            .unwrap()
+            .phases()
+            .next()
+            .unwrap()
+            .physical_property_range_count(),
+        1
+    );
+    let removed = editor.remove_chunk(3).unwrap();
+    assert!(matches!(removed, RawChunk::Unknown { id: 250, .. }));
+    assert_eq!(
+        editor
+            .view()
+            .unwrap()
+            .compounds()
+            .next()
+            .unwrap()
+            .phases()
+            .next()
+            .unwrap()
+            .physical_property_range_count(),
+        1
+    );
+    assert_eq!(
+        &editor.to_bytes().unwrap()[kappa_range],
+        &input[3 * CHUNK_SIZE..4 * CHUNK_SIZE]
+    );
+}

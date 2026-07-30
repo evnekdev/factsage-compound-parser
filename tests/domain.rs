@@ -1,6 +1,6 @@
 use factsage_compound_parser::{
     Database, DatabaseError, DatabaseView, DiagnosticKind, DomainError, DomainIndex,
-    HeatCapacityKind, PhaseState, RawDatabase,
+    HeatCapacityKind, PhaseState, RawChunk, RawDatabase,
 };
 
 const CHUNK_SIZE: usize = 256;
@@ -269,4 +269,71 @@ fn detects_stale_or_foreign_indexes_before_creating_views() {
         DatabaseView::new(&raw, &index),
         Err(DomainError::StaleIndex { .. })
     ));
+}
+#[test]
+fn preserves_and_links_multiple_kappa_records_in_stream_order() {
+    let mut first_kappa = kappa(101);
+    first_kappa[52..56].copy_from_slice(&[0xa1, 0xb2, 0xc3, 0xd4]);
+    first_kappa[252..256].copy_from_slice(&[0x11, 0x22, 0x33, 0x44]);
+    let mut second_kappa = kappa(101);
+    second_kappa[52..56].copy_from_slice(&[0x51, 0x62, 0x73, 0x84]);
+    second_kappa[252..256].copy_from_slice(&[0x55, 0x66, 0x77, 0x88]);
+    let input = [
+        header(),
+        compound("Kappa", "X"),
+        ordinary(101, "solid"),
+        first_kappa,
+        second_kappa,
+        comment(b"comment"),
+    ]
+    .into_iter()
+    .flatten()
+    .collect::<Vec<_>>();
+    let database = Database::from_bytes(&input).unwrap();
+    let view = database.view().unwrap();
+    let phase = view.compounds().next().unwrap().phases().next().unwrap();
+    let ranges = phase.physical_property_ranges().collect::<Vec<_>>();
+
+    assert_eq!(ranges.len(), 2);
+    assert_eq!(ranges[0].chunk_index(), 3);
+    assert_eq!(ranges[1].chunk_index(), 4);
+    let RawChunk::Kappa(raw_first) = &database.raw().chunks()[3] else {
+        panic!("synthetic stream contains first kappa record");
+    };
+    let RawChunk::Kappa(raw_second) = &database.raw().chunks()[4] else {
+        panic!("synthetic stream contains second kappa record");
+    };
+    assert!(std::ptr::eq(ranges[0].raw(), raw_first));
+    assert!(std::ptr::eq(ranges[1].raw(), raw_second));
+    assert_eq!(database.raw().to_bytes().unwrap(), input);
+}
+
+#[test]
+fn preserves_ambiguous_kappa_records_without_selecting_a_phase() {
+    let database = database([
+        header(),
+        compound("Ambiguous", "X"),
+        ordinary(101, "one"),
+        ordinary(101, "two"),
+        kappa(101),
+    ]);
+    let view = database.view().unwrap();
+    let compound = view.compounds().next().unwrap();
+    let orphan = compound.orphan_ranges().next().unwrap();
+
+    assert!(matches!(
+        orphan.range(),
+        Some(factsage_compound_parser::RangeView::Kappa(_))
+    ));
+    assert!(matches!(
+        orphan.reason(),
+        factsage_compound_parser::OrphanReason::AmbiguousPhase { phase_count: 2 }
+    ));
+    assert!(view.diagnostics().iter().any(|diagnostic| matches!(
+        diagnostic.kind,
+        DiagnosticKind::AmbiguousPhaseLink {
+            phase_id_raw: 101,
+            phase_count: 2
+        }
+    )));
 }

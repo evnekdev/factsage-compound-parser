@@ -43,7 +43,12 @@ impl<'a> HeatCapacityRangeView<'a> {
     }
 }
 
-/// A borrowed kappa or extended physical-property range linked to one phase.
+/// A borrowed ID-11 record linked to one phase by exact stored raw phase ID.
+///
+/// The domain link and physical stream order are validated, but the record's
+/// physical equation, units, and coefficient meanings remain unverified. Use
+/// [`Self::raw`] for the authoritative structural fields; this view performs no
+/// kappa evaluation or unit conversion.
 #[derive(Debug, Clone, Copy)]
 pub struct PhysicalPropertyRangeView<'a> {
     raw: &'a RawKappaChunk,
@@ -55,12 +60,12 @@ impl<'a> PhysicalPropertyRangeView<'a> {
         Self { raw, chunk_index }
     }
 
-    /// Returns the zero-based physical chunk index of this kappa record.
+    /// Returns the zero-based physical chunk index of this preserved ID-11 record.
     pub const fn chunk_index(self) -> usize {
         self.chunk_index
     }
 
-    /// Returns the complete borrowed raw kappa record.
+    /// Returns the complete authoritative raw ID-11 record without copying it.
     pub const fn raw(self) -> &'a RawKappaChunk {
         self.raw
     }
@@ -71,7 +76,7 @@ impl<'a> PhysicalPropertyRangeView<'a> {
 pub enum RangeView<'a> {
     /// A heat-capacity range with its preserved CP ID.
     HeatCapacity(HeatCapacityRangeView<'a>),
-    /// A kappa or extended physical-property range.
+    /// A structurally parsed ID-11 record with unverified physical semantics.
     Kappa(PhysicalPropertyRangeView<'a>),
 }
 
