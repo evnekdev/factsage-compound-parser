@@ -39,7 +39,10 @@ use factsage_compound_parser::domain::Database;
 
 fn heat_capacity(path: &std::path::Path) -> Result<f64, Box<dyn std::error::Error>> {
     let database = Database::from_path(path)?;
-    let compound = database`n        .compounds`n        .first()`n        .ok_or_else(|| std::io::Error::other("database has no compounds"))?;
+    let compound = database
+        .compounds
+        .first()
+        .ok_or_else(|| std::io::Error::other("database has no compounds"))?;
     Ok(compound.heat_capacity_at(0, 1000.0)?)
 }
 ```
@@ -108,3 +111,13 @@ cargo doc --no-deps
 ```
 
 For the optional aggregate-only Python parity check, see [python parity](docs/python-parity.md).
+
+## Licensing and toolchain
+
+This crate is dual-licensed under [MIT](LICENSE-MIT) or [Apache-2.0](LICENSE-APACHE). The declared minimum supported Rust version is 1.85.0, required for edition 2024 and verified with the MSRV checks.
+
+GitHub Actions runs formatting, Clippy, tests, documentation tests, example checks, rustdoc warnings, and packaging on stable Linux; library checks on Rust 1.85.0; and all-target tests on Windows and macOS. Dependabot tracks Cargo and GitHub Actions updates. A scheduled security workflow runs `cargo audit` and dependency review runs for pull requests.
+
+`cargo package` is part of CI. The package contains the tracked source, schema, public documentation, README, and license files; ignored local CDB data, `target`, and temporary validation output are excluded. The crate is not published.
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for setup and change requirements and [SECURITY.md](SECURITY.md) for private vulnerability reporting and malformed-input reports. The crate remains a release foundation rather than production-ready: fuzzing, property testing, broader malformed-input coverage, and final API-stability review remain outstanding.

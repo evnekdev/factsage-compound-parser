@@ -1,4 +1,5 @@
 /target
-/examples
+/examples/*
+!/examples/*.rs
 *.CDB
 *.cdb
