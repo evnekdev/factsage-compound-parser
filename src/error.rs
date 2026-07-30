@@ -1,5 +1,6 @@
 use std::fmt;
 use std::io;
+use std::path::PathBuf;
 
 /// Errors returned while parsing the fixed-width CDB binary format.
 #[derive(Debug)]
@@ -62,7 +63,21 @@ pub enum ParseError {
     },
     /// The input contains more records than a `usize` counter can represent.
     RecordCountOverflow,
-    /// Reading the input source failed.
+    /// Opening a caller-supplied CDB path for read-only parsing failed.
+    OpenPath {
+        /// Path that the parser attempted to open.
+        path: PathBuf,
+        /// Operating-system error returned while opening the path.
+        source: io::Error,
+    },
+    /// Reading a caller-supplied CDB path failed after it was opened.
+    ReadPath {
+        /// Path whose read operation failed.
+        path: PathBuf,
+        /// Operating-system error returned while reading the path.
+        source: io::Error,
+    },
+    /// Reading a generic caller-supplied input source failed.
     Io(io::Error),
 }
 
@@ -116,6 +131,18 @@ impl fmt::Display for ParseError {
                 "could not reserve owned storage for {chunk_count} CDB chunk(s)"
             ),
             Self::RecordCountOverflow => formatter.write_str("CDB record count overflows usize"),
+            Self::OpenPath { path, source } => write!(
+                formatter,
+                "could not open CDB path {} for reading: {}",
+                path.display(),
+                source
+            ),
+            Self::ReadPath { path, source } => write!(
+                formatter,
+                "I/O error while reading CDB path {}: {}",
+                path.display(),
+                source
+            ),
             Self::Io(error) => write!(formatter, "I/O error while reading CDB: {}", error),
         }
     }
@@ -124,6 +151,7 @@ impl fmt::Display for ParseError {
 impl std::error::Error for ParseError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
+            Self::OpenPath { source, .. } | Self::ReadPath { source, .. } => Some(source),
             Self::Io(error) => Some(error),
             _ => None,
         }

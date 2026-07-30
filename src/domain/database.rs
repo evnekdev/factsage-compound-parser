@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::fs::File;
 use std::io::Read;
 use std::path::Path;
 
@@ -297,7 +296,7 @@ impl Database {
 
     /// Opens a CDB path with streaming I/O and builds a semantic index.
     pub fn from_path(path: impl AsRef<Path>) -> Result<Self, DatabaseError> {
-        Self::from_reader(File::open(path).map_err(crate::error::ParseError::from)?)
+        Self::from_raw(RawDatabase::from_path(path)?).map_err(DatabaseError::Domain)
     }
 
     /// Takes ownership of a raw stream and builds its lightweight semantic index.

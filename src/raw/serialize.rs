@@ -1,7 +1,7 @@
 use std::fmt;
 use std::fs::File;
 use std::io::{self, Write};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use crate::{BODY_SIZE, CHUNK_SIZE, RawDatabase};
 
@@ -24,6 +24,22 @@ pub enum SerializeError {
         /// Number of bytes requested for the output.
         byte_length: usize,
     },
+    /// Creating a caller-selected output path failed before any CDB bytes were written.
+    CreatePath {
+        /// Path that serialization attempted to create or replace.
+        path: PathBuf,
+        /// Operating-system error returned while creating the path.
+        source: io::Error,
+    },
+    /// Writing a caller-selected output path failed after it was opened.
+    ///
+    /// The destination can contain a partial CDB stream when this error occurs.
+    WritePath {
+        /// Path whose write operation failed.
+        path: PathBuf,
+        /// Operating-system error returned while writing the path.
+        source: io::Error,
+    },
     /// The destination reader or writer returned an I/O error.
     Io(io::Error),
 }
@@ -38,6 +54,18 @@ impl fmt::Display for SerializeError {
             Self::Allocation { byte_length } => {
                 write!(formatter, "could not allocate {byte_length} output bytes")
             }
+            Self::CreatePath { path, source } => write!(
+                formatter,
+                "could not create CDB output path {}: {}",
+                path.display(),
+                source
+            ),
+            Self::WritePath { path, source } => write!(
+                formatter,
+                "CDB serialization I/O error at path {}: {}",
+                path.display(),
+                source
+            ),
             Self::Io(error) => write!(formatter, "CDB serialization I/O error: {error}"),
         }
     }
@@ -46,6 +74,7 @@ impl fmt::Display for SerializeError {
 impl std::error::Error for SerializeError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
+            Self::CreatePath { source, .. } | Self::WritePath { source, .. } => Some(source),
             Self::Io(error) => Some(error),
             Self::LengthOverflow { .. } | Self::Allocation { .. } => None,
         }
@@ -80,7 +109,10 @@ impl RawDatabase {
         Ok(bytes)
     }
 
-    /// Writes this flat raw database to a byte sink.
+    /// Writes this flat raw database to a byte sink without allocating an output buffer.
+    ///
+    /// Chunks are emitted in physical stream order. A sink failure is returned as
+    /// [`SerializeError::Io`] and may leave the sink with a partial CDB stream.
     pub fn write_to<W: Write>(&self, mut writer: W) -> Result<(), SerializeError> {
         for chunk in &self.chunks {
             chunk.write_to(&mut writer)?;
@@ -88,12 +120,25 @@ impl RawDatabase {
         Ok(())
     }
 
-    /// Creates or replaces a file with this serialized raw database.
+    /// Creates or replaces a caller-selected file with this serialized raw database.
     ///
-    /// Callers choose the destination explicitly; this method never writes to
-    /// the input path implicitly.
+    /// Callers choose the destination explicitly; this method never writes an
+    /// input path implicitly. If an operating-system write error occurs after
+    /// creation, the destination can contain a partial CDB stream and the error
+    /// is returned as [`SerializeError::WritePath`] with its underlying source.
     pub fn write_to_path(&self, path: impl AsRef<Path>) -> Result<(), SerializeError> {
-        self.write_to(File::create(path)?)
+        let path = path.as_ref();
+        let file = File::create(path).map_err(|source| SerializeError::CreatePath {
+            path: path.to_path_buf(),
+            source,
+        })?;
+        match self.write_to(file) {
+            Err(SerializeError::Io(source)) => Err(SerializeError::WritePath {
+                path: path.to_path_buf(),
+                source,
+            }),
+            result => result,
+        }
     }
 }
 

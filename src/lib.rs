@@ -234,8 +234,24 @@ impl RawDatabase {
     }
 
     /// Opens and parses a complete CDB from a filesystem path using streaming I/O.
+    ///
+    /// The path is opened for reading only. An open failure is returned as
+    /// [`ParseError::OpenPath`]; an operating-system error after the open is
+    /// returned as [`ParseError::ReadPath`]. Format errors retain their normal
+    /// typed variants and do not modify the source path.
     pub fn from_path(path: impl AsRef<Path>) -> Result<Self, ParseError> {
-        Self::from_reader(File::open(path)?)
+        let path = path.as_ref();
+        let file = File::open(path).map_err(|source| ParseError::OpenPath {
+            path: path.to_path_buf(),
+            source,
+        })?;
+        match Self::from_reader(file) {
+            Err(ParseError::Io(source)) => Err(ParseError::ReadPath {
+                path: path.to_path_buf(),
+                source,
+            }),
+            result => result,
+        }
     }
 
     pub(crate) const fn index_token(&self) -> (u64, u64) {
