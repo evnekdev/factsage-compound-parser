@@ -2,9 +2,15 @@ use std::fs::File;
 use std::io::Read;
 use std::path::Path;
 
+pub mod domain;
 pub mod error;
 pub mod raw;
 
+pub use domain::{
+    Compound, Database, DatabaseError, Diagnostic, DiagnosticKind, DomainError, ExpectedCategory,
+    HeatCapacityRange, OrphanRange, OrphanReason, Phase, PhaseDefinition, PhaseState,
+    PhysicalPropertyRange, Range, RawPhase, TextDecodeError,
+};
 pub use error::ParseError;
 pub use raw::{
     HeatCapacityKind, RawChunk, RawCommentChunk, RawCommonHeader, RawCompoundChunk,

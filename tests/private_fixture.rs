@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 use std::fs;
 use std::path::PathBuf;
 
-use factsage_compound_parser::{RawChunk, RawDatabase};
+use factsage_compound_parser::{Database, DiagnosticKind, RawChunk, RawDatabase};
 
 #[test]
 fn parses_private_ms16base_when_available() {
@@ -39,4 +39,69 @@ fn parses_private_ms16base_when_available() {
         (10_u8, 212_usize),
     ]);
     assert_eq!(histogram, expected);
+}
+
+#[test]
+fn groups_private_ms16base_when_available() {
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("examples")
+        .join("MS16BASE.CDB");
+    if !path.is_file() {
+        return;
+    }
+
+    let bytes = fs::read(&path).expect("private fixture should be readable");
+    let database = Database::from_bytes(&bytes).expect("private fixture should group");
+    assert_eq!(database.compounds.len(), 537);
+    assert_eq!(
+        database
+            .compounds
+            .iter()
+            .flat_map(|compound| compound.phases.iter())
+            .filter(|phase| !phase.is_transition())
+            .count(),
+        620
+    );
+    assert_eq!(
+        database
+            .compounds
+            .iter()
+            .flat_map(|compound| compound.phases.iter())
+            .filter(|phase| phase.is_transition())
+            .count(),
+        64
+    );
+    assert_eq!(
+        database
+            .compounds
+            .iter()
+            .flat_map(|compound| compound.phases.iter())
+            .map(|phase| phase.heat_capacity_ranges.len())
+            .sum::<usize>(),
+        1_518
+    );
+    assert_eq!(
+        database
+            .compounds
+            .iter()
+            .map(|compound| compound.comment_fragments.len())
+            .sum::<usize>(),
+        212
+    );
+    assert_eq!(
+        database
+            .compounds
+            .iter()
+            .map(|compound| compound.orphan_ranges.len())
+            .sum::<usize>(),
+        0
+    );
+    assert_eq!(
+        database
+            .diagnostics
+            .iter()
+            .filter(|diagnostic| matches!(diagnostic.kind, DiagnosticKind::DuplicatePhaseId { .. }))
+            .count(),
+        0
+    );
 }
