@@ -24,7 +24,7 @@ The CP-range stored enthalpy and entropy fields are exposed conservatively as `s
 
 ## OLE Automation dates
 
-`OleAutomationDate` retains the original finite raw day count. Conversion uses the OLE epoch of 1899-12-30 and the Windows/OLE negative-fraction rule. The conversion is millisecond based, matching the established Automation Date representation. Non-finite values and values outside the representable OLE range return `DateError`.
+`OleAutomationDate` retains the original finite raw day count. Conversion uses the OLE epoch of 1899-12-30 and the Windows/OLE negative-fraction rule. The conversion rounds to the nearest millisecond with the same signed rounding and negative-fraction rule as Windows `System.DateTime.FromOADate`. Non-finite values and values outside the representable OLE range return `DateError`.
 
 The raw database header and every shared entry header expose date helpers. Domain compound, phase, CP range, and physical-property range wrappers expose the corresponding shared timestamp helper; raw comment and kappa records expose theirs directly.
 
@@ -46,12 +46,12 @@ Each range evaluates the preserved eight coefficient/power pairs explicitly:
 Cp(T) = sum(coefficients[i] * T.powf(powers[i]))
 ~~~
 
-Evaluation requires finite positive kelvin temperature. This is a deliberate physical-domain rule; it avoids ambiguous zero or negative bases for fractional and negative powers. Bounds are inclusive: `t_min <= T <= t_max`.
+Evaluation requires finite positive kelvin temperature. This is a deliberate physical-domain rule; it avoids ambiguous zero or negative bases for fractional and negative powers. Individual bounds are inclusive: `t_min <= T <= t_max`.
 
-Phase selection searches all ranges in preserved stream order. Unsorted ranges are supported. If no range contains the temperature, the error reports the available intervals. If multiple ranges contain it, the error reports all candidate indexes; the first range is never silently selected. Invalid range bounds, non-finite coefficients or powers, invalid power terms, non-finite terms, and non-finite sums are typed errors.
+Phase selection searches all ranges in preserved stream order. Unsorted ranges are supported. If no range contains the temperature, the error reports the available intervals. At an exact endpoint shared by exactly two adjacent ranges, phase-level evaluation selects the lower-temperature range. This is supported by 834 such endpoints and zero strict overlaps in the local fixture. Other multiple-range cases report all candidate indexes; the first range is never silently selected. Invalid range bounds, non-finite coefficients or powers, invalid power terms, non-finite terms, and non-finite sums are typed errors.
 
 `Compound::heat_capacity_at` selects a phase by index and derives the energy unit from that compound. The direct range methods accept an explicit `EnergyUnit` so callers can evaluate a detached range without introducing ownership or reference cycles. SI CP conversion uses the same 4.184 factor for calorie-based values.
 
 ## Compatibility and scope
 
-The Rust layer follows the Python getter conversion rule consistently for ordinary and transition enthalpy. It intentionally does not copy the Python transition setter asymmetry because this milestone has no setters. It also does not copy Python mutation behavior, CP integration, or inferred density units.
+The Rust layer follows the Python getter conversion rule consistently for ordinary and transition enthalpy. The raw-authoritative editor intentionally does not copy the Python transition setter asymmetry: it converts according to the actual energy code. It also does not propagate ordinary phase edits into CP stored anchors, because their reference convention remains unverified. CP integration and inferred density units remain unsupported.

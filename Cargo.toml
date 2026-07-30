@@ -2,6 +2,11 @@
 name = "factsage-compound-parser"
 version = "0.1.0"
 edition = "2024"
+description = "Lossless native Rust parsing, grouping, and controlled editing for FactSage Compound Database files"
+readme = "README.md"
+repository = "https://github.com/evnekdev/factsage-compound-parser"
+keywords = ["factsage", "chemapp", "thermodynamics", "parser"]
+categories = ["parser-implementations", "science"]
 
 [dependencies]
 encoding_rs = "0.8"

@@ -1,119 +1,110 @@
 # factsage-compound-parser
 
-Native Rust parsing foundations, a read-only semantic model, and read-only thermodynamic accessors for FactSage Compound Database (.CDB) files.
+A safe native Rust foundation for inspecting, grouping, evaluating, editing selected fields, and losslessly serializing FactSage Compound Database (`.CDB`) files.
 
-The repository is derived from two earlier projects:
+The crate is based on a validated Kaitai layout, the completed companion Python parser, and aggregate-only validation against a local private fixture. It does not contain proprietary CDB data.
 
-- evnekdev/factsage-compound: the completed Python/NumPy parser and semantic model.
-- evnekdev/factsage-compound-docs: the explanatory wiki and initial Kaitai draft.
+## API layers
 
-The validated Kaitai schema remains the primary physical-layout specification.
+- `raw::RawDatabase` is the authoritative flat physical stream. It preserves all known and unknown chunks, reserved fields, padding, text bytes, and original CP IDs 2 through 6. It parses and writes CDB bytes losslessly.
+- `domain::Database` is a read-only grouped view: header, compounds, phases, CP/kappa ranges, comments, and typed diagnostics.
+- `thermo` exposes established unit conversion, OLE Automation dates, provisional density decoding, and stored CP-expression evaluation.
+- `edit::DatabaseEditor` owns a mutable raw stream for controlled edits, then rebuilds a domain view on demand.
 
-## Contents
+`RawDatabase` remains the only serialization authority. A grouped `Database` never silently rewrites or reorders records.
 
-- [docs/format-overview.md](docs/format-overview.md) - file organisation, chunk ordering, endianness, and parser invariants.
-- [docs/chunk-layouts.md](docs/chunk-layouts.md) - byte-accurate layouts for every known 256-byte chunk.
-- [docs/parsing-model.md](docs/parsing-model.md) - physical and semantic stream reconstruction.
-- [docs/semantic-rules.md](docs/semantic-rules.md) - phase identifiers, strings, dates, density encoding, and unresolved fields.
-- [docs/domain-model.md](docs/domain-model.md) - domain grouping, range linking, labels, and diagnostics.
-- [docs/thermodynamic-semantics.md](docs/thermodynamic-semantics.md) - units, dates, density, CP evaluation, and boundaries.
-- [docs/schema-validation.md](docs/schema-validation.md) - Kaitai validation results against the private local fixture.
-- [schemas/factsage_compound.ksy](schemas/factsage_compound.ksy) - Kaitai Struct YAML schema.
-- [src/raw](src/raw) - native lossless raw-record parser.
-- [src/domain](src/domain) - read-only semantic grouping layer.
-- [src/thermo](src/thermo) - read-only thermodynamic decoding and CP evaluation.
+## Minimal examples
 
-## Current status
+Parse and group a database:
 
-The first three native Rust milestones are implemented:
+```rust
+use factsage_compound_parser::domain::Database;
 
-- parses a flat sequence of exact 256-byte chunks;
-- validates non-empty input, chunk alignment, first ID 9, and CMPD magic;
-- decodes every known chunk ID into a typed raw representation;
-- preserves unknown, reserved, padding, and fixed-width text bytes;
-- preserves the original heat-capacity IDs 2 through 6;
-- groups compounds, phases, CP ranges, kappa ranges, and comment fragments;
-- links ranges to phases by exact raw phase ID;
-- exposes phase state, index, compact labels, ChemApp labels, and safe text helpers;
-- decodes compound energy and pressure unit codes;
-- converts established calorie-based values to SI joules without mutating raw fields;
-- converts OLE Automation dates to SystemTime;
-- decodes provisional packed phase density values;
-- evaluates stored eight-term CP expressions with inclusive range selection;
-- reports non-fatal semantic issues as typed diagnostics while retaining source records;
-- exposes byte-slice, reader, and path-based raw, domain, and thermodynamic APIs.
-
-The raw API is lossless and flat. The domain API is a read-only view over that raw data: it adds ownership and lookup relationships but does not remove or rewrite raw records. The thermo API adds calculated views over preserved values; it does not cache or mutate them.
-
-Invalid group ordering is fatal by default. Duplicate phase IDs, orphan or ambiguous ranges, questionable phase indexes, invalid ASCII, invalid temperature bounds, and unknown chunks inside a compound group are returned as typed diagnostics. Thermodynamic evaluation returns typed errors for invalid units, temperatures, ranges, coefficients, powers, dates, and density values.
-
-## Minimal domain example
-
-~~~rust
-use factsage_compound_parser::Database;
-
-fn list_compounds(path: &std::path::Path) -> Result<(), Box<dyn std::error::Error>> {
+fn list_phases(path: &std::path::Path) -> Result<(), Box<dyn std::error::Error>> {
     let database = Database::from_path(path)?;
     for compound in &database.compounds {
-        println!("{} ({})", compound.name()?, compound.formula()?);
+        println!("{}", compound.name()?);
         for phase in &compound.phases {
             println!("  {}: {}", phase.chemapp_label(), phase.name()?);
         }
     }
     Ok(())
 }
-~~~
+```
 
-## Thermodynamic example
+Evaluate stored CP for a selected phase. The model uses the compound's established energy-unit code and reports gaps or true overlaps as typed errors.
 
-This evaluates a stored CP expression for a selected phase. The chosen phase and temperature are application inputs; no proprietary names or values are required.
+```rust
+use factsage_compound_parser::domain::Database;
 
-~~~rust
-use factsage_compound_parser::Database;
-
-fn evaluate_first_phase(path: &std::path::Path) -> Result<f64, Box<dyn std::error::Error>> {
+fn heat_capacity(path: &std::path::Path) -> Result<f64, Box<dyn std::error::Error>> {
     let database = Database::from_path(path)?;
-    let compound = database.compounds.first().ok_or_else(|| std::io::Error::other("database has no compounds"))?;
-    let temperature_k = 1000.0;
-    Ok(compound.heat_capacity_at(0, temperature_k)?)
+    let compound = database`n        .compounds`n        .first()`n        .ok_or_else(|| std::io::Error::other("database has no compounds"))?;
+    Ok(compound.heat_capacity_at(0, 1000.0)?)
 }
-~~~
+```
 
-## Raw API
+Edit a documented field and serialize to a caller-selected output path:
 
-Use RawDatabase when the flat physical record stream and every preserved byte are the primary concern:
+```rust
+use factsage_compound_parser::edit::DatabaseEditor;
 
-~~~rust
-use factsage_compound_parser::{RawChunk, RawDatabase};
-
-fn inspect(path: &std::path::Path) -> Result<(), factsage_compound_parser::ParseError> {
-    let database = RawDatabase::from_path(path)?;
-    for chunk in &database.chunks {
-        if let RawChunk::Unknown { id, body } = chunk {
-            println!("preserved unknown ID {id} with {} body bytes", body.len());
-        }
-    }
+fn rename(path: &std::path::Path, output: &std::path::Path) -> Result<(), Box<dyn std::error::Error>> {
+    let mut editor = DatabaseEditor::from_path(path)?;
+    editor.set_compound_name(0, "Example")?;
+    editor.write_to_path(output)?;
     Ok(())
 }
-~~~
+```
 
-Fixed-width text remains available in raw byte arrays. Domain ASCII accessors return an explicit decoding error; Windows-1252 comment decoding is infallible. Text helpers and thermodynamic accessors are convenience views and do not replace the raw representation.
+## Lossless raw serialization
 
-## Unsupported functionality
+For unmodified input accepted by the raw parser:
 
-Integrated enthalpy or entropy calculations, Gibbs-energy calculations, phase-transition path traversal, advanced kappa-property evaluation, pressure conversion, density setters, mutation, CDB writing, round-trip serialization, serde, CLI tools, Python bindings, and crates.io publication are not implemented.
+```text
+input == RawDatabase::from_bytes(input)?.to_bytes()?
+```
 
-## Validation
+The guarantee covers original chunk order and IDs, unknown chunks, reserved/padding bytes, fixed-width text, and parsed IEEE-754 bit patterns. The private fixture is checked entirely in memory; no output copy is created.
 
-The ignored local fixture examples/MS16BASE.CDB is used only when it exists locally. It is never required for public CI and must not be staged, copied, encoded, or uploaded.
+See [serialization](docs/serialization.md) and [editing](docs/editing.md) for the authoritative-data and setter policies.
 
-Run the native checks with:
+## Diagnostics and safe limits
 
-~~~text
+The domain model treats invalid stream ordering as fatal. It retains and reports non-fatal issues such as unknown chunks inside a compound group, duplicate phase IDs, ambiguous/missing range links, invalid ASCII, questionable phase indexes, and CP bound problems.
+
+The editor intentionally supports only well-established fields. Names must fit their strict ASCII fixed-width destination; setters reject non-finite numeric values and unknown energy units. It does not currently edit formulae, comments, density, CP expressions, kappa records, reserved fields, or unknown chunks.
+
+The Python project's ordinary-phase setters propagate values into CP anchor fields, but this crate does not: the anchor convention is unresolved. Rust also corrects the Python transition-enthalpy setter's unit-conversion asymmetry.
+
+## Format knowledge and unsupported semantics
+
+Implemented read-only thermo features include calorie/joule handling, OLE Automation date conversion, provisional density remainder decoding, and eight-term CP evaluation. CP integration, arbitrary-temperature enthalpy/entropy/Gibbs calculations, phase-transition path traversal, advanced kappa evaluation, density units, mutation outside the documented editor fields, and all inferred meanings for unknown data remain out of scope.
+
+## Documentation
+
+- [Format overview](docs/format-overview.md)
+- [Chunk layouts](docs/chunk-layouts.md)
+- [Parsing model](docs/parsing-model.md)
+- [Domain model](docs/domain-model.md)
+- [Thermodynamic semantics](docs/thermodynamic-semantics.md)
+- [Raw serialization](docs/serialization.md)
+- [Controlled editing](docs/editing.md)
+- [Python parity](docs/python-parity.md)
+- [Validation status](docs/validation-status.md)
+- [Release-readiness review](docs/release-readiness.md)
+
+## Validation and fixture policy
+
+`examples/MS16BASE.CDB` is proprietary, intentionally ignored, and optional. Tests skip cleanly when it is unavailable. It must never be staged, copied, encoded, uploaded, or printed.
+
+Run the public checks:
+
+```text
 cargo fmt --check
 cargo clippy --all-targets --all-features -- -D warnings
 cargo test --all-targets
 cargo doc --no-deps
-~~~
+```
 
-Run the schema validator separately after generating its ignored Python output as described in docs/schema-validation.md.
+For the optional aggregate-only Python parity check, see [python parity](docs/python-parity.md).

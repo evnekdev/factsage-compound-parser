@@ -584,3 +584,48 @@ fn accepts_a_zero_width_cp_range_at_its_only_temperature() {
         3.0,
     );
 }
+
+#[test]
+fn rejects_ole_lower_boundary_and_preserves_negative_integral_dates() {
+    assert_eq!(
+        factsage_compound_parser::OleAutomationDate::from_raw(-657_435.0),
+        Err(DateError::OutOfRange {
+            raw_days: -657_435.0,
+        })
+    );
+    assert_eq!(
+        factsage_compound_parser::OleAutomationDate::from_raw(-1.0)
+            .unwrap()
+            .to_system_time()
+            .unwrap(),
+        ole_epoch()
+            .checked_sub(Duration::from_secs(86_400))
+            .unwrap()
+    );
+}
+
+#[test]
+fn rejects_non_positive_temperature_and_invalid_cp_bounds() {
+    let zero_temperature = one_phase_database(
+        1,
+        ordinary(101, 1.0),
+        [cp(101, 0.0, 100.0, 0.0, 0.0, &[(0, 1.0, 0.0)])],
+    );
+    assert!(matches!(
+        zero_temperature.compounds[0].phases[0].heat_capacity_ranges[0].heat_capacity_raw(0.0),
+        Err(HeatCapacityError::NonPositiveTemperature { temperature_k: 0.0 })
+    ));
+
+    let invalid_bounds = one_phase_database(
+        1,
+        ordinary(101, 1.0),
+        [cp(101, 300.0, 100.0, 0.0, 0.0, &[(0, 1.0, 0.0)])],
+    );
+    assert!(matches!(
+        invalid_bounds.compounds[0].phases[0].heat_capacity_ranges[0].heat_capacity_raw(200.0),
+        Err(HeatCapacityError::InvalidRangeBounds {
+            range_index: None,
+            ..
+        })
+    ));
+}
