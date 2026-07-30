@@ -4,11 +4,20 @@ use std::fmt;
 #[derive(Debug, Clone, PartialEq)]
 pub enum UnitError {
     /// The raw energy code is not one of the established values.
-    UnknownEnergyUnit { raw: u32 },
+    UnknownEnergyUnit {
+        /// Unrecognised stored energy-unit code.
+        raw: u32,
+    },
     /// The raw pressure code is not one of the established values.
-    UnknownPressureUnit { raw: u32 },
+    UnknownPressureUnit {
+        /// Unrecognised stored pressure-unit code.
+        raw: u32,
+    },
     /// A conversion input was not finite.
-    NonFiniteValue { value: f64 },
+    NonFiniteValue {
+        /// NaN or infinite value rejected before conversion.
+        value: f64,
+    },
 }
 
 impl fmt::Display for UnitError {
@@ -64,7 +73,10 @@ pub enum PhaseThermoError {
     /// Unit conversion failed.
     Unit(UnitError),
     /// A compound phase index was not present.
-    InvalidPhaseIndex { phase_index: usize },
+    InvalidPhaseIndex {
+        /// Requested zero-based phase index.
+        phase_index: usize,
+    },
 }
 
 impl fmt::Display for PhaseThermoError {
@@ -104,11 +116,20 @@ impl From<UnitError> for PhaseThermoError {
 #[derive(Debug, Clone, PartialEq)]
 pub enum DateError {
     /// The raw value is NaN or infinite.
-    NonFinite { raw_days: f64 },
+    NonFinite {
+        /// NaN or infinite OLE Automation day count.
+        raw_days: f64,
+    },
     /// The value is outside the established OLE Automation date range.
-    OutOfRange { raw_days: f64 },
+    OutOfRange {
+        /// Finite OLE Automation day count outside the supported interval.
+        raw_days: f64,
+    },
     /// The target clock representation could not be constructed.
-    SystemTimeOverflow { raw_days: f64 },
+    SystemTimeOverflow {
+        /// OLE day count that cannot be represented by SystemTime.
+        raw_days: f64,
+    },
 }
 
 impl fmt::Display for DateError {
@@ -132,9 +153,15 @@ impl std::error::Error for DateError {}
 #[derive(Debug, Clone, PartialEq)]
 pub enum HeatCapacityError {
     /// Temperature was NaN or infinite.
-    NonFiniteTemperature { temperature_k: f64 },
+    NonFiniteTemperature {
+        /// NaN or infinite temperature in kelvin.
+        temperature_k: f64,
+    },
     /// Evaluation requires a positive absolute temperature.
-    NonPositiveTemperature { temperature_k: f64 },
+    NonPositiveTemperature {
+        /// Zero or negative temperature in kelvin.
+        temperature_k: f64,
+    },
     /// A range's bounds are not finite and strictly ordered.
     InvalidRangeBounds {
         /// Range index when selected from a phase, if known.
@@ -198,11 +225,17 @@ pub enum HeatCapacityError {
         value: f64,
     },
     /// The final raw sum became non-finite.
-    NonFiniteResult { value: f64 },
+    NonFiniteResult {
+        /// Non-finite accumulated heat-capacity value.
+        value: f64,
+    },
     /// Energy-unit conversion failed.
     Unit(UnitError),
     /// A phase index was not present.
-    InvalidPhaseIndex { phase_index: usize },
+    InvalidPhaseIndex {
+        /// Requested zero-based phase index.
+        phase_index: usize,
+    },
 }
 
 impl fmt::Display for HeatCapacityError {
@@ -293,7 +326,10 @@ impl From<UnitError> for HeatCapacityError {
 #[derive(Debug, Clone, PartialEq)]
 pub enum DensityError {
     /// The raw density is NaN or infinite.
-    NonFinite { raw: f64 },
+    NonFinite {
+        /// NaN or infinite packed density value.
+        raw: f64,
+    },
 }
 
 impl fmt::Display for DensityError {

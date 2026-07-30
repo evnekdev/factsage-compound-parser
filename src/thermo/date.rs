@@ -1,6 +1,8 @@
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-use crate::domain::{Compound, HeatCapacityRange, Phase, PhysicalPropertyRange, RawPhase};
+use crate::domain::{
+    CompoundView, HeatCapacityRangeView, PhaseView, PhysicalPropertyRangeView, RawPhase,
+};
 use crate::raw::{
     RawCommentChunk, RawCommonHeader, RawCompoundChunk, RawDatabaseHeaderChunk,
     RawHeatCapacityChunk, RawKappaChunk, RawOrdinaryPhaseChunk, RawTransitionPhaseChunk,
@@ -127,33 +129,33 @@ impl RawKappaChunk {
     }
 }
 
-impl Compound {
+impl CompoundView<'_> {
     /// Converts the compound's shared-entry OLE timestamp.
     pub fn ole_timestamp(&self) -> Result<OleAutomationDate, DateError> {
-        self.raw.ole_timestamp()
+        self.raw().ole_timestamp()
     }
 }
 
-impl Phase {
+impl PhaseView<'_> {
     /// Converts the phase's shared-entry OLE timestamp.
     pub fn ole_timestamp(&self) -> Result<OleAutomationDate, DateError> {
-        match &self.raw {
+        match self.raw() {
             RawPhase::Ordinary(chunk) => chunk.ole_timestamp(),
             RawPhase::Transition(chunk) => chunk.ole_timestamp(),
         }
     }
 }
 
-impl HeatCapacityRange {
+impl HeatCapacityRangeView<'_> {
     /// Converts the CP range's shared-entry OLE timestamp.
     pub fn ole_timestamp(&self) -> Result<OleAutomationDate, DateError> {
-        self.raw.ole_timestamp()
+        self.raw().ole_timestamp()
     }
 }
 
-impl PhysicalPropertyRange {
+impl PhysicalPropertyRangeView<'_> {
     /// Converts the kappa record's shared-entry OLE timestamp.
     pub fn ole_timestamp(&self) -> Result<OleAutomationDate, DateError> {
-        self.raw.ole_timestamp()
+        self.raw().ole_timestamp()
     }
 }

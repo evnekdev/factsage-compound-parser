@@ -1,36 +1,94 @@
+use crate::RawChunk;
 use crate::raw::{HeatCapacityKind, RawHeatCapacityChunk, RawKappaChunk};
 
-/// A heat-capacity range attached to a phase.
-#[derive(Debug, Clone, PartialEq)]
-pub struct HeatCapacityRange {
-    /// The original CP chunk variant.
-    pub kind: HeatCapacityKind,
-    /// The complete raw CP record.
-    pub raw: RawHeatCapacityChunk,
+use super::database::OrphanRangeIndex;
+
+/// A borrowed heat-capacity range linked to one phase.
+///
+/// The original CP ID and every raw field remain available through [`Self::raw`]
+/// without copying the 256-byte physical record.
+#[derive(Debug, Clone, Copy)]
+pub struct HeatCapacityRangeView<'a> {
+    kind: HeatCapacityKind,
+    raw: &'a RawHeatCapacityChunk,
+    chunk_index: usize,
 }
 
-/// A kappa or extended physical-property range attached to a phase.
-#[derive(Debug, Clone, PartialEq)]
-pub struct PhysicalPropertyRange {
-    /// The complete raw kappa record.
-    pub raw: RawKappaChunk,
+impl<'a> HeatCapacityRangeView<'a> {
+    pub(crate) const fn new(
+        kind: HeatCapacityKind,
+        raw: &'a RawHeatCapacityChunk,
+        chunk_index: usize,
+    ) -> Self {
+        Self {
+            kind,
+            raw,
+            chunk_index,
+        }
+    }
+
+    /// Returns the preserved original CP chunk ID variant.
+    pub const fn kind(self) -> HeatCapacityKind {
+        self.kind
+    }
+
+    /// Returns the zero-based physical chunk index of this range.
+    pub const fn chunk_index(self) -> usize {
+        self.chunk_index
+    }
+
+    /// Returns the complete borrowed raw CP record.
+    pub const fn raw(self) -> &'a RawHeatCapacityChunk {
+        self.raw
+    }
 }
 
-/// A range record attached to an orphan or ambiguous reference collection.
-#[derive(Debug, Clone, PartialEq)]
-pub enum Range {
-    /// A heat-capacity range.
-    HeatCapacity(HeatCapacityRange),
-    /// A kappa range.
-    Kappa(PhysicalPropertyRange),
+/// A borrowed kappa or extended physical-property range linked to one phase.
+#[derive(Debug, Clone, Copy)]
+pub struct PhysicalPropertyRangeView<'a> {
+    raw: &'a RawKappaChunk,
+    chunk_index: usize,
 }
 
-impl Range {
-    /// Returns the raw phase ID referenced by this range.
-    pub fn phase_id_raw(&self) -> i32 {
+impl<'a> PhysicalPropertyRangeView<'a> {
+    pub(crate) const fn new(raw: &'a RawKappaChunk, chunk_index: usize) -> Self {
+        Self { raw, chunk_index }
+    }
+
+    /// Returns the zero-based physical chunk index of this kappa record.
+    pub const fn chunk_index(self) -> usize {
+        self.chunk_index
+    }
+
+    /// Returns the complete borrowed raw kappa record.
+    pub const fn raw(self) -> &'a RawKappaChunk {
+        self.raw
+    }
+}
+
+/// A borrowed range record retained in either a phase link or orphan collection.
+#[derive(Debug, Clone, Copy)]
+pub enum RangeView<'a> {
+    /// A heat-capacity range with its preserved CP ID.
+    HeatCapacity(HeatCapacityRangeView<'a>),
+    /// A kappa or extended physical-property range.
+    Kappa(PhysicalPropertyRangeView<'a>),
+}
+
+impl RangeView<'_> {
+    /// Returns the stored raw phase ID referenced by this range.
+    pub const fn phase_id_raw(self) -> i32 {
         match self {
             Self::HeatCapacity(range) => range.raw.phase_id_raw,
             Self::Kappa(range) => range.raw.phase_id_raw,
+        }
+    }
+
+    /// Returns the zero-based physical chunk index of this range.
+    pub const fn chunk_index(self) -> usize {
+        match self {
+            Self::HeatCapacity(range) => range.chunk_index,
+            Self::Kappa(range) => range.chunk_index,
         }
     }
 }
@@ -38,23 +96,67 @@ impl Range {
 /// Why a range could not be attached to exactly one phase.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum OrphanReason {
-    /// There was no phase with the referenced raw ID.
+    /// No phase in the current compound had the referenced raw ID.
     MissingPhase,
-    /// More than one phase had the referenced raw ID.
-    AmbiguousPhase { phase_count: usize },
+    /// More than one phase in the current compound had the referenced raw ID.
+    AmbiguousPhase {
+        /// Number of matching phase records.
+        phase_count: usize,
+    },
 }
 
-/// A preserved range that was not attached to a phase.
-#[derive(Debug, Clone, PartialEq)]
-pub struct OrphanRange {
-    /// Zero-based source chunk index.
-    pub chunk_index: usize,
-    /// Absolute source byte offset.
-    pub byte_offset: usize,
-    /// Raw phase ID referenced by the source record.
-    pub phase_id_raw: i32,
-    /// Reason the range was not attached.
-    pub reason: OrphanReason,
-    /// Complete preserved range record.
-    pub range: Range,
+/// A borrowed preserved range that was not attached to a phase.
+///
+/// The range remains in raw stream order and can be inspected through
+/// [`Self::range`], which returns `None` only if a caller has somehow supplied a
+/// mismatched raw stream instead of the one that built the index.
+#[derive(Debug, Clone, Copy)]
+pub struct OrphanRangeView<'a> {
+    raw_chunks: &'a [RawChunk],
+    index: &'a OrphanRangeIndex,
+}
+
+impl<'a> OrphanRangeView<'a> {
+    pub(crate) const fn new(raw_chunks: &'a [RawChunk], index: &'a OrphanRangeIndex) -> Self {
+        Self { raw_chunks, index }
+    }
+
+    /// Returns the zero-based physical source chunk index.
+    pub const fn chunk_index(self) -> usize {
+        self.index.chunk_index
+    }
+
+    /// Returns the absolute physical byte offset of the source chunk.
+    pub const fn byte_offset(self) -> usize {
+        self.index.byte_offset
+    }
+
+    /// Returns the stored raw phase ID referenced by the orphan range.
+    pub const fn phase_id_raw(self) -> i32 {
+        self.index.phase_id_raw
+    }
+
+    /// Returns the typed reason that no unique phase link was created.
+    pub const fn reason(self) -> &'a OrphanReason {
+        &self.index.reason
+    }
+
+    /// Returns the complete borrowed range, or `None` for an invalid foreign stream.
+    pub fn range(self) -> Option<RangeView<'a>> {
+        match self.raw_chunks.get(self.index.chunk_index) {
+            Some(RawChunk::HeatCapacity { kind, chunk }) => Some(RangeView::HeatCapacity(
+                HeatCapacityRangeView::new(*kind, chunk, self.index.chunk_index),
+            )),
+            Some(RawChunk::Kappa(chunk)) => Some(RangeView::Kappa(PhysicalPropertyRangeView::new(
+                chunk,
+                self.index.chunk_index,
+            ))),
+            _ => None,
+        }
+    }
+
+    /// Returns the raw range chunk, or `None` for an invalid foreign stream.
+    pub fn raw_chunk(self) -> Option<&'a RawChunk> {
+        self.raw_chunks.get(self.index.chunk_index)
+    }
 }

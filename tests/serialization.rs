@@ -33,7 +33,7 @@ fn serializes_every_chunk_kind_byte_for_byte() {
 
     assert_eq!(output, input);
     assert!(matches!(
-        database.chunks.last(),
+        database.chunks().last(),
         Some(RawChunk::Unknown { id: 250, .. })
     ));
 }

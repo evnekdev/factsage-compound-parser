@@ -10,9 +10,10 @@ fn main() -> Result<(), Box<dyn Error>> {
             .ok_or("usage: list_phases <file.CDB>")?,
     );
     let database = Database::from_path(path)?;
-    for compound in &database.compounds {
+    let view = database.view()?;
+    for compound in view.compounds() {
         println!("{}", compound.name()?);
-        for phase in &compound.phases {
+        for phase in compound.phases() {
             println!("  {}: {}", phase.chemapp_label(), phase.name()?);
         }
     }

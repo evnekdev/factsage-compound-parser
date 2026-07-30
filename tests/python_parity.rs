@@ -4,7 +4,7 @@ use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
 
-use factsage_compound_parser::{Database, DiagnosticKind, RawChunk, RawDatabase};
+use factsage_compound_parser::{Database, DiagnosticKind, PhaseView, RawChunk, RawDatabase};
 
 fn histogram<K: Ord + std::fmt::Display>(values: BTreeMap<K, usize>) -> String {
     values
@@ -14,7 +14,7 @@ fn histogram<K: Ord + std::fmt::Display>(values: BTreeMap<K, usize>) -> String {
         .join(",")
 }
 
-fn state_name(phase: &factsage_compound_parser::Phase) -> &'static str {
+fn state_name(phase: PhaseView<'_>) -> &'static str {
     match phase.state() {
         factsage_compound_parser::PhaseState::Solid => "solid",
         factsage_compound_parser::PhaseState::Liquid => "liquid",
@@ -39,11 +39,12 @@ fn parse_key_values(output: &[u8]) -> BTreeMap<String, String> {
 fn rust_summary(bytes: &[u8]) -> BTreeMap<String, String> {
     let raw = RawDatabase::from_bytes(bytes).expect("fixture should parse");
     let database = Database::from_bytes(bytes).expect("fixture should group");
+    let view = database.view().expect("fixture index should be current");
 
     let mut chunk_ids = BTreeMap::new();
     let mut unknown_chunk_count = 0;
     let mut invalid_cp_bound_count = 0;
-    for chunk in &raw.chunks {
+    for chunk in raw.chunks() {
         *chunk_ids.entry(chunk.id()).or_insert(0_usize) += 1;
         unknown_chunk_count += usize::from(!matches!(chunk.id(), 1..=11));
         if let RawChunk::HeatCapacity { chunk, .. } = chunk {
@@ -68,34 +69,34 @@ fn rust_summary(bytes: &[u8]) -> BTreeMap<String, String> {
     let mut overlapping_cp_phase_count = 0;
     let mut gapped_cp_phase_count = 0;
     let mut shared_cp_endpoint_count = 0;
-    let mut invalid_timestamp_count = usize::from(database.header.ole_date().is_err());
+    let mut invalid_timestamp_count = usize::from(view.header().ole_date().is_err());
 
-    for compound in &database.compounds {
+    for compound in view.compounds() {
         *energy_units
-            .entry(compound.raw.unit_energy)
+            .entry(compound.raw().unit_energy)
             .or_insert(0_usize) += 1;
         *pressure_units
-            .entry(compound.raw.unit_pressure)
+            .entry(compound.raw().unit_pressure)
             .or_insert(0_usize) += 1;
         invalid_timestamp_count += usize::from(compound.ole_timestamp().is_err());
-        comment_chunk_count += compound.comment_fragments.len();
-        orphan_range_count += compound.orphan_ranges.len();
+        comment_chunk_count += compound.comment_fragments().count();
+        orphan_range_count += compound.orphan_ranges().count();
 
-        for phase in &compound.phases {
+        for phase in compound.phases() {
             *state_histogram.entry(state_name(phase)).or_insert(0_usize) += 1;
             ordinary_phase_count += usize::from(!phase.is_transition());
             transition_phase_count += usize::from(phase.is_transition());
             invalid_timestamp_count += usize::from(phase.ole_timestamp().is_err());
             invalid_density_count += usize::from(phase.density().is_err());
-            cp_range_count += phase.heat_capacity_ranges.len();
-            kappa_count += phase.physical_property_ranges.len();
+            cp_range_count += phase.heat_capacity_ranges().count();
+            kappa_count += phase.physical_property_ranges().count();
 
-            let mut intervals = Vec::with_capacity(phase.heat_capacity_ranges.len());
-            for range in &phase.heat_capacity_ranges {
+            let mut intervals = Vec::with_capacity(phase.heat_capacity_range_count());
+            for range in phase.heat_capacity_ranges() {
                 invalid_timestamp_count += usize::from(range.ole_timestamp().is_err());
                 intervals.push((range.temperature_min(), range.temperature_max()));
             }
-            for range in &phase.physical_property_ranges {
+            for range in phase.physical_property_ranges() {
                 invalid_timestamp_count += usize::from(range.ole_timestamp().is_err());
             }
             intervals.sort_by(|left, right| left.0.total_cmp(&right.0));
@@ -113,20 +114,20 @@ fn rust_summary(bytes: &[u8]) -> BTreeMap<String, String> {
             overlapping_cp_phase_count += usize::from(has_overlap);
             gapped_cp_phase_count += usize::from(has_gap);
         }
-        for comment in &compound.comment_fragments {
+        for comment in compound.comment_fragments() {
             invalid_timestamp_count += usize::from(comment.ole_timestamp().is_err());
         }
     }
 
-    let duplicate_phase_id_count = database
-        .diagnostics
+    let duplicate_phase_id_count = view
+        .diagnostics()
         .iter()
         .filter(|diagnostic| matches!(diagnostic.kind, DiagnosticKind::DuplicatePhaseId { .. }))
         .count();
 
     BTreeMap::from([
         ("file_size".to_owned(), bytes.len().to_string()),
-        ("chunk_count".to_owned(), raw.chunks.len().to_string()),
+        ("chunk_count".to_owned(), raw.chunks().len().to_string()),
         ("chunk_id_histogram".to_owned(), histogram(chunk_ids)),
         (
             "unknown_chunk_count".to_owned(),
@@ -134,7 +135,7 @@ fn rust_summary(bytes: &[u8]) -> BTreeMap<String, String> {
         ),
         (
             "compound_count".to_owned(),
-            database.compounds.len().to_string(),
+            view.compound_count().to_string(),
         ),
         (
             "ordinary_phase_count".to_owned(),

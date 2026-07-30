@@ -1,13 +1,13 @@
 use std::borrow::Cow;
 
+use crate::RawChunk;
 use crate::raw::{RawOrdinaryPhaseChunk, RawTransitionPhaseChunk};
 
-use super::{
-    range::{HeatCapacityRange, PhysicalPropertyRange},
-    text::decode_ascii,
-};
+use super::database::PhaseIndex;
+use super::range::{HeatCapacityRangeView, PhysicalPropertyRangeView};
+use super::{TextDecodeError, text::decode_ascii};
 
-/// The phase state inferred from a raw FactSage phase ID.
+/// The phase state inferred from a stored FactSage phase ID.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PhaseState {
     /// A solid phase.
@@ -52,26 +52,29 @@ impl PhaseState {
     }
 }
 
-/// The raw phase record variant retained by a semantic phase.
-#[derive(Debug, Clone, PartialEq)]
-pub enum RawPhase {
-    /// An ordinary phase record, ID 7.
-    Ordinary(RawOrdinaryPhaseChunk),
-    /// A transition phase record, ID 8.
-    Transition(RawTransitionPhaseChunk),
+/// A borrowed raw phase record selected from a [`PhaseView`].
+///
+/// It preserves the complete typed raw record without copying it out of the
+/// authoritative [`crate::RawDatabase`].
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum RawPhase<'a> {
+    /// An ID-7 ordinary phase record.
+    Ordinary(&'a RawOrdinaryPhaseChunk),
+    /// An ID-8 transition phase record.
+    Transition(&'a RawTransitionPhaseChunk),
 }
 
-impl RawPhase {
-    /// Returns the original phase chunk ID.
-    pub const fn id(&self) -> u8 {
+impl RawPhase<'_> {
+    /// Returns the original physical chunk ID, either 7 or 8.
+    pub const fn id(self) -> u8 {
         match self {
             Self::Ordinary(_) => 7,
             Self::Transition(_) => 8,
         }
     }
 
-    /// Returns the raw phase identifier.
-    pub const fn phase_id_raw(&self) -> i32 {
+    /// Returns the preserved stored phase identifier without recalculating it.
+    pub const fn phase_id_raw(self) -> i32 {
         match self {
             Self::Ordinary(chunk) => chunk.phase_id_raw,
             Self::Transition(chunk) => chunk.phase_id_raw,
@@ -79,83 +82,68 @@ impl RawPhase {
     }
 }
 
-/// The raw thermodynamic definition associated with a phase variant.
-#[derive(Debug, Clone, PartialEq)]
-pub enum PhaseDefinition {
-    /// The ordinary phase anchor values.
-    Ordinary {
-        /// Raw enthalpy at the 298 K anchor.
-        enthalpy_298_raw: f64,
-        /// Raw entropy at the 298 K anchor.
-        entropy_298_raw: f64,
-    },
-    /// The transition phase values.
-    Transition {
-        /// Raw transition enthalpy.
-        transition_enthalpy_raw: f64,
-        /// Raw transition temperature.
-        transition_temperature: f64,
-        /// Raw parent phase ID.
-        parent_phase_id_raw: i32,
-    },
+/// A borrowed semantic phase with linked range indexes.
+///
+/// This value is cheap to copy and does not own a second phase record. It remains
+/// valid only for the lifetime of the [`crate::domain::DatabaseView`] that
+/// produced it, which prevents use after mutable raw edits.
+#[derive(Debug, Clone, Copy)]
+pub struct PhaseView<'a> {
+    pub(crate) raw: RawPhase<'a>,
+    pub(crate) index: &'a PhaseIndex,
+    pub(crate) raw_chunks: &'a [RawChunk],
 }
 
-/// A semantic phase with attached raw range records.
-#[derive(Debug, Clone, PartialEq)]
-pub struct Phase {
-    /// The complete original phase record.
-    pub raw: RawPhase,
-    /// The variant-specific raw definition values.
-    pub definition: PhaseDefinition,
-    /// Heat-capacity ranges linked by exact raw phase ID.
-    pub heat_capacity_ranges: Vec<HeatCapacityRange>,
-    /// Kappa ranges linked by exact raw phase ID.
-    pub physical_property_ranges: Vec<PhysicalPropertyRange>,
-}
-
-impl Phase {
-    pub(crate) fn from_raw(raw: RawPhase) -> Self {
-        let definition = match &raw {
-            RawPhase::Ordinary(chunk) => PhaseDefinition::Ordinary {
-                enthalpy_298_raw: chunk.enthalpy,
-                entropy_298_raw: chunk.entropy,
-            },
-            RawPhase::Transition(chunk) => PhaseDefinition::Transition {
-                transition_enthalpy_raw: chunk.transition_enthalpy,
-                transition_temperature: chunk.transition_temperature,
-                parent_phase_id_raw: chunk.parent_phase_id_raw,
-            },
-        };
-
+impl<'a> PhaseView<'a> {
+    pub(crate) const fn new(
+        raw: RawPhase<'a>,
+        index: &'a PhaseIndex,
+        raw_chunks: &'a [RawChunk],
+    ) -> Self {
         Self {
             raw,
-            definition,
-            heat_capacity_ranges: Vec::new(),
-            physical_property_ranges: Vec::new(),
+            index,
+            raw_chunks,
         }
     }
 
-    /// Returns the original raw phase ID.
-    pub fn phase_id_raw(&self) -> i32 {
+    /// Returns the zero-based physical chunk index of this phase record.
+    pub const fn chunk_index(self) -> usize {
+        self.index.phase_chunk
+    }
+
+    /// Returns the complete borrowed raw phase record.
+    pub const fn raw(self) -> RawPhase<'a> {
+        self.raw
+    }
+
+    /// Returns the preserved stored phase identifier without converting it.
+    pub const fn phase_id_raw(self) -> i32 {
         self.raw.phase_id_raw()
     }
 
     /// Decodes the fixed-width phase name as strict ASCII-compatible text.
-    pub fn name(&self) -> Result<Cow<'_, str>, super::TextDecodeError> {
-        let bytes = match &self.raw {
+    ///
+    /// Invalid non-ASCII bytes return [`TextDecodeError`] and are never lossy
+    /// decoded by this accessor.
+    pub fn name(self) -> Result<Cow<'a, str>, TextDecodeError> {
+        let bytes = match self.raw {
             RawPhase::Ordinary(chunk) => &chunk.physical.phase_name,
             RawPhase::Transition(chunk) => &chunk.physical.phase_name,
         };
         decode_ascii(bytes, "phase_name")
     }
 
-    /// Infers the phase state using the FactSage raw-ID thresholds.
-    pub fn state(&self) -> PhaseState {
+    /// Infers the phase state using the established raw-ID thresholds.
+    pub fn state(self) -> PhaseState {
         PhaseState::from_raw_id(self.phase_id_raw())
     }
 
-    /// Calculates the state-local phase index from the raw ID.
-    pub fn index(&self) -> i32 {
+    /// Calculates the state-local phase index without clamping unusual values.
+    ///
+    /// Solid values subtract 100, liquid 800, gas 900, and aqueous 990. A zero
+    /// or negative result is retained and reported by domain diagnostics.
+    pub fn index(self) -> i32 {
         let raw_id = self.phase_id_raw();
         match self.state() {
             PhaseState::Aqueous => raw_id - 990,
@@ -165,13 +153,13 @@ impl Phase {
         }
     }
 
-    /// Returns the compact uppercase label, such as S1 or L2.
-    pub fn compact_label(&self) -> String {
+    /// Returns the compact uppercase label, such as `S1` or `L2`.
+    pub fn compact_label(self) -> String {
         format!("{}{}", self.state().compact_prefix(), self.index())
     }
 
-    /// Returns the ChemApp-style lowercase label, such as s or aq2.
-    pub fn chemapp_label(&self) -> String {
+    /// Returns the ChemApp-style lowercase label, such as `s` or `aq2`.
+    pub fn chemapp_label(self) -> String {
         let suffix = if self.index() == 1 {
             String::new()
         } else {
@@ -180,8 +168,52 @@ impl Phase {
         format!("{}{}", self.state().chemapp_prefix(), suffix)
     }
 
-    /// Returns true for a transition phase record.
-    pub const fn is_transition(&self) -> bool {
+    /// Returns whether this is an ID-8 transition phase record.
+    pub const fn is_transition(self) -> bool {
         matches!(self.raw, RawPhase::Transition(_))
+    }
+
+    /// Iterates heat-capacity records linked by exact stored phase ID.
+    ///
+    /// Iteration follows original stream order and allocates nothing. Ranges that
+    /// were orphaned or ambiguous are intentionally absent and remain available
+    /// from the owning [`crate::domain::CompoundView`].
+    pub fn heat_capacity_ranges(self) -> impl Iterator<Item = HeatCapacityRangeView<'a>> + 'a {
+        self.index
+            .heat_capacity_chunks
+            .iter()
+            .filter_map(move |entry| {
+                let Some(crate::RawChunk::HeatCapacity { kind, chunk }) =
+                    self.raw_chunks.get(*entry)
+                else {
+                    return None;
+                };
+                Some(HeatCapacityRangeView::new(*kind, chunk, *entry))
+            })
+    }
+
+    /// Iterates kappa records linked by exact stored phase ID in stream order.
+    pub fn physical_property_ranges(
+        self,
+    ) -> impl Iterator<Item = PhysicalPropertyRangeView<'a>> + 'a {
+        self.index
+            .kappa_chunks
+            .iter()
+            .filter_map(move |chunk_index| {
+                let Some(crate::RawChunk::Kappa(chunk)) = self.raw_chunks.get(*chunk_index) else {
+                    return None;
+                };
+                Some(PhysicalPropertyRangeView::new(chunk, *chunk_index))
+            })
+    }
+
+    /// Returns the number of heat-capacity ranges linked to this phase.
+    pub fn heat_capacity_range_count(self) -> usize {
+        self.index.heat_capacity_chunks.len()
+    }
+
+    /// Returns the number of kappa ranges linked to this phase.
+    pub fn physical_property_range_count(self) -> usize {
+        self.index.kappa_chunks.len()
     }
 }

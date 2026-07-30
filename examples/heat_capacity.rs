@@ -10,10 +10,8 @@ fn main() -> Result<(), Box<dyn Error>> {
             .ok_or("usage: heat_capacity <file.CDB>")?,
     );
     let database = Database::from_path(path)?;
-    let compound = database
-        .compounds
-        .first()
-        .ok_or("database has no compounds")?;
+    let view = database.view()?;
+    let compound = view.compounds().next().ok_or("database has no compounds")?;
     println!("Cp(1000 K) = {}", compound.heat_capacity_at(0, 1000.0)?);
     Ok(())
 }

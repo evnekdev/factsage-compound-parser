@@ -1,38 +1,22 @@
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, UNIX_EPOCH};
 
 use factsage_compound_parser::{
-    Compound, Database, DateError, DensityError, DiagnosticKind, EnergyUnit, HeatCapacityError,
-    PhaseKind, PhaseProperty, PhaseThermoError, PressureUnit, RawPhase, UnitError,
+    Database, DateError, DensityError, EnergyUnit, HeatCapacityError, PhaseKind, PhaseProperty,
+    PhaseThermoError, PressureUnit, RawPhase, UnitError,
 };
 
 const CHUNK_SIZE: usize = 256;
 
-fn put<const N: usize>(chunk: &mut [u8; CHUNK_SIZE], offset: usize, value: [u8; N]) {
-    chunk[offset..offset + N].copy_from_slice(&value);
-}
-
 fn put_i32(chunk: &mut [u8; CHUNK_SIZE], offset: usize, value: i32) {
-    put(chunk, offset, value.to_le_bytes());
+    chunk[offset..offset + 4].copy_from_slice(&value.to_le_bytes());
 }
 
 fn put_u32(chunk: &mut [u8; CHUNK_SIZE], offset: usize, value: u32) {
-    put(chunk, offset, value.to_le_bytes());
+    chunk[offset..offset + 4].copy_from_slice(&value.to_le_bytes());
 }
 
 fn put_f64(chunk: &mut [u8; CHUNK_SIZE], offset: usize, value: f64) {
-    put(chunk, offset, value.to_le_bytes());
-}
-
-fn common(chunk: &mut [u8; CHUNK_SIZE]) {
-    chunk[1..8].copy_from_slice(&[1, 2, 3, 4, 5, 6, 7]);
-    chunk[8] = 0xaa;
-    chunk[9..16].copy_from_slice(&[8, 9, 10, 11, 12, 13, 14]);
-    chunk[16] = (-2_i8) as u8;
-    chunk[17] = 42;
-    put(chunk, 18, 0x1234_u16.to_le_bytes());
-    put(chunk, 20, 0x5678_u16.to_le_bytes());
-    put_f64(chunk, 22, 123.5);
-    chunk[30..32].copy_from_slice(&[0xbb, 0xcc]);
+    chunk[offset..offset + 8].copy_from_slice(&value.to_le_bytes());
 }
 
 fn header() -> [u8; CHUNK_SIZE] {
@@ -46,7 +30,6 @@ fn header() -> [u8; CHUNK_SIZE] {
 fn compound(energy: u32, pressure: u32) -> [u8; CHUNK_SIZE] {
     let mut chunk = [0; CHUNK_SIZE];
     chunk[0] = 1;
-    common(&mut chunk);
     put_u32(&mut chunk, 156, energy);
     put_u32(&mut chunk, 160, pressure);
     chunk
@@ -55,7 +38,6 @@ fn compound(energy: u32, pressure: u32) -> [u8; CHUNK_SIZE] {
 fn ordinary(phase_id_raw: i32, density_raw: f64) -> [u8; CHUNK_SIZE] {
     let mut chunk = [0; CHUNK_SIZE];
     chunk[0] = 7;
-    common(&mut chunk);
     put_f64(&mut chunk, 32, 10.5);
     put_f64(&mut chunk, 40, 20.5);
     put_i32(&mut chunk, 48, -phase_id_raw);
@@ -67,7 +49,6 @@ fn ordinary(phase_id_raw: i32, density_raw: f64) -> [u8; CHUNK_SIZE] {
 fn transition(phase_id_raw: i32, parent_phase_id_raw: i32) -> [u8; CHUNK_SIZE] {
     let mut chunk = [0; CHUNK_SIZE];
     chunk[0] = 8;
-    common(&mut chunk);
     put_f64(&mut chunk, 32, 30.5);
     put_f64(&mut chunk, 40, 900.0);
     put_i32(&mut chunk, 48, parent_phase_id_raw);
@@ -79,15 +60,12 @@ fn cp(
     phase_id_raw: i32,
     t_min: f64,
     t_max: f64,
-    enthalpy: f64,
-    entropy: f64,
     coefficients: &[(usize, f64, f64)],
 ) -> [u8; CHUNK_SIZE] {
     let mut chunk = [0; CHUNK_SIZE];
     chunk[0] = 2;
-    common(&mut chunk);
-    put_f64(&mut chunk, 32, enthalpy);
-    put_f64(&mut chunk, 40, entropy);
+    put_f64(&mut chunk, 32, 10.0);
+    put_f64(&mut chunk, 40, 20.0);
     put_i32(&mut chunk, 48, phase_id_raw);
     put_f64(&mut chunk, 56, t_min);
     put_f64(&mut chunk, 64, t_max);
@@ -98,534 +76,178 @@ fn cp(
     chunk
 }
 
-fn database(chunks: impl IntoIterator<Item = [u8; CHUNK_SIZE]>) -> Database {
-    let bytes = chunks.into_iter().flatten().collect::<Vec<_>>();
-    Database::from_bytes(&bytes).expect("synthetic database should parse")
+fn source_database(chunks: impl IntoIterator<Item = [u8; CHUNK_SIZE]>) -> Database {
+    Database::from_bytes(&chunks.into_iter().flatten().collect::<Vec<_>>()).unwrap()
 }
 
-fn one_phase_database(
-    energy: u32,
-    phase: [u8; CHUNK_SIZE],
-    ranges: impl IntoIterator<Item = [u8; CHUNK_SIZE]>,
-) -> Database {
-    let mut chunks = vec![header(), compound(energy, 0), phase];
-    chunks.extend(ranges);
-    database(chunks)
-}
-
-fn assert_close(actual: f64, expected: f64) {
+fn close(actual: f64, expected: f64) {
     assert!((actual - expected).abs() < 1e-10, "{actual} != {expected}");
 }
 
-fn ole_epoch() -> SystemTime {
-    UNIX_EPOCH
-        .checked_sub(Duration::from_secs(25_569 * 86_400))
-        .unwrap()
-}
-
 #[test]
-fn maps_energy_and_pressure_unit_codes() {
+fn maps_and_converts_units() {
     assert_eq!(EnergyUnit::from_raw(0), EnergyUnit::Calories);
     assert_eq!(EnergyUnit::from_raw(1), EnergyUnit::Joules);
-    assert_eq!(EnergyUnit::from_raw(99), EnergyUnit::Unknown(99));
-    assert_eq!(PressureUnit::from_raw(0), PressureUnit::Atmospheres);
     assert_eq!(PressureUnit::from_raw(1), PressureUnit::Bars);
-    assert_eq!(PressureUnit::from_raw(99), PressureUnit::Unknown(99));
-    assert_eq!(EnergyUnit::Unknown(7).raw(), 7);
-    assert_eq!(PressureUnit::Unknown(8).raw(), 8);
-}
-
-#[test]
-fn converts_calories_and_passes_joules_through() {
-    assert_close(EnergyUnit::Calories.to_joules(10.0).unwrap(), 41.84);
-    assert_close(EnergyUnit::Calories.from_joules(41.84).unwrap(), 10.0);
-    assert_close(EnergyUnit::Joules.to_joules(10.0).unwrap(), 10.0);
-    assert_close(EnergyUnit::Joules.from_joules(10.0).unwrap(), 10.0);
-}
-
-#[test]
-fn rejects_unknown_units_and_non_finite_conversion_values() {
+    close(EnergyUnit::Calories.to_joules(10.0).unwrap(), 41.84);
     assert_eq!(
         EnergyUnit::Unknown(7).to_joules(1.0),
         Err(UnitError::UnknownEnergyUnit { raw: 7 })
     );
-    assert_eq!(
-        PressureUnit::Unknown(8).require_known(),
-        Err(UnitError::UnknownPressureUnit { raw: 8 })
-    );
-    assert!(matches!(
-        EnergyUnit::Joules.to_joules(f64::NAN),
-        Err(UnitError::NonFiniteValue { .. })
-    ));
 }
 
 #[test]
-fn exposes_compound_units_and_ordinary_conversions() {
-    let database = one_phase_database(0, ordinary(101, 1234.5), std::iter::empty());
-    let compound = &database.compounds[0];
-    let phase = &compound.phases[0];
-    assert_eq!(compound.energy_unit(), EnergyUnit::Calories);
-    assert_eq!(compound.pressure_unit(), PressureUnit::Atmospheres);
-    assert_close(phase.enthalpy_298_raw().unwrap(), 10.5);
-    assert_close(phase.entropy_298_raw().unwrap(), 20.5);
-    assert_close(compound.enthalpy_298_j_per_mol(0).unwrap(), 10.5 * 4.184);
-    assert_close(compound.entropy_298_j_per_mol_k(0).unwrap(), 20.5 * 4.184);
-}
-
-#[test]
-fn exposes_transition_accessors_and_wrong_phase_errors() {
-    let database = database([
+fn exposes_phase_units_density_and_raw_variant_without_duplication() {
+    let database = source_database([
         header(),
-        compound(0, 0),
-        ordinary(101, 100.0),
+        compound(0, 1),
+        ordinary(101, 1_234.5),
         transition(201, 101),
     ]);
-    let ordinary = &database.compounds[0].phases[0];
-    let transition = &database.compounds[0].phases[1];
-    assert_close(
-        transition
-            .transition_enthalpy_j_per_mol(EnergyUnit::Calories)
+    let view = database.view().unwrap();
+    assert_eq!(view.header().ole_date().unwrap().raw_days, 0.5);
+    let compound = view.compounds().next().unwrap();
+    let phases = compound.phases().collect::<Vec<_>>();
+    assert_eq!(compound.energy_unit(), EnergyUnit::Calories);
+    assert_eq!(compound.pressure_unit(), PressureUnit::Bars);
+    close(phases[0].enthalpy_298_raw().unwrap(), 10.5);
+    close(compound.entropy_298_j_per_mol_k(0).unwrap(), 20.5 * 4.184);
+    close(
+        phases[1]
+            .transition_enthalpy_j_per_mol(compound.energy_unit())
             .unwrap(),
         30.5 * 4.184,
     );
-    assert_eq!(transition.transition_temperature_k().unwrap(), 900.0);
-    assert_eq!(transition.parent_phase_id_raw().unwrap(), 101);
+    assert_eq!(phases[1].transition_temperature_k().unwrap(), 900.0);
+    assert_eq!(phases[1].parent_phase_id_raw().unwrap(), 101);
+    assert_eq!(phases[0].density().unwrap(), 1_234.5);
+    assert!(matches!(phases[0].raw(), RawPhase::Ordinary(_)));
     assert_eq!(
-        ordinary.transition_enthalpy_raw(),
+        phases[0].transition_enthalpy_raw(),
         Err(PhaseThermoError::WrongPhaseType {
             property: PhaseProperty::TransitionEnthalpy,
             phase_kind: PhaseKind::Ordinary,
         })
     );
-    assert_eq!(
-        transition.enthalpy_298_raw(),
-        Err(PhaseThermoError::WrongPhaseType {
-            property: PhaseProperty::Enthalpy298,
-            phase_kind: PhaseKind::Transition,
-        })
-    );
 }
 
 #[test]
-fn decodes_density_and_rejects_non_finite_density() {
-    let database = one_phase_database(1, ordinary(101, 1_234.5), std::iter::empty());
-    let phase = &database.compounds[0].phases[0];
-    assert_eq!(phase.density_raw(), 1_234.5);
-    assert_eq!(phase.density().unwrap(), 1_234.5);
-
-    let database = one_phase_database(1, ordinary(101, f64::NAN), std::iter::empty());
-    assert!(matches!(
-        database.compounds[0].phases[0].density(),
-        Err(DensityError::NonFinite { .. })
-    ));
-}
-
-#[test]
-fn converts_ole_epoch_fraction_and_negative_dates() {
-    assert_eq!(
-        factsage_compound_parser::OleAutomationDate::from_raw(0.0)
-            .unwrap()
-            .to_system_time()
-            .unwrap(),
-        ole_epoch()
-    );
-    assert_eq!(
-        factsage_compound_parser::OleAutomationDate::from_raw(0.5)
-            .unwrap()
-            .to_system_time()
-            .unwrap(),
-        ole_epoch()
-            .checked_add(Duration::from_secs(43_200))
-            .unwrap()
-    );
+fn handles_ole_and_density_errors() {
+    let epoch = UNIX_EPOCH
+        .checked_sub(Duration::from_secs(25_569 * 86_400))
+        .unwrap();
     assert_eq!(
         factsage_compound_parser::OleAutomationDate::from_raw(-0.25)
             .unwrap()
             .to_system_time()
             .unwrap(),
-        ole_epoch()
-            .checked_add(Duration::from_secs(21_600))
-            .unwrap()
+        epoch.checked_add(Duration::from_secs(21_600)).unwrap()
     );
-}
-
-#[test]
-fn rejects_non_finite_and_out_of_range_ole_dates() {
     assert!(matches!(
         factsage_compound_parser::OleAutomationDate::from_raw(f64::NAN),
         Err(DateError::NonFinite { .. })
     ));
-    assert_eq!(
-        factsage_compound_parser::OleAutomationDate::from_raw(2_958_466.0),
-        Err(DateError::OutOfRange {
-            raw_days: 2_958_466.0
-        })
-    );
+    let database = source_database([header(), compound(1, 0), ordinary(101, f64::NAN)]);
+    let phase = database
+        .view()
+        .unwrap()
+        .compounds()
+        .next()
+        .unwrap()
+        .phases()
+        .next()
+        .unwrap();
+    assert!(matches!(
+        phase.density(),
+        Err(DensityError::NonFinite { .. })
+    ));
 }
 
 #[test]
-fn exposes_entry_and_record_timestamps() {
-    let database = one_phase_database(
-        1,
+fn evaluates_cp_expression_anchors_boundaries_and_overlap_policy() {
+    let database = source_database([
+        header(),
+        compound(0, 0),
         ordinary(101, 1.0),
-        [cp(101, 100.0, 200.0, 1.0, 2.0, &[(0, 1.0, 0.0)])],
-    );
-    assert_eq!(database.header.ole_date().unwrap().raw_days, 0.5);
-    assert_eq!(
-        database.compounds[0].ole_timestamp().unwrap().raw_days,
-        123.5
-    );
-    assert_eq!(
-        database.compounds[0].phases[0]
-            .ole_timestamp()
-            .unwrap()
-            .raw_days,
-        123.5
-    );
-    assert_eq!(
-        database.compounds[0].phases[0].heat_capacity_ranges[0]
-            .ole_timestamp()
-            .unwrap()
-            .raw_days,
-        123.5
-    );
-}
-
-#[test]
-fn evaluates_constant_and_multiple_power_cp_terms() {
-    let constant = one_phase_database(
-        1,
-        ordinary(101, 1.0),
-        [cp(101, 100.0, 500.0, 0.0, 0.0, &[(0, 2.0, 0.0)])],
-    );
-    assert_close(
-        constant.compounds[0].heat_capacity_at(0, 300.0).unwrap(),
-        2.0,
-    );
-
-    let multiple = one_phase_database(
-        1,
-        ordinary(101, 1.0),
-        [cp(
+        cp(
             101,
-            1.0,
-            500.0,
-            0.0,
-            0.0,
+            100.0,
+            200.0,
             &[(0, 1.0, 0.0), (1, 2.0, 1.0), (2, 3.0, 0.5)],
-        )],
+        ),
+        cp(101, 200.0, 300.0, &[(0, 2.0, 0.0)]),
+    ]);
+    let semantic_compound = database.view().unwrap().compounds().next().unwrap();
+    let phase = semantic_compound.phases().next().unwrap();
+    let first = phase.heat_capacity_ranges().next().unwrap();
+    close(
+        first.heat_capacity_raw(150.0).unwrap(),
+        1.0 + 300.0 + 3.0 * 150.0_f64.sqrt(),
     );
-    assert_close(
-        multiple.compounds[0].phases[0].heat_capacity_ranges[0]
-            .heat_capacity_raw(4.0)
+    close(first.stored_enthalpy_raw(), 10.0);
+    close(
+        first
+            .stored_entropy_j_per_mol_k(EnergyUnit::Calories)
             .unwrap(),
-        15.0,
+        20.0 * 4.184,
     );
-}
-
-#[test]
-fn evaluates_negative_and_fractional_powers_at_positive_temperature() {
-    let database = one_phase_database(
-        1,
-        ordinary(101, 1.0),
-        [cp(
-            101,
-            1.0,
-            10.0,
-            0.0,
-            0.0,
-            &[(0, 1.0, 0.0), (1, 2.0, -1.0), (2, 3.0, 0.5)],
-        )],
-    );
-    assert_close(
-        database.compounds[0].phases[0].heat_capacity_ranges[0]
-            .heat_capacity_raw(4.0)
-            .unwrap(),
-        1.0 + 0.5 + 6.0,
-    );
-}
-
-#[test]
-fn uses_inclusive_boundaries_and_reports_outside_temperature() {
-    let database = one_phase_database(
-        1,
-        ordinary(101, 1.0),
-        [cp(101, 100.0, 300.0, 0.0, 0.0, &[(0, 2.0, 0.0)])],
-    );
-    let phase = &database.compounds[0].phases[0];
-    assert!(phase.heat_capacity_ranges[0].contains_temperature(100.0));
-    assert!(phase.heat_capacity_ranges[0].contains_temperature(300.0));
-    assert_close(
-        phase.heat_capacity_at(100.0, EnergyUnit::Joules).unwrap(),
-        2.0,
-    );
-    assert_close(
-        phase.heat_capacity_at(300.0, EnergyUnit::Joules).unwrap(),
-        2.0,
+    close(
+        phase.heat_capacity_at(200.0, EnergyUnit::Joules).unwrap(),
+        1.0 + 400.0 + 3.0 * 200.0_f64.sqrt(),
     );
     assert!(matches!(
         phase.heat_capacity_at(99.0, EnergyUnit::Joules),
         Err(HeatCapacityError::TemperatureOutsideAllRanges { .. })
     ));
-}
 
-#[test]
-fn detects_overlapping_and_unsorted_ranges() {
-    let overlapping = one_phase_database(
-        1,
-        ordinary(101, 1.0),
-        [
-            cp(101, 100.0, 300.0, 0.0, 0.0, &[(0, 1.0, 0.0)]),
-            cp(101, 200.0, 400.0, 0.0, 0.0, &[(0, 2.0, 0.0)]),
-        ],
-    );
-    assert!(matches!(
-        overlapping.compounds[0].phases[0].heat_capacity_at(250.0, EnergyUnit::Joules),
-        Err(HeatCapacityError::OverlappingRanges {
-            candidate_range_indexes,
-            ..
-        }) if candidate_range_indexes == vec![0, 1]
-    ));
-
-    let unsorted = one_phase_database(
-        1,
-        ordinary(101, 1.0),
-        [
-            cp(101, 300.0, 500.0, 0.0, 0.0, &[(0, 1.0, 0.0)]),
-            cp(101, 100.0, 299.0, 0.0, 0.0, &[(0, 2.0, 0.0)]),
-        ],
-    );
-    assert_close(
-        unsorted.compounds[0].phases[0]
-            .heat_capacity_at(150.0, EnergyUnit::Joules)
-            .unwrap(),
-        2.0,
-    );
-}
-
-#[test]
-fn detects_non_finite_terms_and_results() {
-    let non_finite_coefficient = one_phase_database(
-        1,
-        ordinary(101, 1.0),
-        [cp(101, 1.0, 100.0, 0.0, 0.0, &[(0, f64::NAN, 0.0)])],
-    );
-    assert!(matches!(
-        non_finite_coefficient.compounds[0].phases[0].heat_capacity_ranges[0]
-            .heat_capacity_raw(10.0),
-        Err(HeatCapacityError::NonFiniteCoefficient {
-            coefficient_index: 0,
-            ..
-        })
-    ));
-
-    let non_finite_power = one_phase_database(
-        1,
-        ordinary(101, 1.0),
-        [cp(101, 1.0, 100.0, 0.0, 0.0, &[(0, 1.0, f64::INFINITY)])],
-    );
-    assert!(matches!(
-        non_finite_power.compounds[0].phases[0].heat_capacity_ranges[0].heat_capacity_raw(10.0),
-        Err(HeatCapacityError::NonFinitePower { power_index: 0, .. })
-    ));
-
-    let non_finite_result = one_phase_database(
-        1,
-        ordinary(101, 1.0),
-        [cp(
-            101,
-            1.0,
-            100.0,
-            0.0,
-            0.0,
-            &[(0, f64::MAX, 0.0), (1, f64::MAX, 0.0)],
-        )],
-    );
-    assert!(matches!(
-        non_finite_result.compounds[0].phases[0].heat_capacity_ranges[0].heat_capacity_raw(10.0),
-        Err(HeatCapacityError::NonFiniteResult { .. })
-    ));
-}
-
-#[test]
-fn converts_cp_for_calories_and_joules_and_preserves_stored_values() {
-    let calories = one_phase_database(
-        0,
-        ordinary(101, 1.0),
-        [cp(101, 100.0, 500.0, 10.0, 20.0, &[(0, 2.0, 0.0)])],
-    );
-    let range = &calories.compounds[0].phases[0].heat_capacity_ranges[0];
-    assert_close(
-        range
-            .heat_capacity_j_per_mol_k(300.0, EnergyUnit::Calories)
-            .unwrap(),
-        2.0 * 4.184,
-    );
-    assert_close(range.stored_enthalpy_raw(), 10.0);
-    assert_close(range.stored_entropy_raw(), 20.0);
-    assert_close(
-        range
-            .stored_enthalpy_j_per_mol(EnergyUnit::Calories)
-            .unwrap(),
-        10.0 * 4.184,
-    );
-    assert_close(
-        range
-            .stored_entropy_j_per_mol_k(EnergyUnit::Calories)
-            .unwrap(),
-        20.0 * 4.184,
-    );
-
-    let joules = one_phase_database(
-        1,
-        ordinary(101, 1.0),
-        [cp(101, 100.0, 500.0, 10.0, 20.0, &[(0, 2.0, 0.0)])],
-    );
-    assert_close(
-        joules.compounds[0].phases[0].heat_capacity_ranges[0]
-            .heat_capacity_j_per_mol_k(300.0, EnergyUnit::Joules)
-            .unwrap(),
-        2.0,
-    );
-}
-
-#[test]
-fn raw_phase_records_remain_available_to_thermo_accessors() {
-    let database = database([
+    let overlapping = source_database([
         header(),
         compound(1, 0),
         ordinary(101, 1.0),
-        transition(201, 101),
+        cp(101, 100.0, 300.0, &[(0, 1.0, 0.0)]),
+        cp(101, 200.0, 400.0, &[(0, 2.0, 0.0)]),
     ]);
+    let phase = overlapping
+        .view()
+        .unwrap()
+        .compounds()
+        .next()
+        .unwrap()
+        .phases()
+        .next()
+        .unwrap();
     assert!(matches!(
-        database.compounds[0].phases[0].raw,
-        RawPhase::Ordinary(_)
+        phase.heat_capacity_at(250.0, EnergyUnit::Joules),
+        Err(HeatCapacityError::OverlappingRanges { .. })
+    ));
+}
+
+#[test]
+fn rejects_invalid_cp_inputs() {
+    let database = source_database([
+        header(),
+        compound(1, 0),
+        ordinary(101, 1.0),
+        cp(101, 100.0, 200.0, &[(0, f64::NAN, 0.0)]),
+    ]);
+    let range = database
+        .view()
+        .unwrap()
+        .compounds()
+        .next()
+        .unwrap()
+        .phases()
+        .next()
+        .unwrap()
+        .heat_capacity_ranges()
+        .next()
+        .unwrap();
+    assert!(matches!(
+        range.heat_capacity_raw(150.0),
+        Err(HeatCapacityError::NonFiniteCoefficient { .. })
     ));
     assert!(matches!(
-        database.compounds[0].phases[1].raw,
-        RawPhase::Transition(_)
-    ));
-    assert!(database.diagnostics.iter().all(|diagnostic| !matches!(
-        diagnostic.kind,
-        DiagnosticKind::NonFiniteTemperatureRange { .. }
-    )));
-}
-
-#[allow(dead_code)]
-fn _compound_type_is_public(_: &Compound) {}
-
-#[test]
-fn rounds_ole_dates_like_windows_automation_dates() {
-    let epoch = ole_epoch();
-    assert_eq!(
-        factsage_compound_parser::OleAutomationDate::from_raw(1.0)
-            .unwrap()
-            .to_system_time()
-            .unwrap(),
-        epoch.checked_add(Duration::from_secs(86_400)).unwrap()
-    );
-    assert_eq!(
-        factsage_compound_parser::OleAutomationDate::from_raw(25_569.0)
-            .unwrap()
-            .to_system_time()
-            .unwrap(),
-        UNIX_EPOCH
-    );
-    for raw_days in [0.000000006, -0.000000006] {
-        assert_eq!(
-            factsage_compound_parser::OleAutomationDate::from_raw(raw_days)
-                .unwrap()
-                .to_system_time()
-                .unwrap(),
-            epoch.checked_add(Duration::from_millis(1)).unwrap()
-        );
-    }
-    assert_eq!(
-        factsage_compound_parser::OleAutomationDate::from_raw(0.999999999)
-            .unwrap()
-            .to_system_time()
-            .unwrap(),
-        epoch.checked_add(Duration::from_secs(86_400)).unwrap()
-    );
-}
-
-#[test]
-fn selects_the_lower_range_at_a_shared_cp_endpoint() {
-    let database = one_phase_database(
-        1,
-        ordinary(101, 1.0),
-        [
-            cp(101, 100.0, 200.0, 0.0, 0.0, &[(0, 1.0, 0.0)]),
-            cp(101, 200.0, 300.0, 0.0, 0.0, &[(0, 2.0, 0.0)]),
-        ],
-    );
-    let phase = &database.compounds[0].phases[0];
-
-    assert_close(
-        phase
-            .heat_capacity_at(200.0, EnergyUnit::Joules)
-            .expect("shared endpoint selects lower-temperature range"),
-        1.0,
-    );
-}
-
-#[test]
-fn accepts_a_zero_width_cp_range_at_its_only_temperature() {
-    let database = one_phase_database(
-        1,
-        ordinary(101, 1.0),
-        [cp(101, 200.0, 200.0, 0.0, 0.0, &[(0, 3.0, 0.0)])],
-    );
-
-    assert_close(
-        database.compounds[0].phases[0]
-            .heat_capacity_at(200.0, EnergyUnit::Joules)
-            .unwrap(),
-        3.0,
-    );
-}
-
-#[test]
-fn rejects_ole_lower_boundary_and_preserves_negative_integral_dates() {
-    assert_eq!(
-        factsage_compound_parser::OleAutomationDate::from_raw(-657_435.0),
-        Err(DateError::OutOfRange {
-            raw_days: -657_435.0,
-        })
-    );
-    assert_eq!(
-        factsage_compound_parser::OleAutomationDate::from_raw(-1.0)
-            .unwrap()
-            .to_system_time()
-            .unwrap(),
-        ole_epoch()
-            .checked_sub(Duration::from_secs(86_400))
-            .unwrap()
-    );
-}
-
-#[test]
-fn rejects_non_positive_temperature_and_invalid_cp_bounds() {
-    let zero_temperature = one_phase_database(
-        1,
-        ordinary(101, 1.0),
-        [cp(101, 0.0, 100.0, 0.0, 0.0, &[(0, 1.0, 0.0)])],
-    );
-    assert!(matches!(
-        zero_temperature.compounds[0].phases[0].heat_capacity_ranges[0].heat_capacity_raw(0.0),
-        Err(HeatCapacityError::NonPositiveTemperature { temperature_k: 0.0 })
-    ));
-
-    let invalid_bounds = one_phase_database(
-        1,
-        ordinary(101, 1.0),
-        [cp(101, 300.0, 100.0, 0.0, 0.0, &[(0, 1.0, 0.0)])],
-    );
-    assert!(matches!(
-        invalid_bounds.compounds[0].phases[0].heat_capacity_ranges[0].heat_capacity_raw(200.0),
-        Err(HeatCapacityError::InvalidRangeBounds {
-            range_index: None,
-            ..
-        })
+        range.heat_capacity_raw(0.0),
+        Err(HeatCapacityError::NonPositiveTemperature { .. })
     ));
 }

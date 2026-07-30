@@ -1,49 +1,49 @@
-use crate::domain::{Compound, HeatCapacityRange, Phase};
+use crate::domain::{CompoundView, HeatCapacityRangeView, PhaseView};
 
 use super::error::HeatCapacityError;
 use super::units::EnergyUnit;
 
-impl HeatCapacityRange {
-    /// Returns the raw lower temperature bound.
-    pub const fn temperature_min(&self) -> f64 {
-        self.raw.temperature_min
+impl<'a> HeatCapacityRangeView<'a> {
+    /// Returns the raw lower temperature bound in kelvin.
+    pub const fn temperature_min(self) -> f64 {
+        self.raw().temperature_min
     }
 
-    /// Returns the raw upper temperature bound.
-    pub const fn temperature_max(&self) -> f64 {
-        self.raw.temperature_max
+    /// Returns the raw upper temperature bound in kelvin.
+    pub const fn temperature_max(self) -> f64 {
+        self.raw().temperature_max
     }
 
-    /// Returns the original eight CP coefficients.
-    pub const fn coefficients(&self) -> &[f64; 8] {
-        &self.raw.coefficients
+    /// Returns the original eight stored CP coefficients without conversion.
+    pub const fn coefficients(self) -> &'a [f64; 8] {
+        &self.raw().coefficients
     }
 
-    /// Returns the original eight CP powers.
-    pub const fn powers(&self) -> &[f64; 8] {
-        &self.raw.powers
+    /// Returns the original eight stored CP powers without conversion.
+    pub const fn powers(self) -> &'a [f64; 8] {
+        &self.raw().powers
     }
 
-    /// Returns whether a finite temperature is within inclusive range bounds.
-    pub fn contains_temperature(&self, temperature_k: f64) -> bool {
+    /// Returns whether a finite temperature lies within inclusive stored bounds.
+    pub fn contains_temperature(self, temperature_k: f64) -> bool {
         temperature_k.is_finite()
             && self.temperature_min() <= temperature_k
             && temperature_k <= self.temperature_max()
     }
 
-    /// Returns the stored CP-range enthalpy without reinterpretation.
-    pub const fn stored_enthalpy_raw(&self) -> f64 {
-        self.raw.enthalpy
+    /// Returns the stored CP-range enthalpy without reference-temperature interpretation.
+    pub const fn stored_enthalpy_raw(self) -> f64 {
+        self.raw().enthalpy
     }
 
-    /// Returns the stored CP-range entropy without reinterpretation.
-    pub const fn stored_entropy_raw(&self) -> f64 {
-        self.raw.entropy
+    /// Returns the stored CP-range entropy without reference-temperature interpretation.
+    pub const fn stored_entropy_raw(self) -> f64 {
+        self.raw().entropy
     }
 
     /// Converts the stored CP-range enthalpy to joules per mole.
     pub fn stored_enthalpy_j_per_mol(
-        &self,
+        self,
         energy_unit: EnergyUnit,
     ) -> Result<f64, super::UnitError> {
         energy_unit.to_joules(self.stored_enthalpy_raw())
@@ -51,14 +51,18 @@ impl HeatCapacityRange {
 
     /// Converts the stored CP-range entropy to joules per mole kelvin.
     pub fn stored_entropy_j_per_mol_k(
-        &self,
+        self,
         energy_unit: EnergyUnit,
     ) -> Result<f64, super::UnitError> {
         energy_unit.to_joules(self.stored_entropy_raw())
     }
 
     /// Evaluates the eight-term stored CP expression at a temperature in kelvin.
-    pub fn heat_capacity_raw(&self, temperature_k: f64) -> Result<f64, HeatCapacityError> {
+    ///
+    /// Bounds are closed: `t_min <= temperature_k <= t_max`. The input must be
+    /// finite and strictly positive, coefficients and powers must be finite, and
+    /// every intermediate term plus the final sum must remain finite.
+    pub fn heat_capacity_raw(self, temperature_k: f64) -> Result<f64, HeatCapacityError> {
         validate_temperature(temperature_k)?;
         validate_bounds(self, None)?;
         if !self.contains_temperature(temperature_k) {
@@ -73,7 +77,7 @@ impl HeatCapacityRange {
 
     /// Evaluates CP and converts the result to joules per mole kelvin.
     pub fn heat_capacity_j_per_mol_k(
-        &self,
+        self,
         temperature_k: f64,
         energy_unit: EnergyUnit,
     ) -> Result<f64, HeatCapacityError> {
@@ -82,24 +86,26 @@ impl HeatCapacityRange {
     }
 }
 
-impl Phase {
+impl PhaseView<'_> {
     /// Selects and evaluates the applicable CP range at a temperature.
     ///
-    /// Individual range bounds are closed. At an exact endpoint shared by two
-    /// adjacent ranges, the lower-temperature range wins. This matches the
-    /// observed CDB topology while still reporting genuine interval overlaps.
-    /// Ranges are searched in preserved stream order and need not be sorted.
+    /// Individual ranges use closed bounds. At a shared endpoint between exactly
+    /// two adjacent non-zero-width ranges, the lower-temperature range wins.
+    /// Any other multiple match is reported as an overlap. The method allocates
+    /// small vectors for available intervals and candidate indexes so its typed
+    /// error can report complete context; ordinary view traversal does not.
     pub fn heat_capacity_at(
-        &self,
+        self,
         temperature_k: f64,
         energy_unit: EnergyUnit,
     ) -> Result<f64, HeatCapacityError> {
         validate_temperature(temperature_k)?;
 
-        let mut available_ranges = Vec::with_capacity(self.heat_capacity_ranges.len());
+        let ranges = self.heat_capacity_ranges().collect::<Vec<_>>();
+        let mut available_ranges = Vec::with_capacity(ranges.len());
         let mut candidates = Vec::new();
-        for (range_index, range) in self.heat_capacity_ranges.iter().enumerate() {
-            validate_bounds(range, Some(range_index))?;
+        for (range_index, range) in ranges.iter().enumerate() {
+            validate_bounds(*range, Some(range_index))?;
             available_ranges.push((range.temperature_min(), range.temperature_max()));
             if range.contains_temperature(temperature_k) {
                 candidates.push(range_index);
@@ -114,34 +120,35 @@ impl Phase {
                 });
             }
             [range_index] => *range_index,
-            _ => select_shared_endpoint(&self.heat_capacity_ranges, temperature_k, &candidates)
-                .ok_or(HeatCapacityError::OverlappingRanges {
+            _ => select_shared_endpoint(&ranges, temperature_k, &candidates).ok_or(
+                HeatCapacityError::OverlappingRanges {
                     temperature_k,
                     candidate_range_indexes: candidates,
-                })?,
+                },
+            )?,
         };
 
-        self.heat_capacity_ranges[range_index].heat_capacity_j_per_mol_k(temperature_k, energy_unit)
+        ranges[range_index].heat_capacity_j_per_mol_k(temperature_k, energy_unit)
     }
 }
 
-impl Compound {
-    /// Evaluates CP for a phase index using this compound's energy unit.
+impl CompoundView<'_> {
+    /// Evaluates CP for a phase index using this compound's stored energy unit.
     pub fn heat_capacity_at(
-        &self,
+        self,
         phase_index: usize,
         temperature_k: f64,
     ) -> Result<f64, HeatCapacityError> {
         let phase = self
-            .phases
-            .get(phase_index)
+            .phases()
+            .nth(phase_index)
             .ok_or(HeatCapacityError::InvalidPhaseIndex { phase_index })?;
         phase.heat_capacity_at(temperature_k, self.energy_unit())
     }
 }
 
 fn select_shared_endpoint(
-    ranges: &[HeatCapacityRange],
+    ranges: &[HeatCapacityRangeView<'_>],
     temperature_k: f64,
     candidates: &[usize],
 ) -> Option<usize> {
@@ -151,8 +158,8 @@ fn select_shared_endpoint(
 
     let first = candidates[0];
     let second = candidates[1];
-    let first_range = &ranges[first];
-    let second_range = &ranges[second];
+    let first_range = ranges[first];
+    let second_range = ranges[second];
 
     let first_ends = first_range.temperature_max() == temperature_k
         && first_range.temperature_min() < temperature_k;
@@ -184,7 +191,7 @@ fn validate_temperature(temperature_k: f64) -> Result<(), HeatCapacityError> {
 }
 
 fn validate_bounds(
-    range: &HeatCapacityRange,
+    range: HeatCapacityRangeView<'_>,
     range_index: Option<usize>,
 ) -> Result<(), HeatCapacityError> {
     if !range.temperature_min().is_finite()
@@ -201,10 +208,10 @@ fn validate_bounds(
 }
 
 fn evaluate_expression(
-    range: &HeatCapacityRange,
+    range: HeatCapacityRangeView<'_>,
     temperature_k: f64,
 ) -> Result<f64, HeatCapacityError> {
-    let mut sum = 0.0;
+    let mut sum: f64 = 0.0;
     for index in 0..8 {
         let coefficient = range.coefficients()[index];
         let power = range.powers()[index];

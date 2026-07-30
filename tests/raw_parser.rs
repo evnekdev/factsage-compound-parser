@@ -191,8 +191,8 @@ fn database_with(chunks: &[[u8; CHUNK_SIZE]]) -> Vec<u8> {
 fn parses_valid_database_header() {
     let database = RawDatabase::from_bytes(&database_header_chunk()).unwrap();
 
-    assert_eq!(database.chunks.len(), 1);
-    match &database.chunks[0] {
+    assert_eq!(database.chunks().len(), 1);
+    match &database.chunks()[0] {
         RawChunk::DatabaseHeader(header) => {
             assert_eq!(header.magic, *b"CMPD");
             assert_eq!(header.comment_lossy(), "synthetic header");
@@ -253,7 +253,7 @@ fn parses_compound_and_little_endian_fields() {
     let compound = compound_chunk();
     let database = RawDatabase::from_bytes(&database_with(&[compound])).unwrap();
 
-    match &database.chunks[1] {
+    match &database.chunks()[1] {
         RawChunk::Compound(value) => {
             assert_eq!(value.header.charge_raw, -7);
             assert_eq!(value.unit_energy, 0x1122_3344);
@@ -275,7 +275,7 @@ fn parses_ordinary_and_transition_phases_with_signed_ids() {
     ]))
     .unwrap();
 
-    match &database.chunks[1] {
+    match &database.chunks()[1] {
         RawChunk::PhaseOrdinary(value) => {
             assert_eq!(value.phase_id_raw_neg, -800);
             assert_eq!(value.phase_id_raw, -801);
@@ -284,7 +284,7 @@ fn parses_ordinary_and_transition_phases_with_signed_ids() {
         }
         _ => panic!("expected ordinary phase"),
     }
-    match &database.chunks[2] {
+    match &database.chunks()[2] {
         RawChunk::PhaseTransition(value) => {
             assert_eq!(value.parent_phase_id_raw, 101);
             assert_eq!(value.phase_id_raw, 801);
@@ -299,7 +299,7 @@ fn parses_ordinary_and_transition_phases_with_signed_ids() {
 fn parses_cp_chunk_and_preserves_all_ids() {
     let database = RawDatabase::from_bytes(&database_with(&[heat_capacity_chunk(2)])).unwrap();
 
-    match &database.chunks[1] {
+    match &database.chunks()[1] {
         RawChunk::HeatCapacity { kind, chunk } => {
             assert_eq!(*kind, HeatCapacityKind::Id2);
             assert_eq!(kind.id(), 2);
@@ -324,7 +324,7 @@ fn parses_each_heat_capacity_id_without_collapsing_it() {
     let database = RawDatabase::from_bytes(&database_with(&chunks)).unwrap();
 
     let ids = database
-        .chunks
+        .chunks()
         .iter()
         .skip(1)
         .map(RawChunk::id)
@@ -336,7 +336,7 @@ fn parses_each_heat_capacity_id_without_collapsing_it() {
 fn parses_windows_1252_comment_without_lossy_binary_parsing() {
     let database = RawDatabase::from_bytes(&database_with(&[comment_chunk()])).unwrap();
 
-    match &database.chunks[1] {
+    match &database.chunks()[1] {
         RawChunk::Comment(value) => {
             assert_eq!(value.comment[7], 0xb0);
             assert_eq!(value.comment_windows_1252(), "degree \u{00b0} Celsius");
@@ -350,7 +350,7 @@ fn parses_windows_1252_comment_without_lossy_binary_parsing() {
 fn parses_kappa_arrays_with_exact_lengths() {
     let database = RawDatabase::from_bytes(&database_with(&[kappa_chunk()])).unwrap();
 
-    match &database.chunks[1] {
+    match &database.chunks()[1] {
         RawChunk::Kappa(value) => {
             assert_eq!(value.f1_temperature_coefficients.len(), 10);
             assert_eq!(value.f1_temperature_powers.len(), 8);
@@ -371,7 +371,7 @@ fn preserves_unknown_chunk_body() {
     let unknown = unknown_chunk();
     let database = RawDatabase::from_bytes(&database_with(&[unknown])).unwrap();
 
-    match &database.chunks[1] {
+    match &database.chunks()[1] {
         RawChunk::Unknown { id, body } => {
             assert_eq!(*id, 200);
             assert_eq!(body[0], 0);
@@ -386,5 +386,20 @@ fn preserves_unknown_chunk_body() {
 fn parses_from_reader() {
     let bytes = database_with(&[compound_chunk()]);
     let database = RawDatabase::from_reader(std::io::Cursor::new(bytes)).unwrap();
-    assert_eq!(database.chunks.len(), 2);
+    assert_eq!(database.chunks().len(), 2);
+}
+#[test]
+fn reader_reports_a_partial_final_record() {
+    let mut bytes = database_with(&[compound_chunk()]);
+    bytes.extend_from_slice(&[1_u8; 17]);
+
+    assert!(matches!(
+        RawDatabase::from_reader(std::io::Cursor::new(bytes)),
+        Err(ParseError::TruncatedRecord {
+            chunk_index: 2,
+            byte_offset: 512,
+            expected: CHUNK_SIZE,
+            actual: 17,
+        })
+    ));
 }
