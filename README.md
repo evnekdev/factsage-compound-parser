@@ -2,29 +2,34 @@
 
 A safe native Rust foundation for inspecting, grouping, evaluating, editing selected fields, and losslessly serializing FactSage Compound Database (`.CDB`) files.
 
-The crate is based on a validated Kaitai layout, the completed companion Python parser, and aggregate-only validation against a local private fixture. It does not contain proprietary CDB data.
+The crate is based on a validated Kaitai layout, the companion Python parser, and aggregate-only validation against a local private fixture. It does not contain proprietary CDB data.
 
-## API layers
+## Ownership and API layers
 
-- `raw::RawDatabase` is the authoritative flat physical stream. It preserves all known and unknown chunks, reserved fields, padding, text bytes, and original CP IDs 2 through 6. It parses and writes CDB bytes losslessly.
-- `domain::Database` is a read-only grouped view: header, compounds, phases, CP/kappa ranges, comments, and typed diagnostics.
+The crate uses owned raw parsing and zero-duplication semantic views:
+
+- `raw::RawDatabase` owns the contiguous, authoritative physical chunk stream. It preserves known and unknown chunks, reserved fields, padding, text bytes, and original CP IDs 2 through 6.
+- `domain::DomainIndex` stores only chunk indexes, semantic relationships, and diagnostics for one raw-stream generation.
+- `domain::DatabaseView<'_>` borrows a matching `RawDatabase` and `DomainIndex` to expose header, compounds, phases, CP/kappa ranges, comments, and diagnostics without cloning raw records.
+- `domain::Database` is a read-only owner of one raw stream and its index. Call `Database::view` for semantic traversal.
+- `edit::DatabaseEditor` owns one mutable raw stream, lazily rebuilds its index after structural changes, and returns borrowed semantic views.
 - `thermo` exposes established unit conversion, OLE Automation dates, provisional density decoding, and stored CP-expression evaluation.
-- `edit::DatabaseEditor` owns a mutable raw stream for controlled edits, then rebuilds a domain view on demand.
 
-`RawDatabase` remains the only serialization authority. A grouped `Database` never silently rewrites or reorders records.
+`RawDatabase` is the only serialization authority. Low-level raw insertion or removal can create a temporarily invalid semantic stream; rebuild an index or request an editor view to validate ordering.
 
 ## Minimal examples
 
-Parse and group a database:
+Parse, index, and traverse a database:
 
 ```rust
 use factsage_compound_parser::domain::Database;
 
 fn list_phases(path: &std::path::Path) -> Result<(), Box<dyn std::error::Error>> {
     let database = Database::from_path(path)?;
-    for compound in &database.compounds {
+    let view = database.view()?;
+    for compound in view.compounds() {
         println!("{}", compound.name()?);
-        for phase in &compound.phases {
+        for phase in compound.phases() {
             println!("  {}: {}", phase.chemapp_label(), phase.name()?);
         }
     }
@@ -32,7 +37,7 @@ fn list_phases(path: &std::path::Path) -> Result<(), Box<dyn std::error::Error>>
 }
 ```
 
-Evaluate stored CP for a selected phase. The model uses the compound's established energy-unit code and reports gaps or true overlaps as typed errors.
+Evaluate stored CP for the first phase of the first compound. The API uses the compound's established energy-unit code and reports gaps or true overlaps as typed errors.
 
 ```rust
 use factsage_compound_parser::domain::Database;
@@ -40,8 +45,9 @@ use factsage_compound_parser::domain::Database;
 fn heat_capacity(path: &std::path::Path) -> Result<f64, Box<dyn std::error::Error>> {
     let database = Database::from_path(path)?;
     let compound = database
-        .compounds
-        .first()
+        .view()?
+        .compounds()
+        .next()
         .ok_or_else(|| std::io::Error::other("database has no compounds"))?;
     Ok(compound.heat_capacity_at(0, 1000.0)?)
 }
@@ -68,17 +74,13 @@ For unmodified input accepted by the raw parser:
 input == RawDatabase::from_bytes(input)?.to_bytes()?
 ```
 
-The guarantee covers original chunk order and IDs, unknown chunks, reserved/padding bytes, fixed-width text, and parsed IEEE-754 bit patterns. The private fixture is checked entirely in memory; no output copy is created.
+The guarantee covers original chunk order and IDs, unknown chunks, reserved/padding bytes, fixed-width text, and parsed IEEE-754 bit patterns. `from_reader` reads exact 256-byte records without retaining a second full-file buffer; `write_to` streams records without building a full output buffer.
 
-See [serialization](docs/serialization.md) and [editing](docs/editing.md) for the authoritative-data and setter policies.
+## Diagnostics and editing policy
 
-## Diagnostics and safe limits
+Invalid known-chunk ordering is fatal during index construction. The index retains non-fatal issues such as unknown chunks inside a compound group, duplicate phase IDs, ambiguous/missing range links, invalid ASCII, questionable phase indexes, and CP-bound problems.
 
-The domain model treats invalid stream ordering as fatal. It retains and reports non-fatal issues such as unknown chunks inside a compound group, duplicate phase IDs, ambiguous/missing range links, invalid ASCII, questionable phase indexes, and CP bound problems.
-
-The editor intentionally supports only well-established fields. Names must fit their strict ASCII fixed-width destination; setters reject non-finite numeric values and unknown energy units. It does not currently edit formulae, comments, density, CP expressions, kappa records, reserved fields, or unknown chunks.
-
-The Python project's ordinary-phase setters propagate values into CP anchor fields, but this crate does not: the anchor convention is unresolved. Rust also corrects the Python transition-enthalpy setter's unit-conversion asymmetry.
+The editor supports only well-established fields. Names must fit strict ASCII fixed-width destinations; setters reject non-finite numeric values and unknown energy units. Structural raw edits invalidate the cached index. The editor deliberately does not change CP anchors when ordinary phase enthalpy or entropy changes, because the anchor convention remains unresolved.
 
 ## Format knowledge and unsupported semantics
 
@@ -86,9 +88,11 @@ Implemented read-only thermo features include calorie/joule handling, OLE Automa
 
 ## Documentation
 
+- [Architecture and API migration](docs/architecture.md)
+- [Performance measurements](docs/performance.md)
+- [Fuzzing](docs/fuzzing.md)
 - [Format overview](docs/format-overview.md)
 - [Chunk layouts](docs/chunk-layouts.md)
-- [Parsing model](docs/parsing-model.md)
 - [Domain model](docs/domain-model.md)
 - [Thermodynamic semantics](docs/thermodynamic-semantics.md)
 - [Raw serialization](docs/serialization.md)
@@ -99,18 +103,19 @@ Implemented read-only thermo features include calorie/joule handling, OLE Automa
 
 ## Validation and fixture policy
 
-`examples/MS16BASE.CDB` is proprietary, intentionally ignored, and optional. Tests skip cleanly when it is unavailable. It must never be staged, copied, encoded, uploaded, or printed.
+`examples/MS16BASE.CDB` is proprietary, intentionally ignored, and optional. Tests skip cleanly when it is unavailable. It must never be staged, copied, encoded, uploaded, printed, used as a fuzz seed, or used as a benchmark input.
 
 Run the public checks:
 
 ```text
 cargo fmt --check
 cargo clippy --all-targets --all-features -- -D warnings
-cargo test --all-targets
-cargo doc --no-deps
+cargo test --all-targets --all-features
+cargo test --doc
+cargo check --examples
+RUSTDOCFLAGS="-D warnings" cargo doc --no-deps --all-features
+cargo package
 ```
-
-For the optional aggregate-only Python parity check, see [python parity](docs/python-parity.md).
 
 ## Licensing and toolchain
 
@@ -118,6 +123,4 @@ This crate is dual-licensed under [MIT](LICENSE-MIT) or [Apache-2.0](LICENSE-APA
 
 GitHub Actions runs formatting, Clippy, tests, documentation tests, example checks, rustdoc warnings, and packaging on stable Linux; library checks on Rust 1.85.0; and all-target tests on Windows and macOS. Dependabot tracks Cargo and GitHub Actions updates. A scheduled security workflow runs `cargo audit` and dependency review runs for pull requests.
 
-`cargo package` is part of CI. The package contains the tracked source, schema, public documentation, README, and license files; ignored local CDB data, `target`, and temporary validation output are excluded. The crate is not published.
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for setup and change requirements and [SECURITY.md](SECURITY.md) for private vulnerability reporting and malformed-input reports. The crate remains a release foundation rather than production-ready: fuzzing, property testing, broader malformed-input coverage, and final API-stability review remain outstanding.
+The crate is ready for a robustness-testing pass, not a production-ready release. The property suite and fuzz targets now provide a foundation, but longer Linux sanitizer runs, broader malformed-input corpus work, and a final API-stability review remain necessary.
