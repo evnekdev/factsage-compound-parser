@@ -6,11 +6,15 @@
 
 This recommendation is for an experimental library release only. It does not claim that all reverse-engineered FactSage semantics are production-ready.
 
+The project is independent and reverse-engineered. It is not affiliated with,
+endorsed by, or supported by the FactSage developers or distributors. FactSage
+is a trademark of its respective owners.
+
 ## Windows-first validation
 
 Windows is the primary validated platform because FactSage and the reference databases are Windows-based. The implementation itself uses portable Rust interfaces where practical; Linux and macOS CI remain secondary portability checks.
 
-On Windows 11 Enterprise build 26200, x86_64 MSVC Rust 1.97.1, with a 13th Gen Intel Core i7-13850HX and 31.7 GiB visible memory, the release-candidate corpus validator scanned 13 `.CDB` candidates totaling 15,345,664 bytes.
+On Windows 11 Enterprise build 26200, x86_64 MSVC Rust 1.97.1, with a 13th Gen Intel Core i7-13850HX and 31.7 GiB visible memory, the Windows corpus validator scanned 13 `.CDB` candidates totaling 15,345,664 bytes.
 
 - 12 files (15,165,184 bytes and 59,239 chunks) were valid Compound Databases.
 - All 12 parsed from path, bytes, and reader equivalently.

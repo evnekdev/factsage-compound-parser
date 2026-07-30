@@ -28,12 +28,12 @@ Run synthetic Criterion benchmarks, bounded property tests, and fuzz smoke tests
 
 ## Private fixtures and the local FactSage corpus
 
-The optional repository-local `examples/MS16BASE.CDB` fixture and `C:\FactSage73_0040_standalone\FACTDATA` installation corpus are proprietary. They are not required for public CI.
+The optional repository-local `examples/MS16BASE.CDB` fixture and configured FactSage installation corpus are proprietary. They are not required for public CI.
 
 When the corpus is available, run only the ignored read-only validator:
 
 ```powershell
-$env:FACTSAGE_FACTDATA_ROOT = 'C:\FactSage73_0040_standalone\FACTDATA'
+$env:FACTSAGE_FACTDATA_ROOT = 'C:\path\to\FACTDATA'
 cargo test --test factsage_corpus -- --ignored --nocapture
 ```
 

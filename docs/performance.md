@@ -49,7 +49,7 @@ Run the synthetic benchmark with:
 ```text
 cargo bench --bench architecture
 ```
-## Windows 0.1.0 release-candidate validation
+## Windows 0.1.0 publication validation
 
 The following release measurements were taken on Windows 11 Enterprise build 26200, with Rust 1.97.1 (`x86_64-pc-windows-msvc`), a 13th Gen Intel Core i7-13850HX, and 31.7 GiB visible memory. They use release builds, are aggregate-only, and should be read as local observations rather than guarantees.
 

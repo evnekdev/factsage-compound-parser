@@ -30,7 +30,7 @@ Borrowed views cannot survive a mutable editor borrow, so stale references are p
 
 ## Migration from the pre-index API
 
-Earlier `0.1.0` releases exposed a grouped `Database` containing cloned raw compound, phase, and range records through public vectors. That API duplicated almost the full database and made editor rebuilds clone the raw stream.
+Earlier pre-release iterations exposed a grouped `Database` containing cloned raw compound, phase, and range records through public vectors. That API duplicated almost the full database and made editor rebuilds clone the raw stream.
 
 Use a view instead:
 

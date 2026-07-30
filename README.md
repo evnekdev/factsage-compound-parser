@@ -4,6 +4,12 @@ A safe native Rust foundation for inspecting, grouping, evaluating established f
 
 Windows is the primary validated platform because FactSage and the reference databases are Windows-based. The Rust implementation remains portable where straightforward and CI also performs secondary Linux and macOS checks. The crate contains no proprietary CDB data.
 
+## Independence
+
+This is an independent, reverse-engineered open-source project. It is not
+affiliated with, endorsed by, or supported by the FactSage developers or
+distributors. FactSage is a trademark of its respective owners.
+
 ## Ownership and API layers
 
 The crate uses owned raw parsing and zero-duplication semantic views:
@@ -64,6 +70,20 @@ input == RawDatabase::from_bytes(input)?.to_bytes()?
 The guarantee covers chunk order and IDs, unknown chunks, reserved/padding bytes, fixed-width text, and parsed IEEE-754 bit patterns. `from_reader` consumes exact 256-byte records without retaining a second full-file input buffer; `write_to` streams records without creating a full output vector.
 
 The editor supports only well-established fields. Names require strict ASCII and finite numeric setters retain a valid index. Structural raw edits invalidate the cached index. The editor deliberately does not change CP anchors when ordinary phase enthalpy or entropy changes, because the anchor convention remains unresolved.
+A controlled edit can be written to a caller-selected destination:
+
+```rust
+use std::error::Error;
+use std::path::Path;
+use factsage_compound_parser::edit::DatabaseEditor;
+
+fn rename_first_compound(input: &Path, output: &Path) -> Result<(), Box<dyn Error>> {
+    let mut editor = DatabaseEditor::from_path(input)?;
+    editor.set_compound_name(0, "Example")?;
+    editor.write_to_path(output)?;
+    Ok(())
+}
+```
 
 ID-11 records are structurally parsed, preserved, and linked by exact raw phase ID within their compound. Their physical equation, units, and coefficient meanings are not established and are not evaluated.
 
@@ -72,7 +92,7 @@ ID-11 records are structurally parsed, preserved, and linked by exact raw phase 
 The ignored local `examples/MS16BASE.CDB` fixture and the installed FactSage corpus are proprietary. They are never staged, copied, encoded, uploaded, printed, used as fuzz seeds, or modified. Corpus validation opens source files read-only, canonicalizes every path under the configured root, serializes only to memory, and writes its aggregate local report only to `target/factsage-corpus-report.txt`.
 
 ```powershell
-$env:FACTSAGE_FACTDATA_ROOT = 'C:\FactSage73_0040_standalone\FACTDATA'
+$env:FACTSAGE_FACTDATA_ROOT = 'C:\path\to\FACTDATA'
 cargo test --test factsage_corpus -- --ignored --nocapture
 ```
 
@@ -83,6 +103,14 @@ The latest local Windows validation scanned 13 `.CDB` candidates (15,345,664 byt
 **Recommendation: Ready to publish experimental 0.1.0.**
 
 This is not a production-readiness claim. The implementation has broad Windows corpus validation, lossless round trips, typed I/O errors, synthetic corruption tests, and complete Rustdoc. Production use still requires acceptance of reverse-engineered limitations: ID-11 physics, kappa units, CP integration conventions, density units, unknown fields, and extended fuzzing remain unresolved.
+
+## API stability
+
+This is an experimental `0.1.x` library. Public APIs may evolve, but breaking
+changes are documented explicitly and patch releases should not silently add
+avoidable breaking changes. The reviewed [0.1.0 public API baseline](api/0.1.0.txt)
+and its [comparison workflow](api/README.md) support future compatibility checks;
+this project does not promise `1.0` stability yet.
 
 ## Documentation
 
