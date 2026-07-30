@@ -47,7 +47,7 @@ impl RawDatabase {
         if bytes.is_empty() {
             return Err(ParseError::EmptyFile);
         }
-        if !bytes.len().is_multiple_of(CHUNK_SIZE) {
+        if bytes.len() % CHUNK_SIZE != 0 {
             return Err(ParseError::InvalidFileLength {
                 length: bytes.len(),
                 chunk_size: CHUNK_SIZE,

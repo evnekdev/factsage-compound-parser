@@ -28,3 +28,8 @@
 - compound and phase writing semantics outside the controlled setters.
 
 No proprietary CDB records, text, formulae, coefficients, or raw excerpts are committed or documented.
+## Release-foundation checks
+
+The repository now declares `rust-version = "1.85.0"` and passes `cargo +1.85.0 check --all-targets --all-features` plus `cargo +1.85.0 test --lib --all-features`. Stable checks cover formatting, Clippy, all-target tests, documentation tests, example compilation, warnings-as-errors rustdoc, and packaging. GitHub Actions extends this to Linux, Windows, and macOS.
+
+Dependabot monitors Cargo and GitHub Actions. The security workflow runs `cargo audit`; pull requests receive dependency review where GitHub provides it. These checks do not replace malformed-input robustness testing.
