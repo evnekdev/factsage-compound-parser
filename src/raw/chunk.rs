@@ -64,8 +64,24 @@ pub(crate) fn parse(chunk_index: usize, chunk_bytes: &[u8]) -> Result<RawChunk, 
 
     match id {
         1 => Ok(RawChunk::Compound(compound::parse(&mut cursor)?)),
-        2..=6 => Ok(RawChunk::HeatCapacity {
-            kind: heat_capacity::HeatCapacityKind::from_id(id).expect("range 2..=6 is exhaustive"),
+        2 => Ok(RawChunk::HeatCapacity {
+            kind: heat_capacity::HeatCapacityKind::Id2,
+            chunk: heat_capacity::parse(&mut cursor)?,
+        }),
+        3 => Ok(RawChunk::HeatCapacity {
+            kind: heat_capacity::HeatCapacityKind::Id3,
+            chunk: heat_capacity::parse(&mut cursor)?,
+        }),
+        4 => Ok(RawChunk::HeatCapacity {
+            kind: heat_capacity::HeatCapacityKind::Id4,
+            chunk: heat_capacity::parse(&mut cursor)?,
+        }),
+        5 => Ok(RawChunk::HeatCapacity {
+            kind: heat_capacity::HeatCapacityKind::Id5,
+            chunk: heat_capacity::parse(&mut cursor)?,
+        }),
+        6 => Ok(RawChunk::HeatCapacity {
+            kind: heat_capacity::HeatCapacityKind::Id6,
             chunk: heat_capacity::parse(&mut cursor)?,
         }),
         7 => Ok(RawChunk::PhaseOrdinary(phase::parse_ordinary(&mut cursor)?)),

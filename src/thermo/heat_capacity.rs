@@ -83,10 +83,12 @@ impl HeatCapacityRange {
 }
 
 impl Phase {
-    /// Selects and evaluates the unique CP range containing the temperature.
+    /// Selects and evaluates the applicable CP range at a temperature.
     ///
-    /// Bounds are inclusive. Ranges are searched in preserved stream order;
-    /// overlapping candidates return an error instead of selecting one.
+    /// Individual range bounds are closed. At an exact endpoint shared by two
+    /// adjacent ranges, the lower-temperature range wins. This matches the
+    /// observed CDB topology while still reporting genuine interval overlaps.
+    /// Ranges are searched in preserved stream order and need not be sorted.
     pub fn heat_capacity_at(
         &self,
         temperature_k: f64,
@@ -112,12 +114,11 @@ impl Phase {
                 });
             }
             [range_index] => *range_index,
-            _ => {
-                return Err(HeatCapacityError::OverlappingRanges {
+            _ => select_shared_endpoint(&self.heat_capacity_ranges, temperature_k, &candidates)
+                .ok_or(HeatCapacityError::OverlappingRanges {
                     temperature_k,
                     candidate_range_indexes: candidates,
-                });
-            }
+                })?,
         };
 
         self.heat_capacity_ranges[range_index].heat_capacity_j_per_mol_k(temperature_k, energy_unit)
@@ -137,6 +138,39 @@ impl Compound {
             .ok_or(HeatCapacityError::InvalidPhaseIndex { phase_index })?;
         phase.heat_capacity_at(temperature_k, self.energy_unit())
     }
+}
+
+fn select_shared_endpoint(
+    ranges: &[HeatCapacityRange],
+    temperature_k: f64,
+    candidates: &[usize],
+) -> Option<usize> {
+    if candidates.len() != 2 {
+        return None;
+    }
+
+    let first = candidates[0];
+    let second = candidates[1];
+    let first_range = &ranges[first];
+    let second_range = &ranges[second];
+
+    let first_ends = first_range.temperature_max() == temperature_k
+        && first_range.temperature_min() < temperature_k;
+    let second_starts = second_range.temperature_min() == temperature_k
+        && temperature_k < second_range.temperature_max();
+    if first_ends && second_starts {
+        return Some(first);
+    }
+
+    let second_ends = second_range.temperature_max() == temperature_k
+        && second_range.temperature_min() < temperature_k;
+    let first_starts = first_range.temperature_min() == temperature_k
+        && temperature_k < first_range.temperature_max();
+    if second_ends && first_starts {
+        return Some(second);
+    }
+
+    None
 }
 
 fn validate_temperature(temperature_k: f64) -> Result<(), HeatCapacityError> {

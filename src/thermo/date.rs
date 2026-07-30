@@ -46,7 +46,10 @@ impl OleAutomationDate {
             return Err(DateError::OutOfRange { raw_days });
         }
 
-        let mut ole_millis = (raw_days * MILLIS_PER_DAY as f64) as i128;
+        // Match `System.DateTime.FromOADate`: Automation dates are rounded to
+        // the nearest millisecond before applying the negative-fraction rule.
+        let rounding = if raw_days >= 0.0 { 0.5 } else { -0.5 };
+        let mut ole_millis = (raw_days * MILLIS_PER_DAY as f64 + rounding) as i128;
         if ole_millis < 0 {
             ole_millis -= (ole_millis % MILLIS_PER_DAY) * 2;
         }

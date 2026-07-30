@@ -27,17 +27,6 @@ impl HeatCapacityKind {
             Self::Id6 => 6,
         }
     }
-
-    pub(crate) const fn from_id(id: u8) -> Option<Self> {
-        match id {
-            2 => Some(Self::Id2),
-            3 => Some(Self::Id3),
-            4 => Some(Self::Id4),
-            5 => Some(Self::Id5),
-            6 => Some(Self::Id6),
-            _ => None,
-        }
-    }
 }
 
 /// The common raw body of CP IDs 2 through 6.

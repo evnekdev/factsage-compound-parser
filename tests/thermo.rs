@@ -513,3 +513,74 @@ fn raw_phase_records_remain_available_to_thermo_accessors() {
 
 #[allow(dead_code)]
 fn _compound_type_is_public(_: &Compound) {}
+
+#[test]
+fn rounds_ole_dates_like_windows_automation_dates() {
+    let epoch = ole_epoch();
+    assert_eq!(
+        factsage_compound_parser::OleAutomationDate::from_raw(1.0)
+            .unwrap()
+            .to_system_time()
+            .unwrap(),
+        epoch.checked_add(Duration::from_secs(86_400)).unwrap()
+    );
+    assert_eq!(
+        factsage_compound_parser::OleAutomationDate::from_raw(25_569.0)
+            .unwrap()
+            .to_system_time()
+            .unwrap(),
+        UNIX_EPOCH
+    );
+    for raw_days in [0.000000006, -0.000000006] {
+        assert_eq!(
+            factsage_compound_parser::OleAutomationDate::from_raw(raw_days)
+                .unwrap()
+                .to_system_time()
+                .unwrap(),
+            epoch.checked_add(Duration::from_millis(1)).unwrap()
+        );
+    }
+    assert_eq!(
+        factsage_compound_parser::OleAutomationDate::from_raw(0.999999999)
+            .unwrap()
+            .to_system_time()
+            .unwrap(),
+        epoch.checked_add(Duration::from_secs(86_400)).unwrap()
+    );
+}
+
+#[test]
+fn selects_the_lower_range_at_a_shared_cp_endpoint() {
+    let database = one_phase_database(
+        1,
+        ordinary(101, 1.0),
+        [
+            cp(101, 100.0, 200.0, 0.0, 0.0, &[(0, 1.0, 0.0)]),
+            cp(101, 200.0, 300.0, 0.0, 0.0, &[(0, 2.0, 0.0)]),
+        ],
+    );
+    let phase = &database.compounds[0].phases[0];
+
+    assert_close(
+        phase
+            .heat_capacity_at(200.0, EnergyUnit::Joules)
+            .expect("shared endpoint selects lower-temperature range"),
+        1.0,
+    );
+}
+
+#[test]
+fn accepts_a_zero_width_cp_range_at_its_only_temperature() {
+    let database = one_phase_database(
+        1,
+        ordinary(101, 1.0),
+        [cp(101, 200.0, 200.0, 0.0, 0.0, &[(0, 3.0, 0.0)])],
+    );
+
+    assert_close(
+        database.compounds[0].phases[0]
+            .heat_capacity_at(200.0, EnergyUnit::Joules)
+            .unwrap(),
+        3.0,
+    );
+}
