@@ -237,3 +237,48 @@ fn evaluates_private_ms16base_thermodynamic_aggregates_when_available() {
     assert_eq!(gap_sets, 0);
     assert_eq!(density_errors, 0);
 }
+
+#[test]
+fn round_trips_private_ms16base_when_available() {
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("examples")
+        .join("MS16BASE.CDB");
+    if !path.is_file() {
+        return;
+    }
+
+    let input = fs::read(&path).expect("private fixture should be readable");
+    let raw = RawDatabase::from_bytes(&input).expect("private fixture should parse");
+    let serialized = raw.to_bytes().expect("private fixture should serialize");
+    assert_eq!(serialized, input);
+
+    let reparsed = RawDatabase::from_bytes(&serialized).expect("serialized fixture should parse");
+    assert_eq!(reparsed.chunks.len(), raw.chunks.len());
+    assert_eq!(
+        reparsed.chunks.iter().map(RawChunk::id).collect::<Vec<_>>(),
+        raw.chunks.iter().map(RawChunk::id).collect::<Vec<_>>()
+    );
+
+    let original_domain = Database::from_bytes(&input).expect("fixture should group");
+    let reparsed_domain = Database::from_raw(reparsed).expect("serialized fixture should group");
+    assert_eq!(
+        reparsed_domain.compounds.len(),
+        original_domain.compounds.len()
+    );
+    assert_eq!(
+        reparsed_domain.diagnostics.len(),
+        original_domain.diagnostics.len()
+    );
+    assert_eq!(
+        reparsed_domain
+            .compounds
+            .iter()
+            .flat_map(|compound| compound.phases.iter())
+            .count(),
+        original_domain
+            .compounds
+            .iter()
+            .flat_map(|compound| compound.phases.iter())
+            .count()
+    );
+}

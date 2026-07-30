@@ -7,6 +7,7 @@ pub mod database_header;
 pub mod heat_capacity;
 pub mod kappa;
 pub mod phase;
+mod serialize;
 
 pub use chunk::RawChunk;
 pub use comment::RawCommentChunk;
@@ -16,6 +17,10 @@ pub use database_header::RawDatabaseHeaderChunk;
 pub use heat_capacity::{HeatCapacityKind, RawHeatCapacityChunk};
 pub use kappa::RawKappaChunk;
 pub use phase::{RawOrdinaryPhaseChunk, RawPhasePhysicalTail, RawTransitionPhaseChunk};
+pub use serialize::SerializeError;
+
+/// The flat lossless raw CDB stream. Re-exported here for module-oriented imports.
+pub use crate::RawDatabase;
 
 pub(crate) use cursor::Cursor;
 

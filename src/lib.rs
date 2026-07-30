@@ -16,7 +16,7 @@ pub use error::ParseError;
 pub use raw::{
     HeatCapacityKind, RawChunk, RawCommentChunk, RawCommonHeader, RawCompoundChunk,
     RawDatabaseHeaderChunk, RawHeatCapacityChunk, RawKappaChunk, RawOrdinaryPhaseChunk,
-    RawPhasePhysicalTail, RawTransitionPhaseChunk,
+    RawPhasePhysicalTail, RawTransitionPhaseChunk, SerializeError,
 };
 pub use thermo::{
     DateError, DensityError, EnergyUnit, HeatCapacityError, OleAutomationDate, PhaseKind,
