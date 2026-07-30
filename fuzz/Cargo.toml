@@ -1,0 +1,47 @@
+[package]
+name = "factsage-compound-parser-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2024"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+factsage-compound-parser = { path = ".." }
+
+[[bin]]
+name = "raw_parse"
+path = "fuzz_targets/raw_parse.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "raw_roundtrip"
+path = "fuzz_targets/raw_roundtrip.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "domain_index"
+path = "fuzz_targets/domain_index.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "editor_operations"
+path = "fuzz_targets/editor_operations.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "thermo_eval"
+path = "fuzz_targets/thermo_eval.rs"
+test = false
+doc = false
+bench = false

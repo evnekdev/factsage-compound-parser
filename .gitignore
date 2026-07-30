@@ -1,4 +1,6 @@
 /target
+/fuzz/target/
+/fuzz/Cargo.lock
 /examples/*
 !/examples/*.rs
 *.CDB
