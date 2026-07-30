@@ -6,7 +6,7 @@ All notable changes are documented here. The project follows an experimental 0.x
 
 No unreleased changes.
 
-## 0.1.0 - Unreleased
+## 0.1.0 - 2026-07-30
 
 This is an experimental release. It is not a production-readiness claim or official FactSage compatibility certification.
 

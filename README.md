@@ -70,6 +70,7 @@ input == RawDatabase::from_bytes(input)?.to_bytes()?
 The guarantee covers chunk order and IDs, unknown chunks, reserved/padding bytes, fixed-width text, and parsed IEEE-754 bit patterns. `from_reader` consumes exact 256-byte records without retaining a second full-file input buffer; `write_to` streams records without creating a full output vector.
 
 The editor supports only well-established fields. Names require strict ASCII and finite numeric setters retain a valid index. Structural raw edits invalidate the cached index. The editor deliberately does not change CP anchors when ordinary phase enthalpy or entropy changes, because the anchor convention remains unresolved.
+
 A controlled edit can be written to a caller-selected destination:
 
 ```rust
