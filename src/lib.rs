@@ -5,6 +5,7 @@ use std::path::Path;
 pub mod domain;
 pub mod error;
 pub mod raw;
+pub mod thermo;
 
 pub use domain::{
     Compound, Database, DatabaseError, Diagnostic, DiagnosticKind, DomainError, ExpectedCategory,
@@ -16,6 +17,10 @@ pub use raw::{
     HeatCapacityKind, RawChunk, RawCommentChunk, RawCommonHeader, RawCompoundChunk,
     RawDatabaseHeaderChunk, RawHeatCapacityChunk, RawKappaChunk, RawOrdinaryPhaseChunk,
     RawPhasePhysicalTail, RawTransitionPhaseChunk,
+};
+pub use thermo::{
+    DateError, DensityError, EnergyUnit, HeatCapacityError, OleAutomationDate, PhaseKind,
+    PhaseProperty, PhaseThermoError, PressureUnit, UnitError,
 };
 
 /// The fixed size of every CDB record, including its one-byte ID.
