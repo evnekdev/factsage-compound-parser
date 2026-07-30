@@ -3,6 +3,7 @@ use std::io::Read;
 use std::path::Path;
 
 pub mod domain;
+pub mod edit;
 pub mod error;
 pub mod raw;
 pub mod thermo;
@@ -12,6 +13,7 @@ pub use domain::{
     HeatCapacityRange, OrphanRange, OrphanReason, Phase, PhaseDefinition, PhaseState,
     PhysicalPropertyRange, Range, RawPhase, TextDecodeError,
 };
+pub use edit::{DatabaseEditor, EditError};
 pub use error::ParseError;
 pub use raw::{
     HeatCapacityKind, RawChunk, RawCommentChunk, RawCommonHeader, RawCompoundChunk,
