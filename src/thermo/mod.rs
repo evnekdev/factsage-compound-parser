@@ -8,6 +8,7 @@ mod date;
 mod density;
 mod error;
 mod heat_capacity;
+mod phase_thermodynamics;
 mod units;
 
 /// Re-export of OLE Automation date conversion.
@@ -18,6 +19,12 @@ pub use density::decode_density;
 pub use error::{
     DateError, DensityError, HeatCapacityError, PhaseKind, PhaseProperty, PhaseThermoError,
     UnitError,
+};
+/// Re-exports for evidence-backed FDB/CMPD provider thermodynamic views.
+pub use phase_thermodynamics::{
+    CompoundDatabaseProfileEvidence, HeatCapacityAnchorSemantics, OrdinaryPhaseThermodynamicView,
+    PhaseHeatCapacityRangeView, PhaseThermodynamicView, PhaseThermodynamicViewError,
+    STANDARD_REFERENCE_TEMPERATURE_K, TransitionParentRelation, TransitionPhaseThermodynamicView,
 };
 /// Re-exports for stored compound unit codes.
 pub use units::{EnergyUnit, PressureUnit};

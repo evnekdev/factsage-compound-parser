@@ -1,6 +1,6 @@
 # factsage-compound-parser
 
-A safe native Rust foundation for inspecting, grouping, evaluating established fields, editing selected fields, and losslessly serializing FactSage Compound Database (`.CDB`) files.
+A safe native Rust foundation for inspecting, grouping, evaluating established fields, editing selected fields, and losslessly serializing FactSage's shared Compound/Function Database (`.CDB`/`.FDB`) binary family.
 
 Windows is the primary validated platform because FactSage and the reference databases are Windows-based. The Rust implementation remains portable where straightforward and CI also performs secondary Linux and macOS checks. The crate contains no proprietary CDB data.
 
@@ -19,7 +19,7 @@ The crate uses owned raw parsing and zero-duplication semantic views:
 - `domain::DatabaseView<'_>` borrows matching raw storage and an index to expose header, compounds, phases, CP ranges, structurally linked ID-11 records, comments, and diagnostics without cloning raw records.
 - `domain::Database` is a read-only owner of one raw stream plus its index. Call `Database::view` for semantic traversal.
 - `edit::DatabaseEditor` owns one mutable raw stream, lazily rebuilds its index after structural changes, and returns borrowed semantic views.
-- `thermo` exposes established unit conversion, OLE Automation dates, provisional density decoding, and stored CP-expression evaluation.
+- `thermo` exposes established unit conversion, OLE Automation dates, provisional density decoding, stored CP-expression evaluation, and evidence-backed FDB ordinary-phase thermodynamic views.
 
 `RawDatabase` is the only serialization authority. Low-level raw insertion or removal can create a temporarily invalid semantic stream; rebuilding an index validates grouping. Path APIs accept `AsRef<Path>` and preserve the path plus underlying OS error for open/read/write failures.
 
@@ -87,6 +87,24 @@ fn rename_first_compound(input: &Path, output: &Path) -> Result<(), Box<dyn Erro
 ```
 
 ID-11 records are structurally parsed, preserved, and linked by exact raw phase ID within their compound. Their physical equation, units, and coefficient meanings are not established and are not evaluated.
+
+## FDB provider semantics
+
+`.FDB` is a logical Function Database role built on the same `CMPD` physical
+family as `.CDB`; the filename is not provider-semantic proof. The parser's
+`CompoundDatabaseProfileEvidence` checks the observed FDB-compatible header
+guardrail (`read_flag == 0`), but valid CDB files can satisfy it too. A caller
+must supply the logical bundle role and accept that the result is compatibility
+evidence, not an intrinsic CDB/FDB classification.
+
+For a validated ordinary FDB phase, each CP range supplies H and S constants at
+298.15 K plus `Cp(T) = sum(c_i T^p_i)`. The explicitly named
+`fdb_phase_thermodynamic_view` API returns `PhaseThermodynamicView::Ordinary`,
+preserves source order, requires finite positive contiguous ranges of one CP
+kind, and refuses gaps, overlaps, mixed kinds, and extrapolation. It exposes
+provider data only; downstream code owns canonical Gibbs conversion. ID-8
+transition parent links are typed, but transition effective-G semantics remain
+pending independent evidence.
 
 ## Windows validation and private-data policy
 

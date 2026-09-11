@@ -28,6 +28,10 @@ All offsets below are relative to the beginning of the **256-byte chunk**, inclu
 | 108 | 136 | bytes[136] | `padding3` |
 | 244 | 12 | bytes[12] | `unknown2` |
 
+`read_flag == 0` is an observed FDB-compatible guardrail, not an intrinsic
+CDB/FDB classifier: valid CDB files can also use it. `unknown1` and `unknown2`
+remain uninterpreted and are not profile evidence.
+
 ## Shared entry header — chunks 1–8, 10, 11
 
 The shared header begins at chunk offset 1 and occupies 31 bytes.
@@ -118,6 +122,11 @@ The represented expression is:
 ```text
 Cp(T) = sum(i = 0..7, cp_coefficients[i] * T ^ powers[i])
 ```
+
+For a validated ordinary FDB CP sequence, fields `enthalpy` and `entropy` are
+the range's H/S constants at 298.15 K. They are range-specific constants, not
+`Tmin` or `Tmax` values. This interpretation is not retroactively imposed on
+unvalidated CDB or malformed streams.
 
 ## Comment fragment — ID 10
 

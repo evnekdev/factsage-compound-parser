@@ -45,7 +45,11 @@ This conversion is applied to ordinary-phase enthalpy and entropy. Setters divid
 
 The Python transition-enthalpy setter always divides by `4.184`, although its getter only multiplies when `unit_energy == 0`. This asymmetry is likely a bug and must not be copied blindly. The Rust implementation should apply one consistent conversion policy and verify it against sample files.
 
-CP-range enthalpy and entropy properties in Python return raw stored values without applying the compound energy-unit conversion. Determine whether this is intentional before designing a high-level numerical API.
+CP-range enthalpy and entropy properties in Python return raw stored values
+without applying the compound energy-unit conversion. The Rust provider view
+uses the same compound-level code for their explicit conversions; installed FDB
+records use the established joule code. This does not imply that all future or
+arbitrary CMPD files do.
 
 ## Pressure units
 
@@ -129,14 +133,27 @@ Each CP record stores eight coefficient/power pairs:
 Cp(T) = Σ a_i T^(p_i), i = 0..7
 ```
 
-The range applies between `t_min` and `t_max`, presumed kelvin based on the existing docs and Python display strings. The stored enthalpy and entropy appear to provide integration anchors, likely at a range boundary, but their exact reference convention remains to be verified.
+The range applies between `t_min` and `t_max` in kelvin. For the validated
+ordinary FDB subset, stored H/S are independent values at 298.15 K for the
+range's own Cp expression. They are neither `Tmin` nor `Tmax` anchors. Between
+adjacent contiguous source-order ranges, their values satisfy H/S continuity
+when each range is integrated from 298.15 K.
+
+The ordinary phase's separate H/S fields must not be propagated into every CP
+record: local FDB evidence does not establish a universal equality. The
+provider thermodynamic view therefore uses CP H/S plus Cp directly and rejects
+missing, gapped, overlapping, reordered, mixed-kind, zero-width, or nonfinite
+ranges instead of guessing a repair or extrapolation.
 
 Validation suggestions:
 
 - require finite coefficients and powers for numerical evaluation;
 - permit unused zero terms;
 - do not assume conventional integer or half-integer powers;
-- define endpoint inclusion only after comparing adjacent ranges in real files.
+- individual validated FDB range bounds are closed; at a shared boundary the
+  existing direct evaluator selects the lower range, while derived H/S/G are
+  continuous;
+- never extrapolate past stored range support.
 
 ## Transition phases
 
@@ -147,7 +164,11 @@ ID 8 replaces ordinary `enthalpy` and `entropy` with:
 - parent phase raw ID;
 - current phase raw ID.
 
-The remaining physical-property fields have the same layout as an ordinary phase. A transition phase should be linked to its parent by raw phase ID, but the Python parser does not currently build that relation.
+The remaining physical-property fields have the same layout as an ordinary
+phase. A transition phase is linked to its parent by exact raw phase ID through
+`TransitionParentRelation`. The physical transformation rule remains unknown:
+do not infer a transition entropy, apply `DeltaH` twice, chain records, or
+inherit Cp ranges until independent provider evidence establishes those rules.
 
 ## Extended properties (ID 11)
 

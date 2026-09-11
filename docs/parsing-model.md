@@ -122,6 +122,14 @@ Recommended rules:
 
 An older unused Python method additionally compared element IDs, integer coefficients and charge. The active parser only matches `phase_id_raw`; a Rust strict-validation option may compare the shared formula header as an additional consistency check.
 
+For provider thermodynamic consumption, `CompoundView::fdb_phase_thermodynamic_view`
+adds a narrower validation layer after this structural association. It retains
+the CP source order and accepts an ordinary effective-G definition only when
+all records use one CP kind, every range is finite and strictly positive, and
+adjacent ranges share their exact stored boundary. It does not sort, merge,
+bridge, or extrapolate records. The lower-level domain view remains lossless
+and continues to expose malformed/orphan data for inspection.
+
 ## CP chunk IDs
 
 IDs `2`, `3`, `4`, `5`, and `6` share one layout. Preserve the ID in an enum rather than normalising it away:
@@ -137,6 +145,11 @@ enum CpChunkKind {
 ```
 
 The unusual numbering above reproduces the names used by the Python constants. Since their semantic differences are unknown, public API names such as `Id2` through `Id6` may be less misleading.
+
+The locally examined FDB corpus used one CP kind per phase. ID 2 supplied
+multi-range sequences; IDs 4 and 5 appeared as single ranges. This is
+validation evidence for the current provider view, not a universal semantic
+meaning for the five IDs.
 
 ## Comments
 
