@@ -4,7 +4,15 @@ All notable changes are documented here. The project follows an experimental 0.x
 
 ## Unreleased
 
-No unreleased changes.
+- Added analytical ordinary-FDB Cp/H/S/G range evaluation using the established
+  298.15 K anchors, including logarithmic `p = -1` enthalpy and `p = 0` entropy
+  cases and typed non-finite/no-extrapolation failures.
+- Added provider validation of adjacent-range H and S continuity with dedicated
+  typed errors and a provider-only absolute-plus-relative tolerance.
+- Added typed ordinary-FDB effective-G eligibility so active magnetic,
+  pressure-volume, and ID-11 data cannot masquerade as a complete CP-only Gibbs
+  function; transition and ID-11 equations remain unsupported.
+- Hardened calorie conversion against finite-input overflow.
 
 ## 0.1.0 - 2026-07-30
 

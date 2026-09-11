@@ -43,11 +43,13 @@ pub use raw::{
 /// Re-exports for thermodynamic unit, date, density, and CP evaluation APIs.
 pub use thermo::{
     CompoundDatabaseProfileEvidence, DateError, DensityError, EnergyUnit,
-    HeatCapacityAnchorSemantics, HeatCapacityError, OleAutomationDate,
-    OrdinaryPhaseThermodynamicView, PhaseHeatCapacityRangeView, PhaseKind, PhaseProperty,
-    PhaseThermoError, PhaseThermodynamicView, PhaseThermodynamicViewError, PressureUnit,
-    STANDARD_REFERENCE_TEMPERATURE_K, TransitionParentRelation, TransitionPhaseThermodynamicView,
-    UnitError,
+    FdbThermodynamicEvaluationError, FdbThermodynamicQuantity, HeatCapacityAnchorSemantics,
+    HeatCapacityError, OleAutomationDate, OrdinaryFdbEffectiveGEligibility,
+    OrdinaryPhaseThermodynamicView, PROVIDER_RANGE_CONTINUITY_ABSOLUTE_TOLERANCE,
+    PROVIDER_RANGE_CONTINUITY_RELATIVE_TOLERANCE, PhaseHeatCapacityRangeView, PhaseKind,
+    PhaseProperty, PhaseThermoError, PhaseThermodynamicView, PhaseThermodynamicViewError,
+    PressureUnit, STANDARD_REFERENCE_TEMPERATURE_K, TransitionParentRelation,
+    TransitionPhaseThermodynamicView, UnitError,
 };
 
 /// The fixed size of every CDB record, including its one-byte ID.

@@ -6,6 +6,7 @@
 
 mod date;
 mod density;
+mod effective_g_eligibility;
 mod error;
 mod heat_capacity;
 mod phase_thermodynamics;
@@ -15,6 +16,7 @@ mod units;
 pub use date::OleAutomationDate;
 /// Re-export of the provisional density decoder.
 pub use density::decode_density;
+pub use effective_g_eligibility::OrdinaryFdbEffectiveGEligibility;
 /// Re-exports for typed thermodynamic evaluation errors.
 pub use error::{
     DateError, DensityError, HeatCapacityError, PhaseKind, PhaseProperty, PhaseThermoError,
@@ -22,7 +24,9 @@ pub use error::{
 };
 /// Re-exports for evidence-backed FDB/CMPD provider thermodynamic views.
 pub use phase_thermodynamics::{
-    CompoundDatabaseProfileEvidence, HeatCapacityAnchorSemantics, OrdinaryPhaseThermodynamicView,
+    CompoundDatabaseProfileEvidence, FdbThermodynamicEvaluationError, FdbThermodynamicQuantity,
+    HeatCapacityAnchorSemantics, OrdinaryPhaseThermodynamicView,
+    PROVIDER_RANGE_CONTINUITY_ABSOLUTE_TOLERANCE, PROVIDER_RANGE_CONTINUITY_RELATIVE_TOLERANCE,
     PhaseHeatCapacityRangeView, PhaseThermodynamicView, PhaseThermodynamicViewError,
     STANDARD_REFERENCE_TEMPERATURE_K, TransitionParentRelation, TransitionPhaseThermodynamicView,
 };

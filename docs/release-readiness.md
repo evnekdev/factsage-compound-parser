@@ -54,7 +54,7 @@ None for an explicitly experimental 0.1.0 release. The package is not published 
 ### Production-readiness blockers
 
 - ID-11 physical equations, units, and coefficient meanings remain unverified.
-- CP integration and arbitrary-temperature enthalpy, entropy, and Gibbs conventions remain unverified.
+- Magnetic, pressure-volume, transition, and ID-11 Gibbs contributions remain unsupported and typed as blockers or pending evidence.
 - Density unit and high-order encoding remain unverified.
 - Unknown/reserved field meanings remain unverified.
 - Sustained sanitizer-backed fuzzing and a broader malformed external-file corpus remain desirable.

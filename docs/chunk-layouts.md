@@ -88,6 +88,12 @@ The older wiki/Kaitai draft incorrectly merged the 4-byte unknown field and both
 | 136 | 40 | ascii[40] | `phase_name` |
 | 176 | 80 | bytes[80] | `padding2` |
 
+These physical-tail slots are always structurally present. For ordinary FDB
+effective-G eligibility, finite numeric zero is the established inactive
+fixed-slot pattern. Nonzero magnetic or pressure-volume fields are material
+typed blockers until their equations are independently established; the raw
+pressure-unit code alone does not establish a thermodynamic reference pressure.
+
 ## Transition phase — ID 8
 
 The layout is identical to ID 7 except for offsets 32–55:

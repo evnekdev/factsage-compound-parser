@@ -143,7 +143,16 @@ The ordinary phase's separate H/S fields must not be propagated into every CP
 record: local FDB evidence does not establish a universal equality. The
 provider thermodynamic view therefore uses CP H/S plus Cp directly and rejects
 missing, gapped, overlapping, reordered, mixed-kind, zero-width, or nonfinite
-ranges instead of guessing a repair or extrapolation.
+ranges, and adjacent ranges with discontinuous integrated H or S, instead of
+guessing a repair or extrapolation. The continuity check uses an explicit
+provider-format tolerance independent of downstream comparison tolerances.
+
+The ordinary phase view also classifies whether H/S/Cp is a complete
+effective-G representation. All-zero fixed physical-tail fields are inactive;
+materially nonzero magnetic, pressure-volume, or ID-11 data blocks completeness.
+ID-11 bounds and powers alone are structural; a nonzero coefficient is active.
+Non-finite evidence remains pending. A pressure unit code identifies only
+storage units and does not establish a reference pressure.
 
 Validation suggestions:
 

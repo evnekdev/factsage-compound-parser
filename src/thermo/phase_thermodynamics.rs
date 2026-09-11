@@ -4,11 +4,139 @@ use crate::RawChunk;
 use crate::domain::{CompoundView, DatabaseView, HeatCapacityRangeView, PhaseView, RawPhase};
 use crate::raw::HeatCapacityKind;
 
-use super::{EnergyUnit, UnitError};
+use super::{
+    EnergyUnit, OrdinaryFdbEffectiveGEligibility, UnitError,
+    effective_g_eligibility::ordinary_effective_g_eligibility,
+};
 
 /// The reference temperature used by the established FDB ordinary-phase and
 /// CP-range H/S constants.
 pub const STANDARD_REFERENCE_TEMPERATURE_K: f64 = 298.15;
+
+/// Absolute floor used by provider validation when comparing adjacent FDB H/S
+/// values in the compound's native energy unit.
+///
+/// This is deliberately a provider-format validation tolerance, not a
+/// cross-provider scientific comparison tolerance. The permitted residual is
+/// this floor plus [`PROVIDER_RANGE_CONTINUITY_RELATIVE_TOLERANCE`] times the
+/// larger magnitude of the two boundary values.
+pub const PROVIDER_RANGE_CONTINUITY_ABSOLUTE_TOLERANCE: f64 = 1.0e-8;
+
+/// Relative tolerance used only to validate adjacent FDB range H/S continuity.
+pub const PROVIDER_RANGE_CONTINUITY_RELATIVE_TOLERANCE: f64 = 1.0e-8;
+
+/// Thermodynamic quantity involved in provider range evaluation or validation.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FdbThermodynamicQuantity {
+    /// Heat capacity, `Cp(T)`.
+    HeatCapacity,
+    /// Enthalpy, `H(T)`.
+    Enthalpy,
+    /// Entropy, `S(T)`.
+    Entropy,
+    /// Gibbs energy, `G(T) = H(T) - T S(T)`.
+    GibbsEnergy,
+}
+
+/// Errors raised while evaluating one already validated ordinary FDB range.
+#[derive(Debug, Clone, PartialEq)]
+pub enum FdbThermodynamicEvaluationError {
+    /// Temperature was NaN or infinite.
+    NonFiniteTemperature {
+        /// Rejected temperature in kelvin.
+        temperature_k: f64,
+    },
+    /// Absolute temperature must be positive for real powers and logarithms.
+    NonPositiveTemperature {
+        /// Rejected temperature in kelvin.
+        temperature_k: f64,
+    },
+    /// Public evaluation never extrapolates outside the stored interval.
+    TemperatureOutsideRange {
+        /// Requested temperature in kelvin.
+        temperature_k: f64,
+        /// Stored lower bound in kelvin.
+        temperature_min_k: f64,
+        /// Stored upper bound in kelvin.
+        temperature_max_k: f64,
+    },
+    /// A finite stored term produced a non-finite mathematical contribution.
+    NonFiniteTermEvaluation {
+        /// Physical source CP chunk index.
+        source_chunk_index: usize,
+        /// Zero-based coefficient/power term index.
+        term_index: usize,
+        /// Quantity whose term could not be evaluated finitely.
+        quantity: FdbThermodynamicQuantity,
+        /// Evaluation temperature in kelvin.
+        temperature_k: f64,
+    },
+    /// Accumulation or the final H/S/G expression became non-finite.
+    NonFiniteResult {
+        /// Physical source CP chunk index.
+        source_chunk_index: usize,
+        /// Quantity whose result was non-finite.
+        quantity: FdbThermodynamicQuantity,
+        /// Evaluation temperature in kelvin.
+        temperature_k: f64,
+    },
+    /// Conversion from the compound's native energy unit failed.
+    Unit(UnitError),
+}
+
+impl fmt::Display for FdbThermodynamicEvaluationError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::NonFiniteTemperature { temperature_k } => {
+                write!(formatter, "non-finite temperature {temperature_k}")
+            }
+            Self::NonPositiveTemperature { temperature_k } => {
+                write!(formatter, "temperature must be positive: {temperature_k}")
+            }
+            Self::TemperatureOutsideRange {
+                temperature_k,
+                temperature_min_k,
+                temperature_max_k,
+            } => write!(
+                formatter,
+                "temperature {temperature_k} K is outside {temperature_min_k}..{temperature_max_k} K"
+            ),
+            Self::NonFiniteTermEvaluation {
+                source_chunk_index,
+                term_index,
+                quantity,
+                temperature_k,
+            } => write!(
+                formatter,
+                "non-finite {quantity:?} term {term_index} at CP chunk {source_chunk_index} and {temperature_k} K"
+            ),
+            Self::NonFiniteResult {
+                source_chunk_index,
+                quantity,
+                temperature_k,
+            } => write!(
+                formatter,
+                "non-finite {quantity:?} result at CP chunk {source_chunk_index} and {temperature_k} K"
+            ),
+            Self::Unit(error) => write!(formatter, "unit conversion error: {error}"),
+        }
+    }
+}
+
+impl std::error::Error for FdbThermodynamicEvaluationError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Self::Unit(error) => Some(error),
+            _ => None,
+        }
+    }
+}
+
+impl From<UnitError> for FdbThermodynamicEvaluationError {
+    fn from(error: UnitError) -> Self {
+        Self::Unit(error)
+    }
+}
 
 /// Header evidence relevant when a CMPD-family database is assigned the
 /// logical FactSage Function Database role.
@@ -133,6 +261,222 @@ impl<'a> PhaseHeatCapacityRangeView<'a> {
             .copied()
             .zip(self.range.raw().powers.iter().copied())
     }
+
+    /// Evaluates `Cp(T)` in the compound's native energy unit per formula unit
+    /// kelvin without extrapolating outside this range.
+    pub fn heat_capacity_raw_at(
+        self,
+        temperature_k: f64,
+    ) -> Result<f64, FdbThermodynamicEvaluationError> {
+        self.validate_public_temperature(temperature_k)?;
+        self.evaluate_heat_capacity_raw(temperature_k)
+    }
+
+    /// Evaluates `Cp(T)` in joules per formula unit kelvin.
+    pub fn heat_capacity_j_per_mol_k_at(
+        self,
+        temperature_k: f64,
+    ) -> Result<f64, FdbThermodynamicEvaluationError> {
+        Ok(self
+            .energy_unit
+            .to_joules(self.heat_capacity_raw_at(temperature_k)?)?)
+    }
+
+    /// Evaluates `H(T)` from the stored 298.15 K H anchor and the analytical
+    /// integral of this range's `Cp(T)` expression.
+    pub fn enthalpy_raw_at(
+        self,
+        temperature_k: f64,
+    ) -> Result<f64, FdbThermodynamicEvaluationError> {
+        self.validate_public_temperature(temperature_k)?;
+        self.evaluate_enthalpy_raw_unbounded(temperature_k)
+    }
+
+    /// Evaluates `H(T)` in joules per formula unit.
+    pub fn enthalpy_j_per_mol_at(
+        self,
+        temperature_k: f64,
+    ) -> Result<f64, FdbThermodynamicEvaluationError> {
+        Ok(self
+            .energy_unit
+            .to_joules(self.enthalpy_raw_at(temperature_k)?)?)
+    }
+
+    /// Evaluates `S(T)` from the stored 298.15 K S anchor and the analytical
+    /// integral of `Cp(T) / T`.
+    pub fn entropy_raw_at(
+        self,
+        temperature_k: f64,
+    ) -> Result<f64, FdbThermodynamicEvaluationError> {
+        self.validate_public_temperature(temperature_k)?;
+        self.evaluate_entropy_raw_unbounded(temperature_k)
+    }
+
+    /// Evaluates `S(T)` in joules per formula unit kelvin.
+    pub fn entropy_j_per_mol_k_at(
+        self,
+        temperature_k: f64,
+    ) -> Result<f64, FdbThermodynamicEvaluationError> {
+        Ok(self
+            .energy_unit
+            .to_joules(self.entropy_raw_at(temperature_k)?)?)
+    }
+
+    /// Evaluates the CP-backed provider expression `G(T) = H(T) - T S(T)` in
+    /// the compound's native energy unit per formula unit.
+    ///
+    /// This mathematical range view does not by itself claim that magnetic,
+    /// pressure-volume, transition, or ID-11 contributions are absent. Check
+    /// [`OrdinaryPhaseThermodynamicView::effective_g_eligibility`] before
+    /// treating it as a complete ordinary-phase Gibbs function.
+    pub fn gibbs_energy_raw_at(
+        self,
+        temperature_k: f64,
+    ) -> Result<f64, FdbThermodynamicEvaluationError> {
+        self.validate_public_temperature(temperature_k)?;
+        let value = self.evaluate_enthalpy_raw_unbounded(temperature_k)?
+            - temperature_k * self.evaluate_entropy_raw_unbounded(temperature_k)?;
+        self.ensure_finite_result(value, FdbThermodynamicQuantity::GibbsEnergy, temperature_k)
+    }
+
+    /// Evaluates the CP-backed `G(T)` expression in joules per formula unit.
+    pub fn gibbs_energy_j_per_mol_at(
+        self,
+        temperature_k: f64,
+    ) -> Result<f64, FdbThermodynamicEvaluationError> {
+        Ok(self
+            .energy_unit
+            .to_joules(self.gibbs_energy_raw_at(temperature_k)?)?)
+    }
+
+    fn validate_public_temperature(
+        self,
+        temperature_k: f64,
+    ) -> Result<(), FdbThermodynamicEvaluationError> {
+        validate_evaluation_temperature(temperature_k)?;
+        if temperature_k < self.temperature_min_k() || temperature_k > self.temperature_max_k() {
+            return Err(FdbThermodynamicEvaluationError::TemperatureOutsideRange {
+                temperature_k,
+                temperature_min_k: self.temperature_min_k(),
+                temperature_max_k: self.temperature_max_k(),
+            });
+        }
+        Ok(())
+    }
+
+    fn evaluate_heat_capacity_raw(
+        self,
+        temperature_k: f64,
+    ) -> Result<f64, FdbThermodynamicEvaluationError> {
+        self.sum_terms(
+            FdbThermodynamicQuantity::HeatCapacity,
+            temperature_k,
+            |c, p| c * temperature_k.powf(p),
+        )
+    }
+
+    fn evaluate_enthalpy_raw_unbounded(
+        self,
+        temperature_k: f64,
+    ) -> Result<f64, FdbThermodynamicEvaluationError> {
+        validate_evaluation_temperature(temperature_k)?;
+        let increment = self.sum_terms(
+            FdbThermodynamicQuantity::Enthalpy,
+            temperature_k,
+            |coefficient, power| coefficient * integrate_power(temperature_k, power + 1.0),
+        )?;
+        self.ensure_finite_result(
+            self.reference_enthalpy_raw() + increment,
+            FdbThermodynamicQuantity::Enthalpy,
+            temperature_k,
+        )
+    }
+
+    fn evaluate_entropy_raw_unbounded(
+        self,
+        temperature_k: f64,
+    ) -> Result<f64, FdbThermodynamicEvaluationError> {
+        validate_evaluation_temperature(temperature_k)?;
+        let increment = self.sum_terms(
+            FdbThermodynamicQuantity::Entropy,
+            temperature_k,
+            |coefficient, power| coefficient * integrate_power(temperature_k, power),
+        )?;
+        self.ensure_finite_result(
+            self.reference_entropy_raw() + increment,
+            FdbThermodynamicQuantity::Entropy,
+            temperature_k,
+        )
+    }
+
+    fn sum_terms(
+        self,
+        quantity: FdbThermodynamicQuantity,
+        temperature_k: f64,
+        evaluate: impl Fn(f64, f64) -> f64,
+    ) -> Result<f64, FdbThermodynamicEvaluationError> {
+        let mut sum = 0.0;
+        for (term_index, (coefficient, power)) in self.heat_capacity_terms().enumerate() {
+            let term = evaluate(coefficient, power);
+            if !term.is_finite() {
+                return Err(FdbThermodynamicEvaluationError::NonFiniteTermEvaluation {
+                    source_chunk_index: self.source_chunk_index(),
+                    term_index,
+                    quantity,
+                    temperature_k,
+                });
+            }
+            sum += term;
+            if !sum.is_finite() {
+                return Err(FdbThermodynamicEvaluationError::NonFiniteResult {
+                    source_chunk_index: self.source_chunk_index(),
+                    quantity,
+                    temperature_k,
+                });
+            }
+        }
+        Ok(sum)
+    }
+
+    fn ensure_finite_result(
+        self,
+        value: f64,
+        quantity: FdbThermodynamicQuantity,
+        temperature_k: f64,
+    ) -> Result<f64, FdbThermodynamicEvaluationError> {
+        if value.is_finite() {
+            Ok(value)
+        } else {
+            Err(FdbThermodynamicEvaluationError::NonFiniteResult {
+                source_chunk_index: self.source_chunk_index(),
+                quantity,
+                temperature_k,
+            })
+        }
+    }
+}
+
+fn validate_evaluation_temperature(
+    temperature_k: f64,
+) -> Result<(), FdbThermodynamicEvaluationError> {
+    if !temperature_k.is_finite() {
+        return Err(FdbThermodynamicEvaluationError::NonFiniteTemperature { temperature_k });
+    }
+    if temperature_k <= 0.0 {
+        return Err(FdbThermodynamicEvaluationError::NonPositiveTemperature { temperature_k });
+    }
+    Ok(())
+}
+
+fn integrate_power(temperature_k: f64, integrated_power: f64) -> f64 {
+    let log_ratio = (temperature_k / STANDARD_REFERENCE_TEMPERATURE_K).ln();
+    if integrated_power == 0.0 {
+        log_ratio
+    } else {
+        STANDARD_REFERENCE_TEMPERATURE_K.powf(integrated_power)
+            * (integrated_power * log_ratio).exp_m1()
+            / integrated_power
+    }
 }
 
 /// A validated ordinary-phase provider thermodynamic definition.
@@ -172,6 +516,17 @@ impl<'a> OrdinaryPhaseThermodynamicView<'a> {
     /// Returns the ordered, validated source ranges without reordering them.
     pub fn heat_capacity_ranges(&self) -> &[PhaseHeatCapacityRangeView<'a>] {
         &self.heat_capacity_ranges
+    }
+
+    /// Reports whether the CP-backed H/S/G view is complete for the physical
+    /// contributions that this parser can currently identify.
+    ///
+    /// This is an eligibility guardrail, not an evaluator for magnetic,
+    /// pressure-volume, or ID-11 equations. A result other than
+    /// [`OrdinaryFdbEffectiveGEligibility::PureCpBacked`] means downstream code
+    /// must not present the CP-only Gibbs expression as complete.
+    pub fn effective_g_eligibility(&self) -> OrdinaryFdbEffectiveGEligibility {
+        ordinary_effective_g_eligibility(self.phase)
     }
 }
 
@@ -252,8 +607,10 @@ impl<'a> TransitionPhaseThermodynamicView<'a> {
 /// A provider thermodynamic view of a phase.
 #[derive(Debug, Clone)]
 pub enum PhaseThermodynamicView<'a> {
-    /// A CP-backed ordinary phase suitable for downstream provider-to-canonical
-    /// normalization.
+    /// A validated CP-backed ordinary phase. Downstream normalization must also
+    /// require [`OrdinaryPhaseThermodynamicView::effective_g_eligibility`] to be
+    /// [`OrdinaryFdbEffectiveGEligibility::PureCpBacked`] before claiming a
+    /// complete effective Gibbs function.
     Ordinary(OrdinaryPhaseThermodynamicView<'a>),
     /// An ID-8 structural transition relation whose effective-G semantics are
     /// not yet established.
@@ -302,6 +659,20 @@ pub enum PhaseThermodynamicViewError {
         /// The invalid stored value.
         value: f64,
     },
+    /// A stored H/S anchor is not finite.
+    NonFiniteReferenceAnchor {
+        /// Physical CP chunk index.
+        source_chunk_index: usize,
+        /// Whether the invalid value was enthalpy or entropy.
+        quantity: FdbThermodynamicQuantity,
+        /// Invalid stored value.
+        value: f64,
+    },
+    /// Mathematical evaluation needed for provider validation became non-finite.
+    RangeEvaluation {
+        /// Underlying typed range-evaluation failure.
+        error: FdbThermodynamicEvaluationError,
+    },
     /// Source-order ranges leave an unsupported temperature gap.
     TemperatureGap {
         /// The preceding physical CP chunk index.
@@ -323,6 +694,40 @@ pub enum PhaseThermodynamicViewError {
         previous_temperature_max_k: f64,
         /// The later range lower bound.
         current_temperature_min_k: f64,
+    },
+    /// Adjacent ranges produce materially different enthalpy at their shared boundary.
+    EnthalpyDiscontinuity {
+        /// Preceding physical CP chunk index.
+        previous_chunk_index: usize,
+        /// Following physical CP chunk index.
+        next_chunk_index: usize,
+        /// Shared boundary temperature in kelvin.
+        boundary_temperature_k: f64,
+        /// Enthalpy evaluated from the preceding range in native energy units.
+        left_value: f64,
+        /// Enthalpy evaluated from the following range in native energy units.
+        right_value: f64,
+        /// Absolute boundary difference in native energy units.
+        difference: f64,
+        /// Provider-validation allowance applied to this pair.
+        tolerance: f64,
+    },
+    /// Adjacent ranges produce materially different entropy at their shared boundary.
+    EntropyDiscontinuity {
+        /// Preceding physical CP chunk index.
+        previous_chunk_index: usize,
+        /// Following physical CP chunk index.
+        next_chunk_index: usize,
+        /// Shared boundary temperature in kelvin.
+        boundary_temperature_k: f64,
+        /// Entropy evaluated from the preceding range in native energy units per kelvin.
+        left_value: f64,
+        /// Entropy evaluated from the following range in native energy units per kelvin.
+        right_value: f64,
+        /// Absolute boundary difference in native energy units per kelvin.
+        difference: f64,
+        /// Provider-validation allowance applied to this pair.
+        tolerance: f64,
     },
 }
 
@@ -360,6 +765,17 @@ impl fmt::Display for PhaseThermodynamicViewError {
                 formatter,
                 "non-finite CP {field} {term_index} at chunk {source_chunk_index}: {value}"
             ),
+            Self::NonFiniteReferenceAnchor {
+                source_chunk_index,
+                quantity,
+                value,
+            } => write!(
+                formatter,
+                "non-finite {quantity:?} reference anchor at CP chunk {source_chunk_index}: {value}"
+            ),
+            Self::RangeEvaluation { error } => {
+                write!(formatter, "FDB range validation evaluation failed: {error}")
+            }
             Self::TemperatureGap {
                 previous_chunk_index,
                 current_chunk_index,
@@ -378,11 +794,42 @@ impl fmt::Display for PhaseThermodynamicViewError {
                 formatter,
                 "overlapping or unordered CP ranges at chunks {previous_chunk_index} and {current_chunk_index}: {previous_temperature_max_k} then {current_temperature_min_k} K"
             ),
+            Self::EnthalpyDiscontinuity {
+                previous_chunk_index,
+                next_chunk_index,
+                boundary_temperature_k,
+                left_value,
+                right_value,
+                difference,
+                tolerance,
+            } => write!(
+                formatter,
+                "enthalpy discontinuity between CP chunks {previous_chunk_index} and {next_chunk_index} at {boundary_temperature_k} K: {left_value} versus {right_value}, difference {difference} exceeds {tolerance}"
+            ),
+            Self::EntropyDiscontinuity {
+                previous_chunk_index,
+                next_chunk_index,
+                boundary_temperature_k,
+                left_value,
+                right_value,
+                difference,
+                tolerance,
+            } => write!(
+                formatter,
+                "entropy discontinuity between CP chunks {previous_chunk_index} and {next_chunk_index} at {boundary_temperature_k} K: {left_value} versus {right_value}, difference {difference} exceeds {tolerance}"
+            ),
         }
     }
 }
 
-impl std::error::Error for PhaseThermodynamicViewError {}
+impl std::error::Error for PhaseThermodynamicViewError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Self::RangeEvaluation { error } => Some(error),
+            _ => None,
+        }
+    }
+}
 
 impl<'a> CompoundView<'a> {
     /// Returns typed CMPD header evidence for the Function Database role.
@@ -507,6 +954,7 @@ fn validate_ordinary_ranges(
                 };
                 return Err(error);
             }
+            validate_boundary_continuity(previous_range, *range, previous_max)?;
         }
         previous = Some(*range);
     }
@@ -547,7 +995,77 @@ fn validate_range(
             });
         }
     }
+    for (quantity, value) in [
+        (
+            FdbThermodynamicQuantity::Enthalpy,
+            range.reference_enthalpy_raw(),
+        ),
+        (
+            FdbThermodynamicQuantity::Entropy,
+            range.reference_entropy_raw(),
+        ),
+    ] {
+        if !value.is_finite() {
+            return Err(PhaseThermodynamicViewError::NonFiniteReferenceAnchor {
+                source_chunk_index: range.source_chunk_index(),
+                quantity,
+                value,
+            });
+        }
+    }
     Ok(())
+}
+
+fn validate_boundary_continuity(
+    previous: PhaseHeatCapacityRangeView<'_>,
+    next: PhaseHeatCapacityRangeView<'_>,
+    boundary_temperature_k: f64,
+) -> Result<(), PhaseThermodynamicViewError> {
+    let left_enthalpy = previous
+        .evaluate_enthalpy_raw_unbounded(boundary_temperature_k)
+        .map_err(|error| PhaseThermodynamicViewError::RangeEvaluation { error })?;
+    let right_enthalpy = next
+        .evaluate_enthalpy_raw_unbounded(boundary_temperature_k)
+        .map_err(|error| PhaseThermodynamicViewError::RangeEvaluation { error })?;
+    let enthalpy_difference = (left_enthalpy - right_enthalpy).abs();
+    let enthalpy_tolerance = continuity_tolerance(left_enthalpy, right_enthalpy);
+    if enthalpy_difference > enthalpy_tolerance {
+        return Err(PhaseThermodynamicViewError::EnthalpyDiscontinuity {
+            previous_chunk_index: previous.source_chunk_index(),
+            next_chunk_index: next.source_chunk_index(),
+            boundary_temperature_k,
+            left_value: left_enthalpy,
+            right_value: right_enthalpy,
+            difference: enthalpy_difference,
+            tolerance: enthalpy_tolerance,
+        });
+    }
+
+    let left_entropy = previous
+        .evaluate_entropy_raw_unbounded(boundary_temperature_k)
+        .map_err(|error| PhaseThermodynamicViewError::RangeEvaluation { error })?;
+    let right_entropy = next
+        .evaluate_entropy_raw_unbounded(boundary_temperature_k)
+        .map_err(|error| PhaseThermodynamicViewError::RangeEvaluation { error })?;
+    let entropy_difference = (left_entropy - right_entropy).abs();
+    let entropy_tolerance = continuity_tolerance(left_entropy, right_entropy);
+    if entropy_difference > entropy_tolerance {
+        return Err(PhaseThermodynamicViewError::EntropyDiscontinuity {
+            previous_chunk_index: previous.source_chunk_index(),
+            next_chunk_index: next.source_chunk_index(),
+            boundary_temperature_k,
+            left_value: left_entropy,
+            right_value: right_entropy,
+            difference: entropy_difference,
+            tolerance: entropy_tolerance,
+        });
+    }
+    Ok(())
+}
+
+fn continuity_tolerance(left: f64, right: f64) -> f64 {
+    PROVIDER_RANGE_CONTINUITY_ABSOLUTE_TOLERANCE
+        + PROVIDER_RANGE_CONTINUITY_RELATIVE_TOLERANCE * left.abs().max(right.abs())
 }
 
 #[cfg(test)]
@@ -561,6 +1079,10 @@ mod tests {
     }
 
     fn put_i32(chunk: &mut [u8; CHUNK_SIZE], offset: usize, value: i32) {
+        chunk[offset..offset + 4].copy_from_slice(&value.to_le_bytes());
+    }
+
+    fn put_f32(chunk: &mut [u8; CHUNK_SIZE], offset: usize, value: f32) {
         chunk[offset..offset + 4].copy_from_slice(&value.to_le_bytes());
     }
 
@@ -586,6 +1108,16 @@ mod tests {
         put_f64(&mut chunk, 40, 20.0);
         put_i32(&mut chunk, 48, -phase_id_raw);
         put_i32(&mut chunk, 52, phase_id_raw);
+        chunk
+    }
+
+    fn kappa(phase_id_raw: i32, active_value: f64) -> [u8; CHUNK_SIZE] {
+        let mut chunk = [0_u8; CHUNK_SIZE];
+        chunk[0] = 11;
+        put_f64(&mut chunk, 32, 298.15);
+        put_f64(&mut chunk, 40, 1000.0);
+        put_i32(&mut chunk, 48, phase_id_raw);
+        put_f64(&mut chunk, 56, active_value);
         chunk
     }
 
@@ -625,6 +1157,14 @@ mod tests {
     fn database(chunks: Vec<[u8; CHUNK_SIZE]>) -> Database {
         let bytes = chunks.into_iter().flatten().collect::<Vec<_>>();
         Database::from_bytes(&bytes).unwrap()
+    }
+
+    fn assert_close(actual: f64, expected: f64) {
+        let tolerance = 1.0e-10 * actual.abs().max(expected.abs()).max(1.0);
+        assert!(
+            (actual - expected).abs() <= tolerance,
+            "{actual} != {expected} within {tolerance}"
+        );
     }
 
     #[test]
@@ -673,17 +1213,25 @@ mod tests {
 
     #[test]
     fn ordinary_view_exposes_298_15_anchors_and_source_order() {
+        let boundary = 500.0;
+        let reference = STANDARD_REFERENCE_TEMPERATURE_K;
+        let first_h_at_boundary = -100.0 + 2.0 * (boundary - reference);
+        let first_s_at_boundary = 20.0 + 2.0 * (boundary / reference).ln();
+        let second_h_increment = 3.0 * (boundary / reference).ln()
+            + (4.0 / 1.5) * (boundary.powf(1.5) - reference.powf(1.5));
+        let second_s_increment = -3.0 * (boundary.powf(-1.0) - reference.powf(-1.0))
+            + 8.0 * (boundary.sqrt() - reference.sqrt());
         let database = database(vec![
             header(),
             compound(),
             ordinary(101),
-            cp(2, 101, -100.0, 20.0, 298.15, 500.0, &[(0, 2.0, 0.0)]),
+            cp(2, 101, -100.0, 20.0, 298.15, boundary, &[(0, 2.0, 0.0)]),
             cp(
                 2,
                 101,
-                -100.0,
-                20.0,
-                500.0,
+                first_h_at_boundary - second_h_increment,
+                first_s_at_boundary - second_s_increment,
+                boundary,
                 1000.0,
                 &[(0, 3.0, -1.0), (1, 4.0, 0.5)],
             ),
@@ -722,6 +1270,150 @@ mod tests {
                 (0.0, 0.0)
             ]
         );
+    }
+
+    #[test]
+    fn analytical_integrals_cover_singular_and_finite_power_cases() {
+        let powers = [-3.0, -2.0, -1.0, -0.5, 0.0, 0.5, 1.0, 2.0, 3.0];
+        let temperature = 700.0;
+        let reference = STANDARD_REFERENCE_TEMPERATURE_K;
+
+        for power in powers {
+            let database = database(vec![
+                header(),
+                compound(),
+                ordinary(101),
+                cp(2, 101, 11.0, 7.0, 200.0, 900.0, &[(0, 2.5, power)]),
+            ]);
+            let compound = database.view().unwrap().compounds().next().unwrap();
+            let PhaseThermodynamicView::Ordinary(view) =
+                compound.fdb_phase_thermodynamic_view(0).unwrap()
+            else {
+                unreachable!()
+            };
+            let range = view.heat_capacity_ranges()[0];
+            let expected_h_increment = if power == -1.0 {
+                2.5 * (temperature / reference).ln()
+            } else {
+                2.5 / (power + 1.0) * (temperature.powf(power + 1.0) - reference.powf(power + 1.0))
+            };
+            let expected_s_increment = if power == 0.0 {
+                2.5 * (temperature / reference).ln()
+            } else {
+                2.5 / power * (temperature.powf(power) - reference.powf(power))
+            };
+            assert_close(
+                range.enthalpy_raw_at(temperature).unwrap(),
+                11.0 + expected_h_increment,
+            );
+            assert_close(
+                range.entropy_raw_at(temperature).unwrap(),
+                7.0 + expected_s_increment,
+            );
+            assert_close(
+                range.heat_capacity_raw_at(temperature).unwrap(),
+                2.5 * temperature.powf(power),
+            );
+            let expected_g =
+                11.0 + expected_h_increment - temperature * (7.0 + expected_s_increment);
+            assert_close(range.gibbs_energy_raw_at(temperature).unwrap(), expected_g);
+        }
+    }
+
+    #[test]
+    fn gibbs_derivatives_recover_source_entropy_and_heat_capacity() {
+        let database = database(vec![
+            header(),
+            compound(),
+            ordinary(101),
+            cp(
+                2,
+                101,
+                -125_000.0,
+                45.0,
+                250.0,
+                1200.0,
+                &[(0, 20.0, 0.0), (1, 0.01, 1.0), (2, 1500.0, -1.0)],
+            ),
+        ]);
+        let compound_view = database.view().unwrap().compounds().next().unwrap();
+        let PhaseThermodynamicView::Ordinary(view) =
+            compound_view.fdb_phase_thermodynamic_view(0).unwrap()
+        else {
+            unreachable!()
+        };
+        let range = view.heat_capacity_ranges()[0];
+        let temperature = 700.0;
+        let step = 0.01;
+        let lower = range.gibbs_energy_raw_at(temperature - step).unwrap();
+        let center = range.gibbs_energy_raw_at(temperature).unwrap();
+        let upper = range.gibbs_energy_raw_at(temperature + step).unwrap();
+        let numerical_entropy = -(upper - lower) / (2.0 * step);
+        let numerical_cp = -temperature * (upper - 2.0 * center + lower) / step.powi(2);
+        assert!((numerical_entropy - range.entropy_raw_at(temperature).unwrap()).abs() < 1.0e-7);
+        assert!((numerical_cp - range.heat_capacity_raw_at(temperature).unwrap()).abs() < 0.05);
+
+        let log_limit = (temperature / STANDARD_REFERENCE_TEMPERATURE_K).ln();
+        assert!((integrate_power(temperature, 1.0e-12) - log_limit).abs() < 1.0e-10);
+    }
+
+    #[test]
+    fn validates_continuity_and_reports_h_and_s_discontinuities() {
+        let boundary = 500.0;
+        let reference = STANDARD_REFERENCE_TEMPERATURE_K;
+        let next_h = 10.0 - (boundary - reference);
+        let next_s = 5.0 - (boundary / reference).ln();
+        let continuous = database(vec![
+            header(),
+            compound(),
+            ordinary(101),
+            cp(2, 101, 10.0, 5.0, 298.15, boundary, &[]),
+            cp(2, 101, next_h, next_s, boundary, 1000.0, &[(0, 1.0, 0.0)]),
+        ]);
+        let compound_view = continuous.view().unwrap().compounds().next().unwrap();
+        assert!(compound_view.fdb_phase_thermodynamic_view(0).is_ok());
+
+        let discontinuous_h = database(vec![
+            header(),
+            compound(),
+            ordinary(101),
+            cp(2, 101, 10.0, 5.0, 298.15, boundary, &[]),
+            cp(
+                2,
+                101,
+                next_h + 1.0,
+                next_s,
+                boundary,
+                1000.0,
+                &[(0, 1.0, 0.0)],
+            ),
+        ]);
+        let compound_view = discontinuous_h.view().unwrap().compounds().next().unwrap();
+        assert!(matches!(
+            compound_view.fdb_phase_thermodynamic_view(0),
+            Err(PhaseThermodynamicViewError::EnthalpyDiscontinuity { .. })
+        ));
+
+        let discontinuous_s = database(vec![
+            header(),
+            compound(),
+            ordinary(101),
+            cp(2, 101, 10.0, 5.0, 298.15, boundary, &[]),
+            cp(
+                2,
+                101,
+                next_h,
+                next_s + 1.0,
+                boundary,
+                1000.0,
+                &[(0, 1.0, 0.0)],
+            ),
+        ]);
+        let compound_view = discontinuous_s.view().unwrap().compounds().next().unwrap();
+        assert!(matches!(
+            compound_view.fdb_phase_thermodynamic_view(0),
+            Err(PhaseThermodynamicViewError::EntropyDiscontinuity { .. })
+        ));
     }
 
     #[test]
@@ -766,6 +1458,15 @@ mod tests {
                 ],
                 "term",
             ),
+            (
+                vec![
+                    header(),
+                    compound(),
+                    ordinary(101),
+                    cp(2, 101, 0.0, 0.0, 500.0, 400.0, &[]),
+                ],
+                "reversed",
+            ),
         ];
 
         for (chunks, expected) in cases {
@@ -776,10 +1477,122 @@ mod tests {
                 ("gap", PhaseThermodynamicViewError::TemperatureGap { .. })
                 | ("overlap", PhaseThermodynamicViewError::OverlappingOrUnorderedRanges { .. })
                 | ("kind", PhaseThermodynamicViewError::MixedHeatCapacityKinds { .. })
-                | ("term", PhaseThermodynamicViewError::NonFiniteHeatCapacityTerm { .. }) => {}
+                | ("term", PhaseThermodynamicViewError::NonFiniteHeatCapacityTerm { .. })
+                | ("reversed", PhaseThermodynamicViewError::InvalidTemperatureRange { .. }) => {}
                 (_, unexpected) => panic!("unexpected error {unexpected:?}"),
             }
         }
+    }
+
+    #[test]
+    fn effective_g_eligibility_distinguishes_inactive_and_active_physics() {
+        let pure = database(vec![
+            header(),
+            compound(),
+            ordinary(101),
+            cp(2, 101, 0.0, 0.0, 298.15, 1000.0, &[]),
+        ]);
+        let compound_view = pure.view().unwrap().compounds().next().unwrap();
+        let PhaseThermodynamicView::Ordinary(view) =
+            compound_view.fdb_phase_thermodynamic_view(0).unwrap()
+        else {
+            unreachable!()
+        };
+        assert_eq!(
+            view.effective_g_eligibility(),
+            OrdinaryFdbEffectiveGEligibility::PureCpBacked
+        );
+
+        let inactive_extended = database(vec![
+            header(),
+            compound(),
+            ordinary(101),
+            cp(2, 101, 0.0, 0.0, 298.15, 1000.0, &[]),
+            kappa(101, 0.0),
+        ]);
+        let compound_view = inactive_extended
+            .view()
+            .unwrap()
+            .compounds()
+            .next()
+            .unwrap();
+        let PhaseThermodynamicView::Ordinary(view) =
+            compound_view.fdb_phase_thermodynamic_view(0).unwrap()
+        else {
+            unreachable!()
+        };
+        assert_eq!(
+            view.effective_g_eligibility(),
+            OrdinaryFdbEffectiveGEligibility::PureCpBacked
+        );
+
+        let mut magnetic_phase = ordinary(101);
+        put_f32(&mut magnetic_phase, 104, 1043.0);
+        put_f32(&mut magnetic_phase, 108, 2.2);
+        let magnetic = database(vec![
+            header(),
+            compound(),
+            magnetic_phase,
+            cp(2, 101, 0.0, 0.0, 298.15, 1000.0, &[]),
+        ]);
+        let compound_view = magnetic.view().unwrap().compounds().next().unwrap();
+        let PhaseThermodynamicView::Ordinary(view) =
+            compound_view.fdb_phase_thermodynamic_view(0).unwrap()
+        else {
+            unreachable!()
+        };
+        assert!(matches!(
+            view.effective_g_eligibility(),
+            OrdinaryFdbEffectiveGEligibility::RequiresMagneticSemantics {
+                magnetic_temperature_active: true,
+                magnetic_moment_active: true,
+                p_factor_active: false
+            }
+        ));
+
+        let mut pressure_phase = ordinary(101);
+        put_f64(&mut pressure_phase, 56, 7.1);
+        put_f32(&mut pressure_phase, 64, 1.0e-5);
+        let pressure = database(vec![
+            header(),
+            compound(),
+            pressure_phase,
+            cp(2, 101, 0.0, 0.0, 298.15, 1000.0, &[]),
+        ]);
+        let compound_view = pressure.view().unwrap().compounds().next().unwrap();
+        let PhaseThermodynamicView::Ordinary(view) =
+            compound_view.fdb_phase_thermodynamic_view(0).unwrap()
+        else {
+            unreachable!()
+        };
+        assert!(matches!(
+            view.effective_g_eligibility(),
+            OrdinaryFdbEffectiveGEligibility::RequiresPressureSemantics {
+                density_active: true,
+                thermal_expansion_active: true,
+                ..
+            }
+        ));
+
+        let extended = database(vec![
+            header(),
+            compound(),
+            ordinary(101),
+            cp(2, 101, 0.0, 0.0, 298.15, 1000.0, &[]),
+            kappa(101, 1.0),
+        ]);
+        let compound_view = extended.view().unwrap().compounds().next().unwrap();
+        let PhaseThermodynamicView::Ordinary(view) =
+            compound_view.fdb_phase_thermodynamic_view(0).unwrap()
+        else {
+            unreachable!()
+        };
+        assert_eq!(
+            view.effective_g_eligibility(),
+            OrdinaryFdbEffectiveGEligibility::RequiresExtendedPropertySemantics {
+                linked_record_count: 1
+            }
+        );
     }
 
     #[test]

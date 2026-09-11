@@ -35,10 +35,15 @@ impl EnergyUnit {
         if !value.is_finite() {
             return Err(UnitError::NonFiniteValue { value });
         }
-        match self {
-            Self::Calories => Ok(value * 4.184),
-            Self::Joules => Ok(value),
-            Self::Unknown(raw) => Err(UnitError::UnknownEnergyUnit { raw }),
+        let converted = match self {
+            Self::Calories => value * 4.184,
+            Self::Joules => value,
+            Self::Unknown(raw) => return Err(UnitError::UnknownEnergyUnit { raw }),
+        };
+        if converted.is_finite() {
+            Ok(converted)
+        } else {
+            Err(UnitError::NonFiniteValue { value: converted })
         }
     }
 
@@ -47,10 +52,15 @@ impl EnergyUnit {
         if !value.is_finite() {
             return Err(UnitError::NonFiniteValue { value });
         }
-        match self {
-            Self::Calories => Ok(value / 4.184),
-            Self::Joules => Ok(value),
-            Self::Unknown(raw) => Err(UnitError::UnknownEnergyUnit { raw }),
+        let converted = match self {
+            Self::Calories => value / 4.184,
+            Self::Joules => value,
+            Self::Unknown(raw) => return Err(UnitError::UnknownEnergyUnit { raw }),
+        };
+        if converted.is_finite() {
+            Ok(converted)
+        } else {
+            Err(UnitError::NonFiniteValue { value: converted })
         }
     }
 }

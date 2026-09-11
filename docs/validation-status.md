@@ -56,10 +56,20 @@ Bounded `proptest` cases cover generated raw round trips, float bit patterns, un
 
 - Physical meaning of unknown and reserved bytes;
 - semantic distinction among CP IDs 2 through 6;
-- CP stored enthalpy/entropy anchor convention and integration rules;
+- magnetic, pressure-volume, transition, and ID-11 effective-G equations;
 - density unit and high-order encoding;
 - unusual phase-ID validity and negative field meaning;
 - ID-11/kappa physical equation, units, and coefficient meanings;
 - compound and phase writing semantics outside the controlled setters.
 
 No proprietary records, text, formulae, coefficients, paths, or raw excerpts are committed or documented.
+
+## FDB provider thermodynamic validation
+
+Synthetic releasable tests validate the established 298.15 K integration rule
+for powers -3, -2, -1, -0.5, 0, 0.5, 1, 2, and 3. They cover continuous and
+independently discontinuous H/S range pairs, gaps, overlaps, reversed ranges,
+mixed CP kinds, non-finite terms, missing CP, transition records, active and
+inactive magnetic fields, pressure-volume blockers, and linked ID-11 blockers.
+The optional installed-FDB audit remains aggregate-only and was not configured
+for the latest provider-hardening run.

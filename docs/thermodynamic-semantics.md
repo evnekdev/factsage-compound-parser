@@ -10,11 +10,11 @@ ID-11 physical-property equations.
 | Area | Status | Scope |
 | --- | --- | --- |
 | CDB/FDB physical family | established | Both use `CMPD` records. A zero `read_flag` is compatible with every locally examined FDB, but also occurs in valid CDBs. |
-| FDB ordinary CP H/S/Cp definition | established | Finite, contiguous, one-kind CP sequences on ordinary phases. |
+| FDB ordinary CP H/S/Cp definition | established | Finite, contiguous, one-kind CP sequences on ordinary phases whose independently integrated H/S values are continuous at shared boundaries. |
 | Ordinary phase record H/S versus CP H/S | partially established | Both pairs are preserved and unit-convertible. They cannot be universally equated from the available evidence, so the provider thermodynamic view uses CP-range constants. |
 | CP IDs 2–6 | partially established | Every examined FDB phase used one homogeneous kind; ID 2 had multi-range sequences and IDs 4/5 were observed as single-range sequences. The kind's wider provider meaning remains unknown. |
 | Transition effective G | unresolved | Parent linkage is structural; an entropy-jump rule and chaining behavior are not established. |
-| Pressure, magnetic, volume and ID-11 contributions | unresolved | These values are not folded into the FDB ordinary-phase reference function. |
+| Pressure, magnetic, volume and ID-11 contributions | unresolved | Materially active values block complete effective-G eligibility; no equation is guessed. Exact-zero fixed physical-tail slots are inactive. |
 
 The local evidence survey read installed files without embedding, printing, or
 committing database records. It compared 298.15 K and 298 K integration
@@ -34,7 +34,7 @@ The established raw mappings are:
 
 The calorie conversion factor is exactly 4.184. `to_joules` multiplies calorie-based values and passes joule-based values through. `from_joules` performs the inverse operation. These views never modify raw compound, phase, or CP fields.
 
-The pressure mappings established from documentation and local fixtures are raw code 0 for atmospheres and raw code 1 for bars. Unknown pressure values are preserved. No pressure conversion is implemented.
+The pressure mappings established from documentation and local fixtures are raw code 0 for atmospheres and raw code 1 for bars. Unknown pressure values are preserved. No pressure conversion is implemented, and this storage-unit code must not be mistaken for evidence of the thermodynamic reference pressure.
 
 ## Database-profile evidence
 
@@ -65,6 +65,15 @@ explicitly assigned FDB role; callers first check
 range's H/S constants as values at 298.15 K; it does not need to infer them
 from the ordinary phase record. Its transition variant exposes only the typed
 parent relation.
+
+The ordinary view's `effective_g_eligibility` must be checked before presenting
+the CP-backed expression as a complete Gibbs function. `PureCpBacked` requires
+all magnetic and pressure-volume fixed slots to be finite zero and no linked
+ID-11 coefficient. A nonzero magnetic tuple, nonzero density/expansion/
+compressibility/bulk-derivative data, or active ID-11 coefficient returns a
+typed blocker. ID-11 bounds and powers are structural rather than contributions
+by themselves. A non-finite physical value is `PendingProviderEvidence`. This
+classification does not derive any physical equation.
 
 ## OLE Automation dates
 
@@ -107,6 +116,26 @@ constants adjusted so their derived H and S are continuous. CP may be
 discontinuous at a boundary. This was verified against all available finite
 contiguous FDB range pairs with a relative numerical residual check; it is not
 inferred from the field names.
+
+Construction enforces that claim. At every exact shared source boundary it
+evaluates each range independently from its own 298.15 K anchors, compares H,
+then compares S, and returns `EnthalpyDiscontinuity` or
+`EntropyDiscontinuity` with both source chunks and numerical diagnostics. The
+provider-only allowance in the compound's native energy unit is:
+
+```text
+1e-8 + 1e-8 * max(abs(left), abs(right))
+```
+
+This tolerance is not reused for composition algebra, GUI display, or
+cross-provider scientific comparison.
+
+`PhaseHeatCapacityRangeView` exposes analytical Cp/H/S/G evaluation within its
+stored interval. For every finite power `p`, including negative, fractional,
+and positive cases, H integrates `c*T^p`; `p = -1` uses `c*ln(T/T0)`. S
+integrates `c*T^(p-1)`; `p = 0` uses `c*ln(T/T0)`. Positive absolute
+temperature is required, non-finite mathematical results are typed errors, and
+public evaluation never extrapolates.
 
 The validated view treats individual bounds as closed. At a shared boundary,
 the lower range is selected by the legacy direct evaluator; the established H/S

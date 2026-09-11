@@ -98,13 +98,24 @@ must supply the logical bundle role and accept that the result is compatibility
 evidence, not an intrinsic CDB/FDB classification.
 
 For a validated ordinary FDB phase, each CP range supplies H and S constants at
-298.15 K plus `Cp(T) = sum(c_i T^p_i)`. The explicitly named
+298.15 K plus `Cp(T) = sum(c_i T^p_i)`. Adjacent ranges are accepted only when
+their independently integrated H and S values agree at the shared boundary
+within the parser's explicit provider-validation tolerance. The explicitly named
 `fdb_phase_thermodynamic_view` API returns `PhaseThermodynamicView::Ordinary`,
 preserves source order, requires finite positive contiguous ranges of one CP
-kind, and refuses gaps, overlaps, mixed kinds, and extrapolation. It exposes
-provider data only; downstream code owns canonical Gibbs conversion. ID-8
-transition parent links are typed, but transition effective-G semantics remain
-pending independent evidence.
+kind, and refuses gaps, overlaps, mixed kinds, discontinuous H/S, and
+extrapolation. Each validated range can evaluate provider-native Cp, H, S, and
+the CP-backed G expression analytically, including the logarithmic singular
+cases. It exposes provider data only; downstream code owns canonical Gibbs
+conversion.
+
+`OrdinaryPhaseThermodynamicView::effective_g_eligibility` separates a complete
+`PureCpBacked` ordinary subset from materially active magnetic,
+pressure-volume, and ID-11 data. Exact zero is the inactive fixed-slot pattern;
+nonzero contribution coefficients are typed blockers and non-finite evidence
+remains pending. The pressure unit code does not establish a thermodynamic
+reference pressure. No magnetic, pressure-volume, transition, or ID-11 equation
+is invented. ID-8 transition parent links remain structural only.
 
 ## Windows validation and private-data policy
 
@@ -121,7 +132,13 @@ The latest local Windows validation scanned 13 `.CDB` candidates (15,345,664 byt
 
 **Recommendation: Ready to publish experimental 0.1.0.**
 
-This is not a production-readiness claim. The implementation has broad Windows corpus validation, lossless round trips, typed I/O errors, synthetic corruption tests, and complete Rustdoc. Production use still requires acceptance of reverse-engineered limitations: ID-11 physics, kappa units, CP integration conventions, density units, unknown fields, and extended fuzzing remain unresolved.
+This is not a production-readiness claim. The implementation has broad Windows
+corpus validation, lossless round trips, typed I/O errors, synthetic corruption
+tests, and complete Rustdoc. Production use still requires acceptance of
+reverse-engineered limitations: ID-11 physics, magnetic and pressure-volume
+equations, density units, unknown fields, and extended fuzzing remain unresolved.
+Ordinary FDB CP integration and its 298.15 K anchors are established for the
+validated subset.
 
 ## API stability
 

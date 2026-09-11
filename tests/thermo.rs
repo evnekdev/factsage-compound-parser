@@ -94,6 +94,10 @@ fn maps_and_converts_units() {
         EnergyUnit::Unknown(7).to_joules(1.0),
         Err(UnitError::UnknownEnergyUnit { raw: 7 })
     );
+    assert!(matches!(
+        EnergyUnit::Calories.to_joules(f64::MAX),
+        Err(UnitError::NonFiniteValue { .. })
+    ));
 }
 
 #[test]

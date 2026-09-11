@@ -126,9 +126,12 @@ For provider thermodynamic consumption, `CompoundView::fdb_phase_thermodynamic_v
 adds a narrower validation layer after this structural association. It retains
 the CP source order and accepts an ordinary effective-G definition only when
 all records use one CP kind, every range is finite and strictly positive, and
-adjacent ranges share their exact stored boundary. It does not sort, merge,
-bridge, or extrapolate records. The lower-level domain view remains lossless
-and continues to expose malformed/orphan data for inspection.
+adjacent ranges share their exact stored boundary and produce continuous H and
+S when each is integrated from its own 298.15 K anchors. It does not sort,
+merge, bridge, or extrapolate records. The returned ordinary view separately
+classifies whether nonzero magnetic, pressure-volume, or ID-11 data prevents
+the CP-backed function from being complete. The lower-level domain view remains
+lossless and continues to expose malformed/orphan data for inspection.
 
 ## CP chunk IDs
 
