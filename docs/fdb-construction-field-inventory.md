@@ -349,3 +349,9 @@ Per-record opaque fields: **CONFIRMED DOMAIN POLICY**. For each native record
 kind, copy unknown/reserved/padding values from the controlled fresh FDB template
 for that record kind. Do not infer meanings for them in the bounded writer.
 Independent FactSage acceptance verifies the template policy.
+
+
+Record-kind opaque fields: **CONFIRMED DOMAIN POLICY**. For unknown/reserved/padding
+fields outside ID-9, copy the values from the controlled fresh FDB template for
+the corresponding record kind. Do not infer meanings or request additional
+human input unless existing evidence falsifies the template rule.
