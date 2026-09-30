@@ -136,13 +136,17 @@ little-endian `f64` day counts. The crate already has `OleAutomationDate`
 support.
 
 Timestamp generation is therefore a writer policy, not a native-format blocker.
-For deterministic construction, accept an explicit timestamp from the build
-context; for ordinary interactive construction a provider clock may supply the
-save/create time. Copy per-group timestamps consistently according to the
-observed fresh group pattern.
+
+**Domain policy confirmed by the user:** timestamps are mostly ignored metadata.
+When a group is created or materially changed, use the current save/build time
+encoded as an OLE Automation date for that changed group. Preserve timestamps on
+unchanged groups when editing an existing database. Within a newly written or
+changed group, copy the same timestamp consistently through its ID-1, ID-7 and
+CP records, matching the observed fresh-modern pattern.
 
 Do not require the ID-9 database date to equal every per-group timestamp; the
-fresh evidence shows they can differ.
+fresh evidence shows they can differ. Exact FactSage clock/rounding behavior is
+not a human-in-the-loop blocker for the bounded profile.
 
 ## Function/group names
 
