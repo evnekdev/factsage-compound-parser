@@ -368,6 +368,6 @@ fn semantic_validity_is_separate_from_native_materialization_readiness() {
         built
             .native_blockers()
             .iter()
-            .any(|blocker| blocker.field.contains("zero-base/A"))
+            .any(|blocker| blocker.object == "PHAS_0000A" && blocker.field.contains("zero-A"))
     );
 }

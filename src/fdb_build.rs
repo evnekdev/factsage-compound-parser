@@ -434,38 +434,50 @@ impl FdbBuildPlan {
     /// Lists exact blockers for provider-owned native materialization (FDB-C3).
     /// Semantic validity never implies these fields can already be encoded.
     pub fn native_blockers(&self) -> Vec<FdbBuildBlocker> {
-        vec![
-            FdbBuildBlocker {
-                object: "database header".into(),
-                field: "header padding/unknown bytes and native date policy",
-                reason: "fresh FDB defaults have not been established by paired construction evidence",
-                user_evidence_can_unblock: true,
-            },
-            FdbBuildBlocker {
-                object: "formula groups".into(),
+        let mut blockers = vec![FdbBuildBlocker {
+            object: "database header".into(),
+            field: "header padding/unknown bytes and native date policy",
+            reason: "fresh FDB defaults have not been established by paired construction evidence",
+            user_evidence_can_unblock: true,
+        }];
+        for group in &self.groups {
+            blockers.push(FdbBuildBlocker {
+                object: group.formula.clone(),
                 field: "common header element IDs, charge, entry/reference/timestamp, compound name, real stoichiometry and reserved fields",
                 reason: "native generation, formula-label consistency and default rules are not established for fresh groups",
                 user_evidence_can_unblock: true,
-            },
-            FdbBuildBlocker {
-                object: "functions".into(),
-                field: "phase IDs, negative ID, common metadata and phase padding",
-                reason: "fresh ID allocation/link and default rules are not established",
-                user_evidence_can_unblock: true,
-            },
-            FdbBuildBlocker {
-                object: "Cp ranges".into(),
-                field: "CP unknown bytes/padding and ordinary phase H/S selection",
-                reason: "fresh record defaults and phase-anchor selection need paired construction evidence",
-                user_evidence_can_unblock: true,
-            },
-            FdbBuildBlocker {
-                object: "A companions".into(),
-                field: "ID-5 bounds, powers, zero-base/A encoding and exceptional A entropy sign",
-                reason: "paired evidence does not establish a general source-to-native A rule or zero-object policy",
-                user_evidence_can_unblock: true,
-            },
-        ]
+            });
+            for function in &group.functions {
+                let object = function.identity().target_name.clone();
+                blockers.push(FdbBuildBlocker {
+                    object: object.clone(),
+                    field: "phase IDs, negative ID, common metadata and phase padding",
+                    reason: "fresh ID allocation/link and default rules are not established",
+                    user_evidence_can_unblock: true,
+                });
+                match function {
+                    FdbFunctionPlan::Ordinary(_) => blockers.push(FdbBuildBlocker {
+                        object,
+                        field: "CP unknown bytes/padding, unused Cp slots and ordinary phase H/S selection",
+                        reason: "fresh record defaults and phase-anchor selection need paired construction evidence",
+                        user_evidence_can_unblock: true,
+                    }),
+                    FdbFunctionPlan::ExplicitZeroOrdinary(_) => blockers.push(FdbBuildBlocker {
+                        object,
+                        field: "zero-base physical encoding or versioned omission policy",
+                        reason: "rigorous zero base identity is established but physical representation is not",
+                        user_evidence_can_unblock: true,
+                    }),
+                    FdbFunctionPlan::Added(_) => blockers.push(FdbBuildBlocker {
+                        object,
+                        field: "ID-5 bounds, powers, zero-A encoding and exceptional A entropy sign",
+                        reason: "paired evidence does not establish a general source-to-native A rule or zero-object policy",
+                        user_evidence_can_unblock: true,
+                    }),
+                }
+            }
+        }
+        blockers
     }
 }
 
