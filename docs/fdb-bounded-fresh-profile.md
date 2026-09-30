@@ -268,21 +268,19 @@ This does not block ordinary density or the first bounded fresh writer.
 
 ## Phase-state native ID allocation
 
-Existing provider code and corpus documentation establish the native state bands
-and one-based per-state indexes:
+Generic CDB parsing uses native aggregate-state bands (solid 100+, liquid 800+,
+gas 900+, aqueous 990+), but that behavior must not be projected onto FDB
+construction.
 
-- solid: `100 + index` -> 101, 102, ...
-- liquid: `800 + index` -> 801, 802, ...
-- gas: `900 + index` -> 901, 902, ...
-- aqueous: `990 + index` -> 991, 992, ...
+**Confirmed bounded FDB policy:** treat FDB Function records as a pseudo-solid
+series within each formula group and allocate consecutive raw IDs `101, 102,
+103, ...` in function encounter order, irrespective of the source
+solid/liquid/gas/aqueous state. This matches the observed fresh and translated
+FDB corpus, where all Function records use the solid band.
 
-State inference uses the same boundaries (`>800` liquid, `>900` gas,
-`>990` aqueous; otherwise solid), and compact indexes subtract the respective
-base.
+For ordinary Function records, write `phase_id_raw_neg = -phase_id_raw`.
+CP links use the exact positive raw Function ID. Reset the sequence per formula
+group.
 
-For fresh construction, allocate IDs within each formula group using the
-appropriate state base plus a one-based index for that state. Preserve the
-observed group-local allocation behavior. For ordinary phases, write
-`phase_id_raw_neg = -phase_id_raw`. CP links use the exact positive raw phase ID.
-
-This is established provider/corpus behavior and no longer a user-input blocker.
+If future FDB evidence shows use of another state band, add that as an explicit
+profile extension rather than inheriting generic CDB phase-state semantics.
