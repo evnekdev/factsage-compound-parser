@@ -131,6 +131,13 @@ the categorical differences. No native values or names are retained here.
 | IDs, counters, references | Both groups start their entry counters alike and advance in ID-1/ID-7/CP order. Their solid phase IDs match across groups; negative IDs and CP links are group-local. References remain zero. | This confirms group-local reset for two fresh groups, not allocation of a second phase inside one group or active-reference encoding. |
 | Timestamps and CP | ID-1, ID-7 and CP share one timestamp within each group; the groups have distinct timestamps in the same file. Both nonzero-Cp ranges use ID-2. | Clock source/rounding and fresh zero-Cp kind remain open. The unchanged ID-9 date is not a per-group timestamp source. |
 
+The proposed eight-bit complement rule `charge_raw = !semantic_charge` also
+fails: the declared neutral group's raw byte is not `!0`. If the bracket-plus
+label denotes numeric `+1`, the charged group's byte is not `!1` either. An
+independent byte-offset check agrees with the provider parser; the two observed
+raw bytes differ in exactly one bit. That difference does not establish a
+bitmask or signed-charge mapping without recorded numeric input.
+
 This probe strengthens the bounded one-function-per-group structural profile,
 but does not complete a native materializer. In particular, it establishes a
 charge-sensitive raw distinction while falsifying the simplest numeric charge

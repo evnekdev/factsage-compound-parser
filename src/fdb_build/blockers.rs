@@ -132,7 +132,7 @@ const COMMON_GAPS: &[Gap] = &[
         field: "RawCommonHeader.charge_raw",
         class: FdbBlockerClass::NativeFormat,
         reason: "the declared neutral and charged groups have different repeated signed bytes, but the neutral raw byte is nonzero and exact semantic charge encoding is unknown",
-        known: "the signed byte repeats on each fresh ID-1/ID-7/CP group; the two groups have equal native element arrays and different raw charge; a direct semantic-charge cast is refuted",
+        known: "the signed byte repeats on each fresh ID-1/ID-7/CP group; equal-element neutral/charged groups differ in one raw bit; neutral raw matches neither zero nor !0, refuting direct cast and bitwise complement rules for this pair",
         missing: "recorded signed UI charges and a version-scoped semantic-to-raw mapping, including neutral charge",
         exact_evidence: Some(
             "record exact signed UI charge inputs and FactSage version for the existing fresh neutral/charged pair in an ignored local receipt",

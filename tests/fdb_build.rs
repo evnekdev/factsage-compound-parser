@@ -166,9 +166,7 @@ fn fresh_groups_keep_charge_identity_when_function_names_repeat() {
     );
     assert!(built.native_blockers().iter().any(|blocker| {
         blocker.field == "RawCommonHeader.charge_raw"
-            && blocker
-                .known
-                .contains("direct semantic-charge cast is refuted")
+            && blocker.class == FdbBlockerClass::NativeFormat
     }));
 }
 

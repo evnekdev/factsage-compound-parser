@@ -45,7 +45,7 @@ across groups.
 | `Fe3O4` and `Fe3O4[+]` must remain distinct groups. | CONFIRMED_BY_DOMAIN_CONTRACT | Label syntax is not parsed as semantic charge. |
 | Solution parser models source charge as `i32` and keeps bracketed charge spelling in external references. | CONFIRMED_BY_PROVIDER_CODE | Its SLN parser test is synthetic, not paired FDB evidence. |
 | Historical `dbsolution` parses Legacy charge and derives SLN endmember charge from `chemformula`. | HISTORICAL_PYTHON_HINT | This does not prove FDB `charge_raw` initialization. |
-| A user-declared fresh neutral/charged pair has equal native element IDs and integer/real coefficients but different `charge_raw`; the declared neutral raw byte is nonzero. | CONFIRMED_BY_LOCAL_FRESH_PAIR | Charge-sensitive storage is established for this pair; a direct semantic-charge cast is refuted. Exact entered signed magnitude and native code mapping remain unknown. |
+| A user-declared fresh neutral/charged pair has equal native element IDs and integer/real coefficients but different `charge_raw`; the declared neutral raw byte is neither zero nor the eight-bit complement of zero. | CONFIRMED_BY_LOCAL_FRESH_PAIR | Direct cast and bitwise-complement encoding are refuted for this pair. The bytes differ in one bit, but the exact signed magnitude and native code mapping remain unknown. |
 
 Exact rational identity is a bounded semantic profile, not a claim that every
 FactSage source coefficient has a `u64` rational representation. A future
@@ -160,7 +160,7 @@ header field). No invented database ID is in the semantic plan.
 | `element_ids[7]` | UNRESOLVED_BLOCKER | `V0`: repeat on ID-1/ID-7/CP and remain identical across the declared neutral/charged groups. `V1`: strict simple integer labels matched atomic-number IDs. Input-linked fresh element ordering remains unproved. |
 | `element_coefficients[7]` | UNRESOLVED_BLOCKER | `V0`: group-wide repetition and equality across the neutral/charged groups. `V1`: bounded integer-label matches. Fresh input-to-slot scale remains unproved. |
 | `coefficient_padding` | UNRESOLVED_BLOCKER | `V0`/`V1`: observed stable pattern; versioned fresh assignment and writer acceptance remain unproved. |
-| `charge_raw` | UNRESOLVED_BLOCKER | `V0`: declared neutral/charged groups have different raw bytes with identical native element arrays; each byte repeats within its group. The declared neutral raw byte is nonzero, refuting a direct semantic-charge cast. Exact signed-charge coding is unknown. |
+| `charge_raw` | UNRESOLVED_BLOCKER | `V0`: declared neutral/charged groups have different raw bytes with identical native element arrays; each byte repeats within its group. Neutral raw matches neither a direct cast nor `!0`; the pair differs in one bit, without proving a bitmask rule. Exact signed-charge coding is unknown. |
 | `entry_number` | UNRESOLVED_BLOCKER | `V0`/`V1`: same group start and consecutive ID-1/ID-7/CP stream-order progression. Two fresh singleton groups independently restart the sequence; larger groups and rollover remain outside evidence. |
 | `reference[2]` | UNRESOLVED_BLOCKER | `V0`: group and CP slots remain zero when reference metadata is added, while phase slots change. No-reference pattern is supported; active input-to-slot mapping remains unproved. |
 | `timestamp_ole` | UNRESOLVED_BLOCKER | `V0`: ID-1/ID-7/CP timestamps agree within each group, and two groups in one file have distinct timestamps. ID-9 date stays fixed. `V1`: CP copies ID-1, but ID-7 can differ. Fresh clock source/rounding unknown. |
