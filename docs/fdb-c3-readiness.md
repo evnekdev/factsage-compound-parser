@@ -46,13 +46,18 @@ For the bounded fresh-modern profile:
 Additional user input required now: NO
 Additional domain-policy decisions required now: NO
 Additional controlled user-created evidence required now: NO
-Remaining work: local corpus regression + FactSage acceptance
+Remaining work: FactSage acceptance
 ```
 
-The next regression audit must exhaust the existing ignored local corpus
-for element-order/default confirmation. If a rule is falsified, narrow the
-profile or report the exact automated counterexample. Do not turn an
-implementation/verification task back into a generic request for user evidence.
+The reusable `fdb_native_rule_audit` executable tested every FDB fixture
+admitted by the local fresh and translated receipts. All eligible fresh records
+matched the charge, element-order, integer/real coefficient, shared-header,
+entry, phase-ID and CP-link rules. Translated records matched the structural
+rules and every ordinary formula case eligible for this profile. Some
+translated labels or compositions fall outside ordinary `chemformula` parsing;
+the audit records those cases separately in ignored local results and does not
+promote them as fresh-writer examples. No native-rule contradiction was found.
+The receipt, detailed counts and fixture identities remain local.
 
 ## Evidence precedence
 
@@ -297,8 +302,7 @@ native materialization when the target plan has not already been made explicit.
 | Provider-built file acceptance | EVIDENCE_REQUIRED | Open the constructed FDB in FactSage and verify reference/value stability through load/open/save. Self-reparse is insufficient. |
 
 The bounded FreshModern profile now has all required construction rules.
-Remaining FDB-C3 work is corpus regression plus controlled FactSage
-open/load/save acceptance. Legacy
+Remaining FDB-C3 work is controlled FactSage open/load/save acceptance. Legacy
 source-to-target scientific conversion remains a separate upstream problem and
 does not block native serialization of an already explicit target plan.
 

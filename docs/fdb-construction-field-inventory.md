@@ -13,6 +13,13 @@ is implemented in `src/fdb_build/materialize.rs`; FactSage acceptance remains
 pending. The earlier inventory tables below are historical evidence status,
 not the current implementation status.
 
+The reusable `examples/fdb_native_rule_audit.rs` checked every receipt-admitted
+fresh and translated FDB available locally. All ordinary fresh formula cases
+matched the bounded charge/composition/slot rules; translated structural
+headers, counters, Function IDs and Cp links also matched. Translated formula
+cases outside the ordinary parser/integer profile are separately classified in
+ignored local results, not silently treated as verified ordinary formulas.
+
 This document contains both the original field-by-field evidence ledger and the
 later resolved bounded-construction policy. In the older ledger,
 `UNRESOLVED_BLOCKER` records the state *at the time that evidence was
