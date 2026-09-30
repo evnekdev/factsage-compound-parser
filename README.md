@@ -20,7 +20,7 @@ The crate uses owned raw parsing and zero-duplication semantic views:
 - `domain::Database` is a read-only owner of one raw stream plus its index. Call `Database::view` for semantic traversal.
 - `edit::DatabaseEditor` owns one mutable raw stream, lazily rebuilds its index after structural changes, and returns borrowed semantic views.
 - `thermo` exposes established unit conversion, OLE Automation dates, provisional density decoding, stored CP-expression evaluation, and evidence-backed FDB ordinary-phase thermodynamic views.
-- `fdb_build` seals ordered, rigorous-semantic fresh-FDB plans after typed validation. It uses exact rational elemental ratios plus explicit charge for group identity, and retains distinct typed base/A identities, including explicit zero companions. `native_blockers()` classifies remaining materialization and verification work; this module does not write FDB records.
+- `fdb_build` seals ordered, rigorous-semantic FDB construction plans after typed validation. It uses exact rational elemental ratios plus explicit charge for group identity; native FDB charge is `semantic + 50` over `-50..=50`. The rigorous graph retains distinct typed base/A identities even when physically zero Legacy objects are omitted from native serialization. `native_blockers()` reports only genuinely unresolved materialization/scientific/verification work; this module does not yet write FDB records.
 
 `RawDatabase` is the only serialization authority. Low-level raw insertion or removal can create a temporarily invalid semantic stream; rebuilding an index validates grouping. Path APIs accept `AsRef<Path>` and preserve the path plus underlying OS error for open/read/write failures.
 
