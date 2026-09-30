@@ -171,11 +171,11 @@ offset from the new byte yields `-1`; the earlier neutral yields zero, and the
 plus-marked group yields `+1` under the same arithmetic. No private formula or
 coefficient is retained in this tracked assessment.
 
-The user adopts the neutral offset as a **fresh-modern profile rule** for
-semantic charge `-50..=50`: write the native byte as `charge + 50`, and decode
+Domain policy confirms the neutral offset as the **native FDB charge rule** for
+semantic charge `-50..=50`: write the native value as `charge + 50`, and decode
 admitted raw bytes `0..=100` as `raw - 50`. The same byte is copied to ID-1,
 ID-7 and CP records. `FdbChargeState` now exposes both checked conversions;
-fresh-modern plan validation rejects charge outside this profile. All admitted
+construction-plan validation rejects charge outside this native FDB range. All admitted
 bytes fit the parser's `i8` slot, so changing the raw struct's signedness is
 unnecessary. The observed groups establish the central states; extending the
 linear rule across the admitted range is an explicit profile decision, not a
@@ -186,7 +186,7 @@ fails: the declared neutral group's raw byte is not `!0`. If the bracket-plus
 label denotes numeric `+1`, the charged group's byte is not `!1` either. An
 independent byte-offset check agrees with the provider parser; the two observed
 raw bytes differ in exactly one bit. That difference does not establish a
-bitmask mapping. The adopted fresh-modern offset rule is separate from this
+bitmask mapping. The native FDB offset rule is separate from this
 rejected hypothesis.
 
 This probe strengthens the bounded one-function-per-group structural profile,
@@ -284,14 +284,14 @@ policy/evidence blocker until those checks pass.
 
 | Object or capability | Class | Exact missing rule or action |
 | --- | --- | --- |
-| ID-9 and per-kind uninterpreted bytes | EVIDENCE_REQUIRED | Record the FactSage version and fresh initialization policy; observed stable bytes cannot be copied into a general constructor without provenance and independent acceptance. |
-| Shared charge | RESOLVED_FOR_FRESH_PROFILE | For admitted semantic charge `-50..=50`, encode one byte as `charge + 50` and copy it through ID-1/ID-7/CP. Legacy translation remains a separate profile. |
-| Shared composition | EVIDENCE_REQUIRED | Input-linked element IDs, integer and real coefficient order and scale remain unproved. |
-| Formula and compound names | EVIDENCE_REQUIRED | Fresh formula labels distinguish groups that reuse a local function name; compound names remain empty. Define input-to-label and ambiguous-reference policy separately from optional SLN qualification. |
-| Timestamp assignment | POLICY_REQUIRED | Two fresh groups in one file have distinct internally copied timestamps; ID-9 date stays fixed. Choose and validate clock source, rounding and deterministic assignment. |
+| ID-9 and per-kind uninterpreted bytes | RESOLVED_FOR_BOUNDED_CONSTRUCTION | Copy opaque unknown/reserved/padding/read-flag bytes from the corresponding controlled fresh record templates; mutate only established fields. FactSage acceptance remains a verification gate. |
+| Shared charge | RESOLVED | FDB encodes semantic charge `-50..=50` as `charge + 50` and copies it through ID-1/ID-7/CP. This is source-profile independent and applies to both FreshModern and LegacyTranslation. |
+| Shared composition | RESOLVED_FOR_BOUNDED_CONSTRUCTION | Parse with `chemformula`; preserve first element appearance; use atomic numbers as one-byte IDs; mirror ordinary integral stoichiometry into integer and `f64` arrays. Advanced real-stoichiometry overrides remain outside scope. |
+| Formula and compound names | RESOLVED_FOR_BOUNDED_CONSTRUCTION | Preserve exact validated caller formula spelling; fresh `compound_name` defaults empty. Formula-qualified semantic identity remains separate from local Function naming. |
+| Timestamp assignment | RESOLVED_POLICY | OLE Automation dates. New/materially changed groups use current save/build time consistently across ID-1/ID-7/CP; unchanged groups may preserve timestamps. |
 | More than one function within a group and non-solid states | EVIDENCE_REQUIRED | Two fresh singleton groups restart the same solid phase ID and entry sequence. Allocation of a second phase inside one group and non-solid states remains untested. A singleton-solid-group profile can exclude these. |
-| Active references and density | EVIDENCE_REQUIRED | Map user reference inputs to phase reference slots and density units. A bounded no-reference, inactive-density profile can exclude these. |
-| Fresh zero-Cp kind and shorter Cp term lists | POLICY_REQUIRED | Either prove a fresh selector or validate canonical ID-2; establish unused coefficient/power filling. A nonzero, explicit eight-slot profile can exclude these. |
+| References and density | PARTIALLY_RESOLVED | References default to zero. Ordinary density is supported using the low/remainder density portion with no advanced family code; advanced volumetric-family mappings are extensions and active nonzero references remain outside the bounded profile. |
+| Fresh zero-Cp kind and shorter Cp term lists | RESOLVED_POLICY | Fresh ranges use ID-2, including zero Cp. Unused coefficient and power slots are written as zero. |
 | Fresh empty-function verification | ENGINEERING_ONLY | The native empty function has ID-7 without CP; verify it by strict reparse and domain structure because the ordinary thermodynamic view requires a CP range. |
 | Legacy A conversion and zero-object omission | PARTIALLY_RESOLVED | **Zero-object omission policy resolved:** physically zero base/A Function objects may be omitted in `NativeFactSage`, while rigorous semantic identities remain internal. Remaining Legacy A source-to-target reduction/sign semantics are separate. |
 | Provider materializer and verification pipeline | ENGINEERING_ONLY | Implement only after every byte for an admitted profile is supported; then serialize, strict-reparse, index and verify thermodynamics. |
