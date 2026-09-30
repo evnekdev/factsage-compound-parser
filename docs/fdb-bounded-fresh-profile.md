@@ -208,9 +208,10 @@ For the first profile:
 - use native ID-2, which is the observed direct-modern form for all fresh
   nonzero-Cp ranges;
 - preserve range order and chained bounds;
-- require a term shape already supported by the provider/native slot layout
-  (initially seven/eight stored slots as appropriate);
-- use observed zero/default padding for unused native bytes;
+- require a term shape already supported by the provider/native slot layout;
+- write zero to every unused Cp coefficient slot and zero to the corresponding
+  unused power slot;
+- use observed zero/default padding for other unused native bytes;
 - reject fresh zero-Cp construction until the later policy/acceptance path is
   implemented.
 
@@ -251,3 +252,16 @@ The current `native_blockers()` implementation may still report some of these
 legacy evidence requests until the implementation tranche reconciles the blocker
 API with this profile. That reconciliation is engineering work and must not be
 reported as a human-in-the-loop requirement.
+
+
+## Advanced volumetric coefficients
+
+For now, treat the physical-property coefficient blocks as a multipurpose native
+coefficient array whose detailed interpretation depends on the packed volumetric
+equation-family selector. Do not invent per-family semantics in the bounded
+writer.
+
+Before adding named advanced volumetric families, inspect the historical Legacy
+Python parser for existing family definitions/mappings. If they are absent or
+insufficient, later user-provided snapshots may be used to establish them.
+This does not block ordinary density or the first bounded fresh writer.
