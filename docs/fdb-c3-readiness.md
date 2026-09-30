@@ -1,12 +1,17 @@
 # FDB-C3 readiness after joint fresh-modern and translation audit
 
-**Decision: BOUNDED-GO FOR IMPLEMENTATION; NOT YET VERIFIED.** FDB-C1 and FDB-C2
-remain GO. The first fresh-modern native writer now has an explicit bounded
+**Decision: BOUNDED IMPLEMENTED; FACTSAGE ACCEPTANCE PENDING.** FDB-C1 and FDB-C2
+remain GO. The fresh-modern native writer uses the bounded
 construction policy in
 [`fdb-bounded-fresh-profile.md`](fdb-bounded-fresh-profile.md). No remaining
-scientific/domain-policy question requires human input before implementing that
-profile. The provider can proceed through plan traversal, raw chunk assembly,
-serialization, strict reparse, domain indexing and thermodynamic verification.
+scientific/domain-policy question requires human input for that profile.
+`FdbBuildPlan::materialize_fresh` now assembles raw chunks from caller-supplied
+controlled templates, serializes and strict-reparses, builds a `DomainIndex`,
+and checks Cp/H/S/G at the endpoints and midpoint of each range. A synthetic
+probe generated from receipt-admitted local templates passed these internal
+checks. FactSage 7.3 eventually started, but its Solution child window was not
+exposed as a targetable window to the available UI controller; native open/save
+acceptance remains unverified.
 
 The bounded profile resolves the previously open fresh-writer choices by policy:
 copy opaque ID-9/default bytes from the controlled empty-FDB profile, use OLE
@@ -20,16 +25,16 @@ profile rather than blocking it. Fresh zero-Cp is admitted as ID-2. Semantic
 aggregate state does not select FDB Function ID bands: FDB Functions use the
 group-local pseudo-solid 101+ series.
 
-FDB-C3 is not yet a completed GO because the materializer and independent
-FactSage acceptance have not been executed. Those are engineering/verification
-gates, not human-in-the-loop blockers.
+FDB-C3 is not yet a completed GO because independent FactSage acceptance has
+not been executed. That is a verification gate, not a scientific blocker.
 
 The field-level status checklist is
 [`fdb-construction-field-inventory.md`](fdb-construction-field-inventory.md).
 `FdbBuildPlan::native_blockers()` emits field-specific records with a
 provider-neutral class, exact object, known fact, missing rule, and smallest
-evidence artifact. It includes an engineering blocker for the unimplemented
-builder and a verification blocker for independent FactSage acceptance. Caller
+evidence artifact. The FreshModern plan now reports a verification blocker for
+independent FactSage acceptance; LegacyTranslation still reports an engineering
+blocker for explicit A and zero-object native emission. Caller
 H/S/Cp values, evidenced chunk IDs, native units and inactive physical tails
 are not misclassified as new evidence needs.
 
@@ -41,10 +46,10 @@ For the bounded fresh-modern profile:
 Additional user input required now: NO
 Additional domain-policy decisions required now: NO
 Additional controlled user-created evidence required now: NO
-Remaining work: engineering + automated evidence checks + FactSage acceptance
+Remaining work: local corpus regression + FactSage acceptance
 ```
 
-The implementation tranche must first exhaust the existing ignored local corpus
+The next regression audit must exhaust the existing ignored local corpus
 for element-order/default confirmation. If a rule is falsified, narrow the
 profile or report the exact automated counterexample. Do not turn an
 implementation/verification task back into a generic request for user evidence.
@@ -286,24 +291,20 @@ native materialization when the target plan has not already been made explicit.
 | Function ID allocation | RESOLVED_POLICY | FDB Functions use group-local pseudo-solid IDs `101, 102, 103, ...` in Function encounter order regardless of semantic aggregate state; negative IDs are arithmetic negations and CP links use exact positive IDs. |
 | References and density | PARTIALLY_RESOLVED | References default to zero. Ordinary density is supported using the low/remainder density portion with no advanced family code; advanced volumetric-family mappings are extensions and active nonzero references remain outside the bounded profile. |
 | Fresh zero-Cp kind and shorter Cp term lists | RESOLVED_POLICY | Fresh ranges use ID-2, including zero Cp. Unused coefficient and power slots are written as zero. |
-| Fresh empty-function verification | ENGINEERING_ONLY | The native empty function has ID-7 without CP; verify it by strict reparse and domain structure because the ordinary thermodynamic view requires a CP range. |
+| Fresh empty-function verification | IMPLEMENTED | The writer emits ID-7 without CP and verifies strict reparse/domain structure; it skips ordinary Cp-backed evaluation for this case. |
 | Legacy A conversion and zero-object omission | PARTIALLY_RESOLVED | **Zero-object omission policy resolved:** physically zero base/A Function objects may be omitted in `NativeFactSage`, while rigorous semantic identities remain internal. Remaining Legacy A source-to-target reduction/sign semantics are separate. Do not assume the uncounted two-line A-leading block has the same field semantics as the counted ordinary xxxx ranges merely because the layouts are similar. Their meanings and reduction rules must be established independently from parser/conversion evidence. |
-| Provider materializer and verification pipeline | ENGINEERING_ONLY | Implement only after every byte for an admitted profile is supported; then serialize, strict-reparse, index and verify thermodynamics. |
+| Provider materializer and verification pipeline | IMPLEMENTED_FRESH_MODERN | `materialize_fresh` uses controlled templates, serializes, strict-reparses, indexes and checks Cp/H/S/G over each admitted range. LegacyTranslation emission remains separate. |
 | Provider-built file acceptance | EVIDENCE_REQUIRED | Open the constructed FDB in FactSage and verify reference/value stability through load/open/save. Self-reparse is insufficient. |
 
 The bounded FreshModern profile now has all required construction rules.
-Remaining FDB-C3 work is implementation plus verification: build the materializer,
-strict-reparse and index the result, verify the thermodynamic view where
-applicable, and perform controlled FactSage open/load/save acceptance. Legacy
+Remaining FDB-C3 work is corpus regression plus controlled FactSage
+open/load/save acceptance. Legacy
 source-to-target scientific conversion remains a separate upstream problem and
 does not block native serialization of an already explicit target plan.
 
 ## Next implementation/verification action
 
-Implement the bounded-profile materializer using the resolved construction
-rules, then serialize and strict-reparse a tiny generated FDB, build its
-`DomainIndex`, and verify structural/thermodynamic invariants where applicable.
-After internal verification, open/load/save that generated FDB in FactSage and
+Open/load/save the generated synthetic FDB in FactSage and
 confirm intended values and references remain stable.
 
 No additional composition, timestamp, charge, zero-Cp, Function-ID, opaque-byte,

@@ -1,4 +1,4 @@
-//! Rigorous, ordered FDB construction intent. This module does not create native records.
+//! Rigorous, ordered FDB construction intent and bounded fresh materialization.
 //!
 //! A [`crate::fdb_build::FdbBuildPlan`] is sealed by validation. Target names are
 //! structural identities; Legacy provenance is required only for the translation profile.
@@ -13,7 +13,9 @@ use crate::PhaseState;
 use crate::thermo::{EnergyUnit, OleAutomationDate, PressureUnit};
 
 mod blockers;
+mod materialize;
 pub use blockers::{FdbBlockerClass, FdbBuildBlocker};
+pub use materialize::{FdbFreshMaterialization, FdbMaterializeError, FdbNativeTemplates};
 
 /// Metadata actually represented by the FDB-compatible database header.
 #[derive(Debug, Clone, PartialEq)]
@@ -414,7 +416,7 @@ impl FdbBuildPlan {
                 reason: error.to_string(),
             }
         })?;
-        if self.groups.is_empty() {
+        if self.groups.is_empty() && self.profile == FdbConstructionProfile::LegacyTranslation {
             return Err(FdbBuildError::AmbiguousGroup {
                 group: "database".into(),
                 reason: "at least one formula group is required".into(),

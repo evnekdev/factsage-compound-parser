@@ -11,6 +11,7 @@ keywords = ["factsage", "chemapp", "thermodynamics", "parser"]
 categories = ["parser-implementations", "science"]
 
 [dependencies]
+chemformula = "0.2"
 encoding_rs = "0.8"
 
 [dev-dependencies]

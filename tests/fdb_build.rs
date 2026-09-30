@@ -177,22 +177,13 @@ fn fdb_charge_uses_the_native_neutral_offset_rule() {
     for (semantic, raw) in [(-50, 0), (-1, 49), (0, 50), (1, 51), (50, 100)] {
         let charge = FdbChargeState::new(semantic);
         assert_eq!(charge.fdb_raw_byte(), Some(raw));
-        assert_eq!(
-            FdbChargeState::from_fdb_raw_byte(raw),
-            Some(charge)
-        );
+        assert_eq!(FdbChargeState::from_fdb_raw_byte(raw), Some(charge));
     }
     for unsupported in [i32::MIN, -51, 51, i32::MAX] {
-        assert_eq!(
-            FdbChargeState::new(unsupported).fdb_raw_byte(),
-            None
-        );
+        assert_eq!(FdbChargeState::new(unsupported).fdb_raw_byte(), None);
     }
     for unsupported in [101, 127, 128, 255] {
-        assert_eq!(
-            FdbChargeState::from_fdb_raw_byte(unsupported),
-            None
-        );
+        assert_eq!(FdbChargeState::from_fdb_raw_byte(unsupported), None);
     }
 
     let function = FdbFunctionPlan::Ordinary(FdbOrdinaryFunctionPlan {
@@ -278,9 +269,12 @@ fn fresh_nonzero_cp_uses_a_distinct_kind_blocker_policy() {
             .iter()
             .any(|b| b.field.contains("zero-base"))
     );
-    assert!(zero.native_blockers().iter().any(|b| {
-        b.field == "fresh empty-function verification" && b.class == FdbBlockerClass::Engineering
-    }));
+    assert!(
+        !zero
+            .native_blockers()
+            .iter()
+            .any(|b| { b.field == "fresh empty-function verification" })
+    );
 }
 
 fn iron_oxide_group(label: &str, charge: i32, phase: &str) -> FdbFormulaGroupPlan {
@@ -552,7 +546,7 @@ fn target_phase_state_is_explicit_and_shared_by_each_pair() {
         PhaseState::Gas
     );
     assert!(
-        built
+        !built
             .native_blockers()
             .iter()
             .any(|blocker| blocker.field == "ID-7.phase_id_raw allocation")
@@ -998,7 +992,6 @@ fn semantic_validity_is_separate_from_native_materialization_readiness() {
                 | "CP unused coefficient/power slots"
         )
     }));
-
 
     assert!(
         !blockers

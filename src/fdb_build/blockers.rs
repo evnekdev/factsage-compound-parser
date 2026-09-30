@@ -1,6 +1,6 @@
 //! Actionable FDB-C3 blockers. These are not semantic-plan validation errors.
 
-use super::{FdbBuildPlan, FdbConstructionProfile, FdbFunctionPlan};
+use super::{FdbBuildPlan, FdbConstructionProfile};
 
 /// Provider-neutral blocker category, translatable to application reporting.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -50,34 +50,18 @@ impl FdbBuildPlan {
     /// belong to the conversion adapter; an already explicit target plan is not
     /// blocked from native materialization by those upstream questions.
     pub fn native_blockers(&self) -> Vec<FdbBuildBlocker> {
-        let mut blockers = vec![FdbBuildBlocker {
-            object: "FDB materializer".into(),
-            field: "provider-owned RawDatabase construction",
-            class: FdbBlockerClass::Engineering,
-            reason: "no sealed plan-to-raw builder exists yet",
-            known: "raw serialization, strict reparse, domain indexing and ordinary FDB validation already exist",
-            missing: "implement the provider builder using the resolved native policies",
-            exact_evidence: None,
-            user_evidence_can_unblock: false,
-        }];
-
-        if self.profile == FdbConstructionProfile::FreshModern {
-            for group in &self.groups {
-                for function in &group.functions {
-                    if matches!(function, FdbFunctionPlan::ExplicitZeroOrdinary(_)) {
-                        blockers.push(FdbBuildBlocker {
-                            object: function.identity().target_name.clone(),
-                            field: "fresh empty-function verification",
-                            class: FdbBlockerClass::Engineering,
-                            reason: "the ordinary thermodynamic view requires at least one CP range",
-                            known: "a directly authored fresh empty function has an ID-7 and no CP record",
-                            missing: "verify an empty fresh function by strict reparse and domain structure without invoking ordinary H/S/Cp evaluation",
-                            exact_evidence: None,
-                            user_evidence_can_unblock: false,
-                        });
-                    }
-                }
-            }
+        let mut blockers = Vec::new();
+        if self.profile == FdbConstructionProfile::LegacyTranslation {
+            blockers.push(FdbBuildBlocker {
+                object: "LegacyTranslation FDB materializer".into(),
+                field: "explicit target A and zero-object native emission",
+                class: FdbBlockerClass::Engineering,
+                reason: "the implemented bounded writer accepts FreshModern plans only",
+                known: "the shared FDB charge, composition, phase ID and entry policies are resolved",
+                missing: "apply the explicit target A and physical zero-object omission policy in a Legacy writer",
+                exact_evidence: None,
+                user_evidence_can_unblock: false,
+            });
         }
 
         blockers.push(FdbBuildBlocker {

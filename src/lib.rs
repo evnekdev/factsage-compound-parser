@@ -94,7 +94,7 @@ impl PartialEq for RawDatabase {
 }
 
 impl RawDatabase {
-    fn from_chunks(chunks: Vec<RawChunk>) -> Self {
+    pub(crate) fn from_chunks(chunks: Vec<RawChunk>) -> Self {
         Self {
             chunks,
             identity: NEXT_RAW_DATABASE_ID.fetch_add(1, Ordering::Relaxed),

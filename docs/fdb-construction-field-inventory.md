@@ -8,7 +8,10 @@ meaning is from `docs/thermodynamic-semantics.md` and the paired Legacy G/FDB
 audit on `factsage-solution-parser` branch
 `architecture/legacy-modern-conversion-contract`. Database Compare's
 conversion-blocker contract controls the quality of the remaining questions.
-No private database bytes are included here.
+No private database bytes are included here. The bounded FreshModern materializer
+is implemented in `src/fdb_build/materialize.rs`; FactSage acceptance remains
+pending. The earlier inventory tables below are historical evidence status,
+not the current implementation status.
 
 This document contains both the original field-by-field evidence ledger and the
 later resolved bounded-construction policy. In the older ledger,
@@ -275,12 +278,12 @@ blockers. Current blocker authority is
 | CP unknown 4 bytes and remaining padding | EVIDENCE_REQUIRED | Zero in fresh ID-2 and translated ID-2/5; versioned writer acceptance remains. | Yes | No |
 | CP unused coefficient/power slots for fewer than eight supplied terms | RESOLVED | Preserve supplied coefficient/power pairs exactly; zero-fill only unused coefficient slots and their unused power slots. A supplied zero coefficient may retain a nonzero supplied power. | No | Yes |
 | Explicit zero base/A physical form | EVIDENCE_REQUIRED | Fresh empty function has ID-7 without CP and no A; translated zero blocks may be emitted or omitted. Keep profile policies separate. | Yes for translation policy | Fresh empty form observed; translation blocked |
-| Fresh empty-function verification | ENGINEERING_ONLY | Strict reparse and domain validation can check the ID-7-only structure; ordinary H/S/Cp evaluation requires a CP range and must be skipped for this form. | No | Yes after builder implementation |
+| Fresh empty-function verification | IMPLEMENTED_FRESH_MODERN | The writer emits ID-7-only and verifies strict reparse/domain structure, skipping Cp-backed evaluation. | No | Yes |
 | General Legacy ordinary H/S/Cp source mapping | SCIENTIFIC_SEMANTICS_REQUIRED | Full local base ranges preserve cardinality and upper bounds but show direct and transformed H/S/Cp values by model/function; the plan accepts explicit target values. | Yes if conversion adapter is built | C3 builder yes; full conversion no |
 | Legacy A leading pair → CP and entropy sign | SCIENTIFIC_SEMANTICS_REQUIRED | In this full translation, emitted ID-5 A H is direct and nonzero S has opposite sign; earlier small paired examples mostly had direct S. ID-2 A source mapping also differs. Determine the governing source/version condition. | Yes if adapter is built | C3 builder yes; full conversion no |
 | Exact conversion of arbitrary source `f64` composition to rational identity | POLICY_REQUIRED | No tolerance is selected. An adapter must preserve source exact fractions or declare a conversion policy. | Domain input may be needed | C3 with exact-rational input yes |
 | NativeFactSage omission choice for zero objects | POLICY_REQUIRED | Only after version behavior is observed; do not silently omit in rigorous plan. | Domain/version policy later | No for zero-object native output |
-| Provider raw constructor and serialize/reparse/domain/thermo pipeline | ENGINEERING_ONLY | Existing lower layers are available; implement after native field gates. | No | Yes once evidence gates close |
+| Provider raw constructor and serialize/reparse/domain/thermo pipeline | IMPLEMENTED_FRESH_MODERN | Bounded writer constructs, serializes, strict-reparses, indexes and checks Cp/H/S/G at three temperatures per range. | No | Yes for FreshModern |
 | Independent FactSage acceptance of newly built file | EVIDENCE_REQUIRED | Verification-class gate: self-reparse is insufficient; open a tiny constructed FDB in the identified FactSage version. | Yes, controlled local check | Construction can be coded; GO publication cannot |
 
 ID-8 transitions and active ID-11/auxiliary physics are
@@ -314,7 +317,7 @@ In particular:
 | Compound name | **CONFIRMED DOMAIN POLICY:** leave ID-1 `compound_name` empty by default for fresh-modern construction. Translated FDB alias/population behavior is separate. |
 | Function name | Caller supplied; no Legacy naming rule. |
 | References/density | **CONFIRMED DOMAIN POLICY:** references default to zero. Density is a common optional property: the low portion of `density_raw` carries density while the high packed portion selects an advanced volumetric equation family. Ordinary density can be supported with the default/no-advanced-family code; advanced volumetric families are extensions, not blockers. |
-| Function topology | First implementation tranche may admit one ordinary function per formula group; native FDB Function IDs always use the group-local pseudo-solid `101, 102, ...` series regardless of semantic aggregate state. |
+| Function topology | Implemented for multiple ordinary or empty Functions per group; IDs use the group-local pseudo-solid `101, 102, ...` series regardless of semantic aggregate state. |
 | Cp kind | **CONFIRMED DOMAIN POLICY:** use ID-2 for fresh Cp ranges. Zero-Cp is represented by zero coefficients and zero corresponding powers; unused slots are also zero-filled. |
 | Per-record opaque padding/defaults | **CONFIRMED DOMAIN POLICY:** copy the corresponding values from the controlled fresh FDB record template for each record kind; do not infer semantics. Validate by provider-built FactSage acceptance. |
 
