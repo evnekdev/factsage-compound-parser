@@ -137,21 +137,24 @@ charge-sensitive raw distinction while falsifying the simplest numeric charge
 mapping. Input-linked element encoding, timestamp generation and versioned
 uninterpreted fields are still missing.
 
-### Supplemental Solution UI screenshots
+### Supplemental function-view screenshots
 
-Two user-supplied screenshots show a FactSage 7.3 **Solution** window selecting
-an unmarked and a bracket-plus formula group from an SLN file. Each tree group
-shows one function; the selected functions have the same displayed name,
-range count and visible thermodynamic inputs. This independently corroborates
-that the Solution UI can display separately qualified groups with a reused
-local function name. The screenshots are not stored in the repository.
+Two user-supplied screenshots show functions opened in FactSage 7.3's
+**Solution** module, which displays both functions and solutions. They select
+an unmarked and a bracket-plus formula group. Each tree group shows one
+function; the selected functions have the same displayed name, range count
+and visible thermodynamic inputs. This independently corroborates that the
+function viewer displays separately qualified groups with a reused local
+function name. The screenshots are not stored in the repository.
 
 The window does not show a numeric signed-charge input, an elemental-composition
-editor, an FDB file, or the FDB creation action. The bracket-plus spelling is a
-displayed label, not independent proof of the entered numeric charge. The
-visible application version identifies the viewer, not necessarily the version
-that created the FDB snapshots. These screenshots therefore do not change the
-native charge, element-mapping, versioned-header or timestamp blockers.
+editor, native FDB fields, or the FDB creation action. The window title and
+status-bar path do not make the displayed functions solution-only records. The
+bracket-plus spelling is a displayed label, not independent proof of the
+entered numeric charge. The visible application version identifies the viewer,
+not necessarily the version that created the FDB snapshots. These screenshots
+therefore do not change the native charge, element-mapping, versioned-header
+or timestamp blockers.
 
 ## Exhaustive CP-kind falsification pass
 
@@ -248,8 +251,8 @@ Legacy pairing contract.
 
 Capture the numeric charge and elemental-composition inputs used to create the
 existing **FDB** neutral/charged groups, with the FDB creation version and
-action recorded in one ignored local provenance receipt. The Solution group
-tree and bracket-plus label do not supply those inputs. No new FDB is needed if
+action recorded in one ignored local provenance receipt. The function tree
+and bracket-plus label do not supply those inputs. No new FDB is needed if
 the original inputs can be recovered. This single action can establish or
 reject a bounded numeric charge mapping and constrain the composition policy.
 It does not by itself settle timestamps, fresh zero-Cp serialization or
