@@ -108,7 +108,7 @@ stoichiometry). This is not required for the first FDB profile.
 Default bounded policy:
 
 - integer coefficient slots = parsed integral formula coefficients;
-- real coefficient slots = the same coefficients converted to `f64`;
+- real coefficient slots = the same coefficients converted to `f64` (`real_stoichiometric_coefficients` is native `f8[7]` / `[f64; 7]`);
 - advanced real-stoichiometry overrides are rejected/not admitted initially.
 
 Existing simple FDB evidence already shows integer-formula cases where the integer
