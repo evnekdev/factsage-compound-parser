@@ -379,3 +379,8 @@ Legacy zero base/A omission: **CONFIRMED DOMAIN POLICY**. In the
 may be omitted, matching observed FactSage behavior. The rigorous semantic graph
 may retain the identities internally; native references must remain consistent
 with the emitted object set.
+
+
+### Legacy A leading-block caution
+
+The uncounted two-line `xxxxA` leading block and counted ordinary `xxxx` ranges are not presumed semantically identical. Similar physical layout is insufficient evidence. Field meanings, H/S interpretation, Cp contribution, bounds, defaults, and emitted FDB reduction must be established independently.
