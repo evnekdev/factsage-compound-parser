@@ -176,8 +176,12 @@ corresponding record kind and validate them by independent FactSage acceptance.
 This is a versioned serialization policy. It is preferable to inventing meanings
 for opaque bytes.
 
-For the first profile, zero references and inactive physical metadata are
-admitted. Active references/density remain outside scope.
+For the first profile, references are written as zero by default. These are
+internal FactSage ecosystem references and are not required for ordinary fresh
+function construction. Active/nonzero reference encoding remains outside scope
+unless explicitly requested later.
+
+Inactive physical metadata is admitted. Active density remains outside scope.
 
 ## Cp policy
 
