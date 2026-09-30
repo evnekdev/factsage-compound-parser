@@ -329,3 +329,10 @@ as a multipurpose native coefficient array keyed by the packed equation-family
 code. Search the historical Legacy Python parser for any existing family mapping
 before asking for new evidence. Missing advanced-family semantics do not block
 ordinary density or the bounded fresh writer.
+
+
+Phase-state raw ID allocation: **RESOLVED FROM PROVIDER/CORPUS EVIDENCE**.
+Use 101+ for solids, 801+ for liquids, 901+ for gases, and 991+ for aqueous
+(one-based index within the respective state band, allocated group-locally).
+Ordinary phase negative IDs are arithmetic negations; CP links use exact positive
+raw IDs.
