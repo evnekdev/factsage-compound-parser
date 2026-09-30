@@ -36,7 +36,7 @@ The first writer may intentionally admit only:
 - no automatic A companion;
 - inactive magnetic/PV/transition/ID-11 physics;
 - no active references;
-- no active density;
+- ordinary density may be supplied; advanced volumetric equation families are optional extensions;
 - ordinary integer formula stoichiometry;
 - no advanced real-stoichiometry override;
 - semantic charge `-50..=50`;
@@ -181,7 +181,24 @@ internal FactSage ecosystem references and are not required for ordinary fresh
 function construction. Active/nonzero reference encoding remains outside scope
 unless explicitly requested later.
 
-Inactive physical metadata is admitted. Active density remains outside scope.
+Density is a common optional property and is not inherently outside scope.
+
+**Domain clarification confirmed by the user:** the high-order packed portion of
+`density_raw` encodes the selected advanced volumetric-property equation family.
+The low/remainder portion carries the physical density value. FactSage can pack
+the family code into the same numeric field because physically realistic density
+values are bounded well below the encoding scale.
+
+For the bounded writer:
+- if no density/advanced volumetric model is supplied, use the observed zero/default
+  inactive representation;
+- if density is supplied without an advanced volumetric model, write the ordinary
+  density value with the default/no-advanced-family code;
+- if an advanced volumetric model is supplied, use the corresponding family code
+  and coefficients once that family's native mapping is implemented.
+
+Advanced volumetric equation-family mappings are capability extensions, not a
+blocker for ordinary density support.
 
 ## Cp policy
 
