@@ -304,7 +304,7 @@ In particular:
 | ID-9 / entry timestamps | OLE Automation `f64`; explicit build timestamp or provider clock policy. |
 | Formula parser | Use `chemformula`. |
 | Element IDs | Periodic-table atomic numbers encoded as `u8`. |
-| Element slot order | Formula/parser encounter order, automatically checked against the existing local corpus before enabling the materializer. |
+| Element slot order | **CONFIRMED DOMAIN POLICY:** preserve first-appearance/parser encounter order exactly; verify against the existing local corpus as a regression check. |
 | Integer stoichiometry | Parsed integral formula coefficients. |
 | Real stoichiometry | Default to the same formula coefficients as `f64`; advanced real-stoichiometry overrides are outside the first profile. |
 | Charge | `raw = semantic + 50` for semantic `-50..=50`. |
