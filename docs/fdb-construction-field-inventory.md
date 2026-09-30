@@ -343,3 +343,9 @@ Per-record opaque/default fields: **CONFIRMED DOMAIN POLICY**. For bounded fresh
 construction, copy unknown/reserved/padding values from the corresponding
 controlled fresh-FDB record template for each native record kind. Do not infer
 meanings for opaque bytes. FactSage acceptance is verification only.
+
+
+Per-record opaque fields: **CONFIRMED DOMAIN POLICY**. For each native record
+kind, copy unknown/reserved/padding values from the controlled fresh FDB template
+for that record kind. Do not infer meanings for them in the bounded writer.
+Independent FactSage acceptance verifies the template policy.
