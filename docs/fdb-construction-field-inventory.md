@@ -259,7 +259,7 @@ controlled experiments and dependencies, see
 | Shared `entry_number` | RESOLVED | Fresh and translated FDBs share group start and consecutive stream-order increments within the observed small profile; rollover remains outside it. | No for one-function profile | Yes for bounded small profile |
 | Shared `reference[2]` | EVIDENCE_REQUIRED | No-reference fresh group/CP slots are zero; active reference edit changes only phase slots. Input-to-slot assignment remains. | Yes for active references | No for active; bounded no-reference policy possible |
 | Shared `timestamp_ole` | POLICY_REQUIRED | Fresh ID-1/7/CP agree per group; two groups in one file differ while ID-9 date stays fixed. Clock source/rounding remain unproved. | Yes, versioned action times | No |
-| ID-1 formula label bytes and energy/pressure codes | RESOLVED | Supplied printable label; known code enums; pressure reference is not inferred. | No | Yes |
+| ID-1 formula label bytes and energy/pressure codes | RESOLVED | Preserve the caller-supplied formula spelling exactly after `chemformula` validation; reject invalid formulas rather than canonicalizing/repairing them. Element order is retained exactly as entered. Known code enums; pressure reference is not inferred. | No | Yes |
 | ID-1 formula label correspondence to semantic composition/charge | EVIDENCE_REQUIRED | Neutral/charged groups differ in formula label and raw charge but share native element arrays. Label spelling is not authority for signed charge or composition. Record exact UI inputs and alias policy. | Yes | No |
 | ID-1 `compound_name`, real coefficients, reserved strings, unknown/padding | EVIDENCE_REQUIRED | Fresh compound name stays empty; real coefficients and reserved fields are unchanged across charge contrast. Input-linked scale and versioned assignment remain. | Yes, recorded stoichiometry/version | No |
 | ID-7 target phase name and explicit H/S | RESOLVED | Fresh names are caller supplied; translated names derive from FILE phase ID/G encounter index. The plan keeps explicit H/S. | No | Yes |
@@ -318,3 +318,8 @@ In particular:
 No item in this bounded table requires a new human/domain decision. Remaining
 uncertainty must be handled by automated corpus checks, a narrower capability
 gate, or implementation/verification failure reporting.
+
+
+Formula-label policy: **CONFIRMED DOMAIN POLICY**. Preserve caller spelling exactly
+after `chemformula` validation; reject invalid formulas and require corrected input.
+Do not canonicalize or reorder equivalent formulas.
