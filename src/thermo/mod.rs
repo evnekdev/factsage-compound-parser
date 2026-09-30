@@ -12,7 +12,7 @@ mod heat_capacity;
 mod phase_thermodynamics;
 mod units;
 
-pub(crate) use phase_thermodynamics::integrate_power;
+pub(crate) use phase_thermodynamics::{continuity_tolerance, integrate_power};
 
 /// Re-export of OLE Automation date conversion.
 pub use date::OleAutomationDate;

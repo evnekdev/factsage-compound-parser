@@ -10,6 +10,9 @@ use std::fmt;
 
 use crate::thermo::{EnergyUnit, OleAutomationDate, PressureUnit};
 
+mod blockers;
+pub use blockers::{FdbBlockerClass, FdbBuildBlocker};
+
 /// Metadata actually represented by the FDB-compatible database header.
 #[derive(Debug, Clone, PartialEq)]
 pub struct FdbDatabaseMetadata {
@@ -19,22 +22,71 @@ pub struct FdbDatabaseMetadata {
     pub date_ole: f64,
 }
 
-/// One element and its nonzero amount in a formula group.
-#[derive(Debug, Clone, PartialEq)]
-pub struct FdbElementAmount {
-    /// Chemical element symbol; the provider does not yet map it to native IDs.
-    pub symbol: String,
-    /// Finite positive stoichiometric coefficient.
-    pub amount: f64,
+/// Exact positive source stoichiometric amount; no floating rounding is implied.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct FdbStoichiometricAmount {
+    /// Positive numerator.
+    pub numerator: u64,
+    /// Positive denominator.
+    pub denominator: u64,
 }
 
-/// A database-global stoichiometry group containing ordered, distinct functions.
+/// Semantic electrical charge, independent of formula-label spelling.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct FdbChargeState(i32);
+
+impl FdbChargeState {
+    /// Retains the exact signed source charge without assuming native encoding.
+    pub const fn new(value: i32) -> Self {
+        Self(value)
+    }
+
+    /// Returns the exact signed semantic charge.
+    pub const fn value(self) -> i32 {
+        self.0
+    }
+}
+
+/// One element and its exact, nonzero amount in a formula group.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FdbElementAmount {
+    /// Canonically cased one- or two-letter element symbol; native ID mapping is pending.
+    pub symbol: String,
+    /// Positive exact stoichiometric amount.
+    pub amount: FdbStoichiometricAmount,
+}
+
+/// Canonical semantic group key: ordered element ratios and explicit charge.
+///
+/// Ratio normalization uses exact integer arithmetic. It does not assert how
+/// FactSage should encode source coefficients in native ID-1 fields.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct FdbFormulaGroupIdentity {
+    elements: Vec<(String, u128, u128)>,
+    charge: FdbChargeState,
+}
+
+impl FdbFormulaGroupIdentity {
+    /// Canonical symbol and reduced numerator/denominator ratios.
+    pub fn element_ratios(&self) -> &[(String, u128, u128)] {
+        &self.elements
+    }
+
+    /// Exact semantic charge.
+    pub const fn charge(&self) -> FdbChargeState {
+        self.charge
+    }
+}
+
+/// A database-global composition-plus-charge group containing distinct functions.
 #[derive(Debug, Clone, PartialEq)]
 pub struct FdbFormulaGroupPlan {
     /// Target formula label; its native composition encoding remains a C3 blocker.
     pub formula: String,
     /// Complete composition, in caller order; comparison canonicalizes symbol order.
     pub elements: Vec<FdbElementAmount>,
+    /// Explicit signed semantic charge; neutral is zero, not an inferred default.
+    pub charge: FdbChargeState,
     /// Native compound-level energy convention.
     pub energy_unit: EnergyUnit,
     /// Native compound-level pressure-unit convention.
@@ -43,8 +95,15 @@ pub struct FdbFormulaGroupPlan {
     pub functions: Vec<FdbFunctionPlan>,
 }
 
+impl FdbFormulaGroupPlan {
+    /// Computes exact, charge-aware semantic identity independently of the label.
+    pub fn semantic_identity(&self) -> Result<FdbFormulaGroupIdentity, FdbBuildError> {
+        composition_key(self)
+    }
+}
+
 /// Structural base versus added-companion role.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum FdbFunctionRole {
     /// Ordinary/base Function object.
     Base,
@@ -53,7 +112,7 @@ pub enum FdbFunctionRole {
 }
 
 /// Caller-owned source identity and deterministic target name.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct FdbFunctionIdentity {
     /// Exact FactSage phase ID from the Legacy FILE header, not its display name.
     pub source_phase_id: String,
@@ -123,20 +182,24 @@ pub struct FdbOrdinaryFunctionPlan {
 pub enum FdbAddedContribution {
     /// The source A section is zero, but the A identity still exists.
     ExplicitZero,
-    /// Nonzero contribution retained as ordered H/S/Cp ranges for later ID-5 mapping.
+    /// Explicit H/S/Cp contribution retained as ordered ranges for later ID-5 mapping.
     Thermodynamic {
+        /// Explicit ID-7 phase H field in the group energy convention.
+        phase_enthalpy: f64,
+        /// Explicit ID-7 phase S field in the group energy convention.
+        phase_entropy: f64,
         /// A contribution intervals, with no assumed native default bounds.
         ranges: Vec<FdbThermoRangePlan>,
     },
 }
 
-/// An added Function explicitly paired to one named base.
+/// An added Function explicitly paired to one typed base identity.
 #[derive(Debug, Clone, PartialEq)]
 pub struct FdbAddedFunctionPlan {
     /// Distinct A structural identity.
     pub identity: FdbFunctionIdentity,
-    /// Exact target name of its owning base.
-    pub base_target_name: String,
+    /// Exact structural identity of its owning base.
+    pub base: FdbFunctionIdentity,
     /// Zero or nonzero A intent.
     pub contribution: FdbAddedContribution,
     /// Explicit disposition of auxiliary physics.
@@ -184,7 +247,7 @@ pub enum FdbBuildError {
         /// First claim or conflicting source role.
         previous: String,
     },
-    /// A formula group is missing or repeats an existing stoichiometry.
+    /// A formula group is missing or duplicates a full composition-plus-charge key.
     AmbiguousGroup {
         /// Formula group or database scope.
         group: String,
@@ -227,19 +290,6 @@ impl fmt::Display for FdbBuildError {
 }
 
 impl std::error::Error for FdbBuildError {}
-
-/// A missing native rule or implementation capability, separate from plan validity.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct FdbBuildBlocker {
-    /// Object or profile affected.
-    pub object: String,
-    /// Exact native field or capability.
-    pub field: &'static str,
-    /// Specific missing evidence or implementation.
-    pub reason: &'static str,
-    /// Whether a paired fixture or domain expert can provide the missing fact.
-    pub user_evidence_can_unblock: bool,
-}
 
 /// Validated, immutable rigorous-semantic FDB intent.
 #[derive(Debug, Clone, PartialEq)]
@@ -285,13 +335,13 @@ impl FdbBuildPlan {
                 reason: "at least one formula group is required".into(),
             });
         }
-        let mut group_keys = BTreeMap::new();
+        let mut group_keys = BTreeMap::<FdbFormulaGroupIdentity, String>::new();
         let mut formula_names = BTreeSet::new();
-        let mut names = BTreeMap::<String, String>::new();
         let mut source_roles = BTreeSet::new();
-        let mut bases = BTreeMap::<String, (String, usize, String)>::new();
+        let mut bases = BTreeMap::<FdbFunctionIdentity, FdbFormulaGroupIdentity>::new();
         let mut additions = Vec::new();
         for group in &self.groups {
+            let mut names = BTreeMap::<String, String>::new();
             check_text(&group.formula, "formula", &group.formula, 40, false)?;
             if !formula_names.insert(group.formula.clone()) {
                 return Err(FdbBuildError::AmbiguousGroup {
@@ -340,7 +390,7 @@ impl FdbBuildPlan {
                     id.source_token.clone(),
                     id.source_phase_id.clone(),
                     id.source_g_index,
-                    id.role as u8,
+                    id.role,
                 )) {
                     return Err(FdbBuildError::DuplicateIdentity {
                         object: id.target_name.clone(),
@@ -360,10 +410,7 @@ impl FdbBuildPlan {
                         check_finite(&id.target_name, "phase_enthalpy", base.phase_enthalpy)?;
                         check_finite(&id.target_name, "phase_entropy", base.phase_entropy)?;
                         validate_ranges(&id.target_name, &base.ranges)?;
-                        bases.insert(
-                            id.target_name.clone(),
-                            (id.source_token.clone(), id.source_g_index, key.clone()),
-                        );
+                        bases.insert(id.clone(), key.clone());
                     }
                     FdbFunctionPlan::ExplicitZeroOrdinary(_) => {
                         if id.role != FdbFunctionRole::Base {
@@ -373,10 +420,7 @@ impl FdbBuildPlan {
                                 reason: "zero ordinary variant requires Base role".into(),
                             });
                         }
-                        bases.insert(
-                            id.target_name.clone(),
-                            (id.source_token.clone(), id.source_g_index, key.clone()),
-                        );
+                        bases.insert(id.clone(), key.clone());
                     }
                     FdbFunctionPlan::Added(added) => {
                         if id.role != FdbFunctionRole::Added {
@@ -387,104 +431,64 @@ impl FdbBuildPlan {
                             });
                         }
                         validate_aux(&id.target_name, &added.auxiliary)?;
-                        if let FdbAddedContribution::Thermodynamic { ranges } = &added.contribution
+                        if let FdbAddedContribution::Thermodynamic {
+                            phase_enthalpy,
+                            phase_entropy,
+                            ranges,
+                        } = &added.contribution
                         {
+                            check_finite(&id.target_name, "phase_enthalpy", *phase_enthalpy)?;
+                            check_finite(&id.target_name, "phase_entropy", *phase_entropy)?;
                             validate_ranges(&id.target_name, ranges)?;
                         }
-                        additions.push((id, &added.base_target_name, key.clone()));
+                        additions.push((id, &added.base, key.clone()));
                     }
                 }
             }
         }
         let mut paired = BTreeSet::new();
-        for (id, base_name, group_key) in additions {
-            let Some((source, index, base_group)) = bases.get(base_name) else {
+        for (id, base, group_key) in additions {
+            validate_identity(base)?;
+            let Some(base_group) = bases.get(base) else {
                 return Err(FdbBuildError::InvalidPairing {
                     added: id.target_name.clone(),
-                    base: base_name.clone(),
+                    base: base.target_name.clone(),
                     reason: "base identity is missing".into(),
                 });
             };
             if base_group != &group_key
-                || source != &id.source_token
-                || *index != id.source_g_index
-                || id.target_name != format!("{base_name}A")
+                || base.role != FdbFunctionRole::Base
+                || base.source_token != id.source_token
+                || base.source_phase_id != id.source_phase_id
+                || base.source_g_index != id.source_g_index
+                || id.target_name != format!("{}A", base.target_name)
             {
                 return Err(FdbBuildError::InvalidPairing {
                     added: id.target_name.clone(),
-                    base: base_name.clone(),
+                    base: base.target_name.clone(),
                     reason:
                         "A must share source G entry and formula group and use the base name plus A"
                             .into(),
                 });
             }
-            if !paired.insert(base_name) {
+            if !paired.insert(base) {
                 return Err(FdbBuildError::InvalidPairing {
                     added: id.target_name.clone(),
-                    base: base_name.clone(),
+                    base: base.target_name.clone(),
                     reason: "base already owns another A".into(),
                 });
             }
         }
-        for base_name in bases.keys() {
-            if !paired.contains(base_name) {
+        for base in bases.keys() {
+            if !paired.contains(base) {
                 return Err(FdbBuildError::InvalidPairing {
-                    added: format!("{base_name}A"),
-                    base: base_name.clone(),
+                    added: format!("{}A", base.target_name),
+                    base: base.target_name.clone(),
                     reason: "rigorous profile requires one explicit A companion per base".into(),
                 });
             }
         }
         Ok(())
-    }
-
-    /// Lists exact blockers for provider-owned native materialization (FDB-C3).
-    /// Semantic validity never implies these fields can already be encoded.
-    pub fn native_blockers(&self) -> Vec<FdbBuildBlocker> {
-        let mut blockers = vec![FdbBuildBlocker {
-            object: "database header".into(),
-            field: "header padding/unknown bytes and native date policy",
-            reason: "fresh FDB defaults have not been established by paired construction evidence",
-            user_evidence_can_unblock: true,
-        }];
-        for group in &self.groups {
-            blockers.push(FdbBuildBlocker {
-                object: group.formula.clone(),
-                field: "common header element IDs, charge, entry/reference/timestamp, compound name, real stoichiometry and reserved fields",
-                reason: "native generation, formula-label consistency and default rules are not established for fresh groups",
-                user_evidence_can_unblock: true,
-            });
-            for function in &group.functions {
-                let object = function.identity().target_name.clone();
-                blockers.push(FdbBuildBlocker {
-                    object: object.clone(),
-                    field: "phase IDs, negative ID, common metadata and phase padding",
-                    reason: "fresh ID allocation/link and default rules are not established",
-                    user_evidence_can_unblock: true,
-                });
-                match function {
-                    FdbFunctionPlan::Ordinary(_) => blockers.push(FdbBuildBlocker {
-                        object,
-                        field: "CP unknown bytes/padding, unused Cp slots and ordinary phase H/S selection",
-                        reason: "fresh record defaults and phase-anchor selection need paired construction evidence",
-                        user_evidence_can_unblock: true,
-                    }),
-                    FdbFunctionPlan::ExplicitZeroOrdinary(_) => blockers.push(FdbBuildBlocker {
-                        object,
-                        field: "zero-base physical encoding or versioned omission policy",
-                        reason: "rigorous zero base identity is established but physical representation is not",
-                        user_evidence_can_unblock: true,
-                    }),
-                    FdbFunctionPlan::Added(_) => blockers.push(FdbBuildBlocker {
-                        object,
-                        field: "ID-5 bounds, powers, zero-A encoding and exceptional A entropy sign",
-                        reason: "paired evidence does not establish a general source-to-native A rule or zero-object policy",
-                        user_evidence_can_unblock: true,
-                    }),
-                }
-            }
-        }
-        blockers
     }
 }
 
@@ -522,19 +526,27 @@ fn check_finite(object: &str, field: &'static str, value: f64) -> Result<(), Fdb
     Ok(())
 }
 
-fn composition_key(group: &FdbFormulaGroupPlan) -> Result<String, FdbBuildError> {
+fn composition_key(group: &FdbFormulaGroupPlan) -> Result<FdbFormulaGroupIdentity, FdbBuildError> {
     if group.elements.is_empty() {
         return Err(FdbBuildError::AmbiguousGroup {
             group: group.formula.clone(),
             reason: "composition is empty".into(),
         });
     }
+    if group.elements.len() > 7 {
+        return Err(FdbBuildError::AmbiguousGroup {
+            group: group.formula.clone(),
+            reason: "native compound headers support at most seven element slots".into(),
+        });
+    }
     let mut elements = BTreeMap::new();
     for element in &group.elements {
-        if element.symbol.is_empty()
-            || !element.symbol.bytes().all(|b| b.is_ascii_alphabetic())
-            || !element.amount.is_finite()
-            || element.amount <= 0.0
+        let symbol = element.symbol.as_bytes();
+        if !(symbol.len() == 1 || symbol.len() == 2)
+            || !symbol[0].is_ascii_uppercase()
+            || (symbol.len() == 2 && !symbol[1].is_ascii_lowercase())
+            || element.amount.numerator == 0
+            || element.amount.denominator == 0
         {
             return Err(FdbBuildError::AmbiguousGroup {
                 group: group.formula.clone(),
@@ -554,21 +566,27 @@ fn composition_key(group: &FdbFormulaGroupPlan) -> Result<String, FdbBuildError>
             });
         }
     }
-    // Stoichiometry is a ratio: Ni1S1 and Ni2S2 must occupy the same group.
-    // Exact f64 ratios are used deliberately; identity never uses a tolerance.
+    // Stoichiometry is a ratio: Ni1S1 and Ni2S2 share a semantic key at the
+    // same charge. Products of two u64 values fit u128; reduction stays exact.
     let scale = *elements.values().next().expect("nonempty checked above");
-    let mut key = String::new();
+    let mut canonical = Vec::with_capacity(elements.len());
     for (symbol, amount) in elements {
-        let ratio = amount / scale;
-        if !ratio.is_finite() {
-            return Err(FdbBuildError::AmbiguousGroup {
-                group: group.formula.clone(),
-                reason: "normalized stoichiometry is non-finite".into(),
-            });
-        }
-        key.push_str(&format!("{symbol}:{};", ratio.to_bits()));
+        let numerator = u128::from(amount.numerator) * u128::from(scale.denominator);
+        let denominator = u128::from(amount.denominator) * u128::from(scale.numerator);
+        let divisor = gcd_u128(numerator, denominator);
+        canonical.push((symbol, numerator / divisor, denominator / divisor));
     }
-    Ok(key)
+    Ok(FdbFormulaGroupIdentity {
+        elements: canonical,
+        charge: group.charge,
+    })
+}
+
+fn gcd_u128(mut left: u128, mut right: u128) -> u128 {
+    while right != 0 {
+        (left, right) = (right, left % right);
+    }
+    left
 }
 
 fn validate_identity(id: &FdbFunctionIdentity) -> Result<(), FdbBuildError> {
@@ -612,6 +630,13 @@ fn validate_identity(id: &FdbFunctionIdentity) -> Result<(), FdbBuildError> {
 
 fn validate_aux(object: &str, auxiliary: &FdbAuxiliaryIntent) -> Result<(), FdbBuildError> {
     if let FdbAuxiliaryIntent::Active { field } = auxiliary {
+        if field.trim().is_empty() {
+            return Err(FdbBuildError::InvalidField {
+                object: object.into(),
+                field: "auxiliary.field",
+                reason: "active auxiliary contribution needs a named field or capability".into(),
+            });
+        }
         return Err(FdbBuildError::UnsupportedAuxiliary {
             object: object.into(),
             field: field.clone(),
@@ -699,9 +724,7 @@ fn validate_ranges(object: &str, ranges: &[FdbThermoRangePlan]) -> Result<(), Fd
                             reason,
                         }
                     })? + right_anchor;
-                let tolerance = crate::thermo::PROVIDER_RANGE_CONTINUITY_ABSOLUTE_TOLERANCE
-                    + crate::thermo::PROVIDER_RANGE_CONTINUITY_RELATIVE_TOLERANCE
-                        * left_value.abs().max(right_value.abs());
+                let tolerance = crate::thermo::continuity_tolerance(left_value, right_value);
                 if !left_value.is_finite()
                     || !right_value.is_finite()
                     || (left_value - right_value).abs() > tolerance

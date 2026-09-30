@@ -1063,7 +1063,7 @@ fn validate_boundary_continuity(
     Ok(())
 }
 
-fn continuity_tolerance(left: f64, right: f64) -> f64 {
+pub(crate) fn continuity_tolerance(left: f64, right: f64) -> f64 {
     PROVIDER_RANGE_CONTINUITY_ABSOLUTE_TOLERANCE
         + PROVIDER_RANGE_CONTINUITY_RELATIVE_TOLERANCE * left.abs().max(right.abs())
 }
