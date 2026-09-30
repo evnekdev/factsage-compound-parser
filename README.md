@@ -157,6 +157,7 @@ this project does not promise `1.0` stability yet.
 - [Chunk layouts](docs/chunk-layouts.md)
 - [Domain model](docs/domain-model.md)
 - [Thermodynamic semantics](docs/thermodynamic-semantics.md)
+- [Fresh FDB construction plan](docs/fdb-construction-plan.md)
 - [Raw serialization](docs/serialization.md)
 - [Controlled editing](docs/editing.md)
 - [Python parity](docs/python-parity.md)
