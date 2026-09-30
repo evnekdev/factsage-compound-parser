@@ -337,3 +337,9 @@ not use them. Allocate FDB Function IDs as a group-local pseudo-solid series
 `101, 102, 103, ...` in encounter order regardless of source aggregate state.
 Write the negative ID as the arithmetic negation and link CP records to the exact
 positive Function ID.
+
+
+Per-record opaque/default fields: **CONFIRMED DOMAIN POLICY**. For bounded fresh
+construction, copy unknown/reserved/padding values from the corresponding
+controlled fresh-FDB record template for each native record kind. Do not infer
+meanings for opaque bytes. FactSage acceptance is verification only.
