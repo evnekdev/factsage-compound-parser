@@ -285,3 +285,36 @@ ID-8 transitions and active ID-11/auxiliary physics are
 fabricated zero defaults. No native field is silently initialized by Rust's
 default values. Historical `dbsolution` has Legacy/SLN charge parsing but no
 FDB raw constructor or evidence for the unresolved shared-header fields.
+
+
+## Bounded fresh-modern policy overrides
+
+The detailed inventory above records the evidence history. For the first
+`FreshModern` writer, the normative construction policy is now
+[`fdb-bounded-fresh-profile.md`](fdb-bounded-fresh-profile.md). Where an older
+inventory row still says `UNRESOLVED_BLOCKER` or `EVIDENCE_REQUIRED`, the
+bounded profile takes precedence when it explicitly supplies a policy or excludes
+the feature.
+
+In particular:
+
+| Field/capability | Bounded fresh-modern disposition |
+| --- | --- |
+| ID-9 opaque/padding/read-flag bytes | Copy from the controlled empty-FDB template; change only established date/comment fields. |
+| ID-9 / entry timestamps | OLE Automation `f64`; explicit build timestamp or provider clock policy. |
+| Formula parser | Use `chemformula`. |
+| Element IDs | Periodic-table atomic numbers encoded as `u8`. |
+| Element slot order | Formula/parser encounter order, automatically checked against the existing local corpus before enabling the materializer. |
+| Integer stoichiometry | Parsed integral formula coefficients. |
+| Real stoichiometry | Default to the same formula coefficients as `f64`; advanced real-stoichiometry overrides are outside the first profile. |
+| Charge | `raw = semantic + 50` for semantic `-50..=50`. |
+| Compound name | Empty for the bounded fresh profile, matching the direct-modern evidence. |
+| Function name | Caller supplied; no Legacy naming rule. |
+| References/density | Inactive/zero only in the first profile. |
+| Function topology | One ordinary solid function per formula group. |
+| Cp kind | Nonzero Cp only; ID-2. Fresh zero-Cp is outside the first profile. |
+| Per-record opaque padding/defaults | Use the controlled fresh record-kind values and validate by provider-built FactSage acceptance. |
+
+No item in this bounded table requires a new human/domain decision. Remaining
+uncertainty must be handled by automated corpus checks, a narrower capability
+gate, or implementation/verification failure reporting.
