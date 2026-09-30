@@ -360,3 +360,8 @@ human input unless existing evidence falsifies the template rule.
 Function/CP stream order: **CONFIRMED DOMAIN POLICY**. Within a formula group,
 emit `ID-1 -> ID-7(function 1) -> CP(function 1) -> ID-7(function 2) ->
 CP(function 2) -> ...` in function/range encounter order.
+
+
+Cp range ordering and continuity: **CONFIRMED DOMAIN POLICY**. Preserve supplied
+range order and require `Tmax(i) == Tmin(i+1)` for adjacent ranges. Reject gaps,
+overlaps, and silent reordering.
