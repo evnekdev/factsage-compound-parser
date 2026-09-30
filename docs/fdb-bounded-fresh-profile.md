@@ -162,7 +162,7 @@ For the bounded fresh profile:
 - validate that spelling with `chemformula`;
 - if parsing fails, reject it and require a valid formula rather than silently repairing or canonicalizing it;
 - preserve the entered element order in the stored label and in native composition slots (for example, `O4Fe3` remains `O4Fe3`);
-- compound-name field may remain empty, matching the controlled fresh evidence;
+- **confirmed domain policy:** leave the ID-1 `compound_name` field empty by default for fresh-modern construction, matching the controlled fresh evidence; translated FDB alias behavior does not change this fresh-writer default;
 - local function names may repeat across distinct formula/charge groups;
 - formula-qualified identity disambiguates such groups;
 - an empty SLN formula qualifier does not mean the FDB object lacks composition.
