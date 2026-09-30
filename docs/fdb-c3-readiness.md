@@ -1,14 +1,26 @@
 # FDB-C3 readiness after joint fresh-modern and translation audit
 
-**Decision: BLOCKED for native materialization.** The provider can implement
-plan traversal, raw chunk assembly, serialization, strict reparse, domain
-indexing and ordinary thermodynamic verification with existing lower layers.
-It cannot yet assign every native byte for a bounded fresh, one-function FDB
-without guessing header, semantic charge/composition, timestamp and some
-record-kind fields. The ignored `data/v0` direct-modern snapshots and `data/v1`
-official Legacy translation were examined separately. No raw FDB construction
-is implemented by this review. FDB-C1 and FDB-C2 remain GO; FDB-C3 remains
-BLOCKED.
+**Decision: BOUNDED-GO FOR IMPLEMENTATION; NOT YET VERIFIED.** FDB-C1 and FDB-C2
+remain GO. The first fresh-modern native writer now has an explicit bounded
+construction policy in
+[`fdb-bounded-fresh-profile.md`](fdb-bounded-fresh-profile.md). No remaining
+scientific/domain-policy question requires human input before implementing that
+profile. The provider can proceed through plan traversal, raw chunk assembly,
+serialization, strict reparse, domain indexing and thermodynamic verification.
+
+The bounded profile resolves the previously open fresh-writer choices by policy:
+copy opaque ID-9/default bytes from the controlled empty-FDB profile, use OLE
+Automation dates, parse formulas with `chemformula`, encode periodic-table
+atomic numbers as one-byte element IDs, use formula encounter order subject to
+automatic corpus confirmation, use integral formula coefficients with matching
+`f64` real coefficients, and retain the established bounded charge offset.
+Advanced real-stoichiometry, zero-Cp, active references/density, non-solid
+functions and Legacy A reduction are outside the first profile rather than
+blocking it.
+
+FDB-C3 is not yet a completed GO because the materializer and independent
+FactSage acceptance have not been executed. Those are engineering/verification
+gates, not human-in-the-loop blockers.
 
 The field-level status checklist is
 [`fdb-construction-field-inventory.md`](fdb-construction-field-inventory.md).
@@ -18,6 +30,22 @@ evidence artifact. It includes an engineering blocker for the unimplemented
 builder and a verification blocker for independent FactSage acceptance. Caller
 H/S/Cp values, evidenced chunk IDs, native units and inactive physical tails
 are not misclassified as new evidence needs.
+
+## Human-in-the-loop assessment
+
+For the bounded fresh-modern profile:
+
+```text
+Additional user input required now: NO
+Additional domain-policy decisions required now: NO
+Additional controlled user-created evidence required now: NO
+Remaining work: engineering + automated evidence checks + FactSage acceptance
+```
+
+The implementation tranche must first exhaust the existing ignored local corpus
+for element-order/default confirmation. If a rule is falsified, narrow the
+profile or report the exact automated counterexample. Do not turn an
+implementation/verification task back into a generic request for user evidence.
 
 ## Evidence precedence
 
