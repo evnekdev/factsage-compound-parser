@@ -306,7 +306,7 @@ In particular:
 | Element IDs | Periodic-table atomic numbers encoded as `u8`. |
 | Element slot order | **CONFIRMED DOMAIN POLICY:** preserve first-appearance/parser encounter order exactly; verify against the existing local corpus as a regression check. |
 | Integer stoichiometry | Parsed integral formula coefficients. |
-| Real stoichiometry | Default to the same formula coefficients as `f64`; advanced real-stoichiometry overrides are outside the first profile. |
+| Real stoichiometry | **CONFIRMED NATIVE TYPE:** `f8[7]` / `[f64; 7]`. Default to the same formula coefficients as `f64`; advanced real-stoichiometry overrides are outside the first profile. |
 | Charge | `raw = semantic + 50` for semantic `-50..=50`. |
 | Compound name | Empty for the bounded fresh profile, matching the direct-modern evidence. |
 | Function name | Caller supplied; no Legacy naming rule. |
