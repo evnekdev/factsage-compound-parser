@@ -312,7 +312,7 @@ In particular:
 | Function name | Caller supplied; no Legacy naming rule. |
 | References/density | **CONFIRMED DOMAIN POLICY:** references default to zero. Density is a common optional property: the low portion of `density_raw` carries density while the high packed portion selects an advanced volumetric equation family. Ordinary density can be supported with the default/no-advanced-family code; advanced volumetric families are extensions, not blockers. |
 | Function topology | One ordinary solid function per formula group. |
-| Cp kind | Nonzero Cp only; ID-2. Fresh zero-Cp is outside the first profile. |
+| Cp kind | Nonzero Cp only; ID-2. Unused Cp coefficient slots and their corresponding power slots are written as zero. Fresh zero-Cp is outside the first profile. |
 | Per-record opaque padding/defaults | Use the controlled fresh record-kind values and validate by provider-built FactSage acceptance. |
 
 No item in this bounded table requires a new human/domain decision. Remaining
@@ -323,3 +323,9 @@ gate, or implementation/verification failure reporting.
 Formula-label policy: **CONFIRMED DOMAIN POLICY**. Preserve caller spelling exactly
 after `chemformula` validation; reject invalid formulas and require corrected input.
 Do not canonicalize or reorder equivalent formulas.
+
+Advanced volumetric coefficients: treat the physical-property coefficient blocks
+as a multipurpose native coefficient array keyed by the packed equation-family
+code. Search the historical Legacy Python parser for any existing family mapping
+before asking for new evidence. Missing advanced-family semantics do not block
+ordinary density or the bounded fresh writer.
