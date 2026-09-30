@@ -298,11 +298,13 @@ applicable, and perform controlled FactSage open/load/save acceptance. Legacy
 source-to-target scientific conversion remains a separate upstream problem and
 does not block native serialization of an already explicit target plan.
 
-## Smallest next controlled evidence action
+## Next implementation/verification action
 
-Create one directly authored fresh FDB with a controlled elemental-ratio
-change while keeping charge, function and thermodynamic inputs fixed. Record
-the entered composition and creation version in an ignored local receipt, then
-compare ID-1/ID-7/CP element IDs and integer/real coefficients. This is the
-smallest remaining input-linked composition experiment. It does not by itself
-settle timestamps, fresh zero-Cp serialization or provider-built acceptance.
+Implement the bounded-profile materializer using the resolved construction
+rules, then serialize and strict-reparse a tiny generated FDB, build its
+`DomainIndex`, and verify structural/thermodynamic invariants where applicable.
+After internal verification, open/load/save that generated FDB in FactSage and
+confirm intended values and references remain stable.
+
+No additional composition, timestamp, charge, zero-Cp, Function-ID, opaque-byte,
+or unused-slot evidence experiment is required before this implementation step.
