@@ -16,6 +16,33 @@ builder and a verification blocker for independent FactSage acceptance. Caller
 H/S/Cp values, evidenced chunk IDs, native units and inactive physical tails
 are not misclassified as new evidence needs.
 
+## Evidence precedence
+
+Before requesting any new manual FactSage experiment, inspect the existing
+local-only paired Legacy -> Modern translation corpus recorded in
+`database-compare/architecture/local-v1-translation-evidence.md` and stored
+under ignored `database-compare/data/v1/`.
+
+This local corpus is the primary evidence source for current FDB-C3 blockers.
+The intended order is:
+
+```text
+provider code and tracked contracts
+    +
+local paired data/v1 translation evidence
+    +
+historical dbsolution evidence where useful
+        ↓
+resolve or narrow blockers
+        ↓
+only then request the smallest new controlled FactSage experiment
+```
+
+The corpus itself remains confidential and untracked. Only generalized,
+redacted structural conclusions may enter tracked code, tests, or
+documentation. If `data/v1/` already answers an E1/E2/E3 question, that
+experiment is not required.
+
 ## Evidence audit
 
 - **Provider code:** `RawCommonHeader.charge_raw` is signed `i8` and occurs on
