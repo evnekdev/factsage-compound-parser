@@ -310,7 +310,7 @@ In particular:
 | Charge | `raw = semantic + 50` for semantic `-50..=50`. |
 | Compound name | Empty for the bounded fresh profile, matching the direct-modern evidence. |
 | Function name | Caller supplied; no Legacy naming rule. |
-| References/density | **CONFIRMED DOMAIN POLICY:** references default to zero; they are internal FactSage metadata and are not required for ordinary fresh construction. Active/nonzero references and active density are outside the first profile. |
+| References/density | **CONFIRMED DOMAIN POLICY:** references default to zero. Density is a common optional property: the low portion of `density_raw` carries density while the high packed portion selects an advanced volumetric equation family. Ordinary density can be supported with the default/no-advanced-family code; advanced volumetric families are extensions, not blockers. |
 | Function topology | One ordinary solid function per formula group. |
 | Cp kind | Nonzero Cp only; ID-2. Fresh zero-Cp is outside the first profile. |
 | Per-record opaque padding/defaults | Use the controlled fresh record-kind values and validate by provider-built FactSage acceptance. |
