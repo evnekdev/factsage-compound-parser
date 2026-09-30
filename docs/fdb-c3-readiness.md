@@ -67,8 +67,11 @@ experiment is not required.
 - **Native field variation:** solid phase IDs increase within each group and
   repeat across groups; negative IDs are their arithmetic negation in the FDB
   and comparison CDBs. CP links are group-local. Shared composition and raw
-  charge repeat within groups; entry numbers and timestamps vary. Strict
-  simple integer FDB labels match atomic-number IDs and integer/real
+  charge repeat within groups. FDB entry numbers increment once per group
+  record in stream order; the comparison CDBs do not all follow that rule.
+  CP timestamps copy the ID-1 timestamp in all local native members, while
+  phase timestamps can differ. Strict simple integer FDB labels match
+  atomic-number IDs and integer/real
   coefficients, but comparison CDBs do not follow the same pattern. Repeated
   zero padding and header fields are observations, not fresh defaults.
 - **Historical Python:** `dbsolution` reads Legacy charge and derives modern
@@ -83,11 +86,72 @@ experiment is not required.
   source G roles remain globally distinct. It contains no raw offsets or byte
   padding fields.
 
+## Exhaustive CP-kind falsification pass
+
+The local-only map includes every receipt-admitted FDB CP record, matched
+source G entries and direct QKTO functions. It tests all represented model
+families, both base/A names, source ordinary-range counts, direct source-range
+matches, exact Cp coefficient zero status, phase links, and emitted/omitted
+cases. It does not infer source identity by numerical equality.
+
+**Observed invariant:** every paired FDB ID-2 CP record has at least one
+exactly nonzero Cp coefficient; every ID-5 record has all-zero Cp coefficients.
+Both kinds occur under base and A names. Every identity-and-order-linked
+counted base range with nonzero source Cp uses ID-2, and every exact-zero
+source Cp range uses ID-5 across the represented model families.
+The same zero/nonzero split for IDs 2/5 appears in both comparison CDBs, but
+their additional zero-Cp ID-3 records show that zero Cp alone does not select
+a kind across all native databases. No counterexample to the restricted FDB
+invariant was found. A fresh FDB with controlled zero/nonzero Cp remains
+necessary to show whether this invariant is a constructor rule. Added and
+generated source contributions need a separate, lossless Cp reduction.
+
+The full local translation has only solid FDB phases. Its phase IDs are
+group-local and consecutive, and their negative fields are arithmetic
+negations. CP links point within the group. Entry numbers are consecutive in
+ID-1/ID-7/CP stream order from a uniform group start. Both reference slots
+are zero in the FDB, but comparison CDBs include nonzero references. These
+relationships narrow fresh-format tests without proving version defaults or
+non-solid allocation.
+
+The emitted ID-5 A objects in this translation retain the source leading H
+anchor and reverse the sign of nonzero source S. Earlier small paired examples
+mostly retained the S sign. ID-2 A objects do not follow that direct leading
+anchor mapping. No universal A sign condition follows from the combined
+evidence. Emitted objects are referenced by Modern SLN and omitted objects
+are not, but tested source-side zero, matrix, model and range features still
+leave ambiguous emission cases. A NativeFactSage zero-object policy remains
+blocked.
+
+For identity-linked base functions, counted source-range cardinality and
+upper-temperature bounds transfer in encounter order across represented
+models. Direct H/S/Cp numeric conversion holds for a subset, while other
+base ranges have transformed anchors or terms. The earlier small-fixture
+conversion table therefore remains a bounded observation, not a universal
+Legacy-to-FDB transform. The native builder can accept explicit target H/S/Cp
+without solving the later source-to-plan adapter.
+
 ## Remaining experiments after the local audit
 
 All inspected native files must remain local and uncommitted. Record the
 FactSage version and creation action; compare only aggregate field decisions in
 project documentation.
+
+### E0 — controlled CP-kind discriminator
+
+**Question:** Does zero versus nonzero semantic Cp select ID-5 versus ID-2
+when all other function inputs are held fixed?
+
+**Input and action:** Make one same-version controlled Legacy import with two
+otherwise equivalent functions that differ only in whether the source Cp
+coefficients are all exactly zero. Retain the local source, generated FDB and
+SLN, version and import settings. Inspect the generated Cp coefficients and
+kind under their identity-linked functions, including any omitted objects.
+
+**Decision enabled:** Confirm or reject the paired FDB zero/nonzero kind
+candidate as a construction rule. A counterexample leaves CP kind as a
+scientific-semantics blocker; a confirmation narrows the writer to the
+tested profile but does not establish other native bytes.
 
 ### E1 — minimal neutral fresh FDB
 
@@ -160,6 +224,6 @@ validation. The semantic plan now records target phase state and rejects a
 base/A pair with mismatched states. A builder skeleton, plan-order traversal,
 typed generated-ID map and post-build verification pipeline could be
 implemented without writing native chunks. Actual byte materialization waits
-for E1 and a CP kind rule; charged support waits for E2; zero base/A and Legacy
+for E0 and E1; charged support waits for E2; zero base/A and Legacy
 A conversion wait for E3. This review leaves those engineering tasks
 unimplemented because no complete bounded native profile is yet evidenced.

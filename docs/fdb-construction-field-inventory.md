@@ -73,16 +73,30 @@ defaults. Solid phase IDs increase in group stream order and restart within
 each group; the negative field is the arithmetic negative of the positive ID
 in the paired FDB and comparison CDBs. CP phase links are group-local. Shared
 composition, charge, coefficient padding, and references repeat within an FDB
-group, while entry numbers and timestamps vary. Strict simple integer FDB
-labels match atomic-number element IDs and matching integer/real coefficients
+group. In the paired FDB, entry numbers advance once per ID-1/ID-7/CP record
+in group stream order. CP timestamps copy the ID-1 group timestamp in the
+paired FDB and both comparison CDBs; ID-7 timestamps can differ. Strict simple
+integer FDB labels match atomic-number element IDs and matching integer/real coefficients
 in label order, with empty slots zero; this pattern does not hold in the two
 comparison CDBs and cannot be generalized to fractional or charged labels.
 
-Most critically, base/A role does **not** select CP ID-2 versus ID-5. Both
-kinds occur under both roles in the translation, depending on source model and
-function. Zero base/A objects can be emitted or omitted. This corpus does not
-identify the full CP kind condition or a universal zero-object policy. Native
-materialization remains blocked even for a bounded fresh profile.
+Base/A role does **not** select CP ID-2 versus ID-5. Across every CP record in
+the paired FDB, ID-2 has at least one exactly nonzero Cp coefficient and ID-5
+has all-zero Cp coefficients. The same ID-2/ID-5 split occurs in both local
+comparison CDBs, although those CDBs also have zero-Cp ID-3 records.
+Identity-and-order-linked counted base source ranges with nonzero Cp map to
+ID-2, and all-zero Cp ranges map to ID-5 across represented model families.
+This is a strong, falsification-checked **output invariant**, not yet a
+fresh-construction rule: some added/generated records
+need a source-to-target reduction before their Cp content is known.
+
+Zero base/A objects can be emitted or omitted. Emitted objects have Modern SLN
+references and omitted objects do not, but that output relationship does not
+establish a source-side emission policy. The full local translation's emitted
+ID-5 A anchors show direct H and opposite-sign S for nonzero S, whereas the
+earlier small paired examples mostly showed direct S. A universal A sign rule
+is therefore unsupported. Native materialization remains blocked even for a
+bounded fresh profile.
 
 ## ID-9 database header
 
@@ -108,9 +122,9 @@ header field). No invented database ID is in the semantic plan.
 | `element_coefficients[7]` | UNRESOLVED_BLOCKER | `LOCAL_PAIR`: the same bounded labels have integer coefficients matching the written amounts and group-wide repetition. General native scale and fresh construction remain unproved. |
 | `coefficient_padding` | UNRESOLVED_BLOCKER | `UNKNOWN`: no fresh default. |
 | `charge_raw` | UNRESOLVED_BLOCKER | `LOCAL_PAIR`: the raw signed byte repeats within each FDB group and differs among groups. The corpus lacks a neutral group and does not establish numeric semantic mapping. |
-| `entry_number` | UNRESOLVED_BLOCKER | `LOCAL_PAIR`: varies within groups; allocation semantics are not established. |
-| `reference[2]` | UNRESOLVED_BLOCKER | `LOCAL_PAIR`: observed group-consistent values and CP-to-phase copying; fresh generation and rollover remain unproved. |
-| `timestamp_ole` | UNRESOLVED_BLOCKER | `LOCAL_PAIR`: varies within groups and is not uniformly the database date or owning phase timestamp; creation rule unknown. |
+| `entry_number` | UNRESOLVED_BLOCKER | `LOCAL_PAIR`: consecutive in ID-1/ID-7/CP stream order within every paired FDB group, from a uniform group start. Comparison CDB groups do not all follow this pattern; fresh start/rollover remain unproved. |
+| `reference[2]` | UNRESOLVED_BLOCKER | `LOCAL_PAIR`: both slots are zero in the paired FDB, while comparison CDBs contain nonzero values. CP references match their owning phase; fresh generation remains unproved. |
+| `timestamp_ole` | UNRESOLVED_BLOCKER | `LOCAL_PAIR`: CP timestamps copy ID-1 group timestamps in the paired FDB and both comparison CDBs. ID-7 may differ from ID-1 and CP; fresh ID-1/ID-7 source unknown. |
 | `unknown[2]` | UNRESOLVED_BLOCKER | `UNKNOWN`: no established fresh default. |
 
 These slots are `RAW_PRESERVED_ONLY` when editing existing databases, but
@@ -145,7 +159,7 @@ different charges are allowed. Numerically equal functions remain distinct.
 | shared header | UNRESOLVED_BLOCKER | See shared-entry table. |
 | `phase_name` | CALLER_PROVIDED | `PAIR`/`CONTRACT`: `<FILE phase ID>_<zero-based four digits>`, 40-byte text; display name is not the naming source. |
 | `enthalpy`, `entropy` | CALLER_PROVIDED | `CODE`: independent ID-7 H/S values. The plan retains them on both ordinary and nonzero A functions; C3 can write supplied values without choosing an anchor. Legacy source-to-plan selection remains a later scientific integration question. |
-| `phase_id_raw` | UNRESOLVED_BLOCKER | `LOCAL_PAIR`: solid IDs are consecutive in group stream order, restart in each group, and CP links group-locally. Fresh allocation and other phase states remain unproved. |
+| `phase_id_raw` | UNRESOLVED_BLOCKER | `LOCAL_PAIR`: all observed FDB phases are solid; IDs are consecutive in group stream order, restart in each group, and CP links group-locally. Fresh allocation and other phase states remain unproved. |
 | `phase_id_raw_neg` | PROVIDER_GENERATED | `LOCAL_PAIR`: arithmetic negation of positive ID holds in the paired FDB and comparison CDBs; no independent blocker after positive ID allocation. |
 | `density_raw`, thermal-expansion, compressibility, bulk-modulus, magnetic temperature/moment, `p_factor` | EVIDENCED_DEFAULT | `CODE`: exact numeric zero is the inactive pure H/S/Cp pattern. Any requested active contribution is a typed semantic blocker; zero is only a profile-specific inactive value, not a default for general FDBs. |
 | `padding_1`, `padding_2` | UNRESOLVED_BLOCKER | `UNKNOWN`: no established fresh byte pattern. |
@@ -158,12 +172,12 @@ cannot enter this pure profile by silently selecting zero.
 
 | Native field | Class | Evidence and required disposition |
 | --- | --- | --- |
-| chunk ID | UNRESOLVED_BLOCKER | `LOCAL_PAIR`: both ID 2 and ID 5 appear under base and A names across source models/functions. Role alone cannot choose kind; the model-specific source condition is unresolved. Wider ID 3/4/6 families are outside this profile. |
+| chunk ID | UNRESOLVED_BLOCKER | `LOCAL_PAIR`: both ID 2 and ID 5 appear under base and A names. In this FDB, ID-2 always has nonzero Cp and ID-5 always has exactly zero Cp; every identity-and-order-linked counted base range follows the same source zero/nonzero split. Whether that property causes kind selection for fresh or generated records remains unproved. Wider ID 3/4/6 families are outside this profile. |
 | shared header | UNRESOLVED_BLOCKER | See shared-entry table. |
 | `phase_id_raw` | PROVIDER_GENERATED | `CODE`: exact link to owning ID-7, conditional on resolving the native ID allocation rule. |
-| `temperature_min`, `temperature_max` | CALLER_PROVIDED | `CODE`: finite, positive, ordered, contiguous kelvin bounds. `PAIR`: some ordinary upper bounds transfer; first lower bound still needs explicit source/target evidence. Added CP bounds are unresolved for C3. |
-| `enthalpy`, `entropy` | CALLER_PROVIDED | `CODE`: range-specific H/S constants at 298.15 K in group energy units. `PAIR`: ordinary conversion factors established; A entropy has one observed sign exception. |
-| `coefficients[8]`, `powers[8]` | CALLER_PROVIDED | `CODE`: capacity of eight ordered Cp terms; `PAIR`: four fixed and three variable Legacy terms map to slots 0–6, with slot 7 zero in paired examples. The local translation also has a zero eighth slot in observed CP records, without proving a fresh fill rule. The semantic plan takes ordered meaningful terms without native slot padding. Exact values/powers are retained; no refit, normalization, or tiny-term erasure. The native fill rule for unused slots remains `UNRESOLVED_BLOCKER` outside the paired seven-term profile. |
+| `temperature_min`, `temperature_max` | CALLER_PROVIDED | `CODE`: finite, positive, ordered, contiguous kelvin bounds. `LOCAL_PAIR`: identity-linked base objects preserve counted source-range cardinality and upper bounds in encounter order across represented models. First lower-bound and added-range rules remain unresolved. |
+| `enthalpy`, `entropy` | CALLER_PROVIDED | `CODE`: range-specific H/S constants at 298.15 K in group energy units. `PAIR`: direct conversion holds for a tested small-fixture subset, but full local base ranges include transformed H/S anchors. The full local ID-5 A translation has opposite-sign nonzero S, unlike earlier small examples. Source-to-plan conversion is model/function dependent. |
+| `coefficients[8]`, `powers[8]` | CALLER_PROVIDED | `CODE`: capacity of eight ordered Cp terms; `PAIR`: four fixed and three variable Legacy terms map to slots 0–6 for a tested small-fixture subset. The full local base translation includes both direct and transformed term mappings. The eighth slot is zero in observed CP records, without proving a fresh fill rule. The semantic plan takes ordered meaningful terms without native slot padding. Exact caller-supplied values/powers are retained; no refit, normalization, or tiny-term erasure. The native fill rule for unused slots remains `UNRESOLVED_BLOCKER` outside the paired seven-term profile. |
 | `unknown_1[4]`, `padding_remaining[56]` | UNRESOLVED_BLOCKER | `UNKNOWN`: no fresh-output default. |
 
 The rigorous plan always retains a base and A identity, even for zero base and
@@ -196,8 +210,9 @@ controlled experiments and dependencies, see
 | Shared `element_ids[7]`, integer `element_coefficients[7]` | EVIDENCE_REQUIRED | Arrays parsed; need element code/order, scale, unused slots and repetition in ID-1/7/CP. | Yes, neutral/fractional paired fixture | No |
 | Shared coefficient padding and unknown 2 bytes | EVIDENCE_REQUIRED | Distinct preserved slots; inspect each record kind in one fresh FDB. | Yes | No |
 | Shared `charge_raw` | EVIDENCE_REQUIRED | Signed `i8` parsed in each record; need direct semantic charge mapping, neutral zero and per-record repetition. | Yes, neutral/charged pair | No |
-| Shared `entry_number`, `reference[2]` | EVIDENCE_REQUIRED | Numeric fields parsed; need fresh allocation/link and rollover rule from controlled one/two-function creation. | Yes | No |
-| Shared `timestamp_ole` | EVIDENCE_REQUIRED | OLE parser exists; compare two creation times and source/header timestamps. | Yes | No |
+| Shared `entry_number` | EVIDENCE_REQUIRED | Paired FDB uses a consecutive group-stream counter; confirm fresh start, increments and rollover. | Yes | No |
+| Shared `reference[2]` | EVIDENCE_REQUIRED | Paired FDB values are zero, comparison CDBs include nonzero values, and CP copies its phase; fresh FDB source/initialization unknown. | Yes | No |
+| Shared `timestamp_ole` | EVIDENCE_REQUIRED | CP copies ID-1 in all local native members; fresh ID-1 and ID-7 timestamp sources remain unknown. | Yes | No |
 | ID-1 formula label bytes and energy/pressure codes | RESOLVED | Supplied printable label; known code enums; pressure reference is not inferred. | No | Yes |
 | ID-1 formula label correspondence to semantic composition/charge | EVIDENCE_REQUIRED | The label is opaque; establish provider-accepted grammar and consistency rule with a controlled neutral/charged pair. | Yes | No |
 | ID-1 `compound_name`, real coefficients, reserved strings, unknown/padding | EVIDENCE_REQUIRED | Native locations parsed; need name selection, coefficient scaling and fresh reserved patterns. | Yes, changed-label/fractional/charged examples | No |
@@ -205,13 +220,14 @@ controlled experiments and dependencies, see
 | ID-7 `phase_id_raw` allocation and physical padding | EVIDENCE_REQUIRED | Group-local consecutive solid IDs and arithmetic negative IDs observed; fresh allocation, other states and padding need controlled creation. | Yes, two base/A pairs | No |
 | ID-7 `phase_id_raw_neg` relation | RESOLVED | Compute arithmetic negative after allocating the positive ID; observed in paired FDB and comparison CDBs. | No | Yes, conditional on positive ID |
 | ID-7 inactive magnetic/pressure-volume tail for pure H/S/Cp | RESOLVED | Provider eligibility code accepts exact numeric zero; active intent fails plan validation. | No | Yes for admitted profile |
-| CP ID-2/ID-5 kind selection | SCIENTIFIC_SEMANTICS_REQUIRED | Both kinds occur under base and A functions. Determine the source model/function condition before writing a CP chunk. | Possibly controlled source/output | No |
-| CP supplied bounds/anchors/terms and phase-ID link | ENGINEERING_ONLY | Shared CP layout and group-local exact phase link known; plan retains explicit values. | No | Yes, conditional on kind and ID rules |
+| CP ID-2/ID-5 kind for counted base ranges | EVIDENCE_REQUIRED | Identity-and-order-linked source ranges select ID-2 for nonzero Cp and ID-5 for exact-zero Cp across represented models; confirm as a fresh writer rule. | Controlled source/output | No |
+| CP ID-2/ID-5 kind for added/generated ranges | SCIENTIFIC_SEMANTICS_REQUIRED | The target zero/nonzero split also holds under A names, but source leading terms do not map directly to target Cp. Derive the source reduction and confirm fresh selection. | Controlled source/output | No |
+| CP supplied bounds/anchors/terms and phase-ID link | ENGINEERING_ONLY | Shared CP layout and group-local exact phase link known; plan retains explicit values. Base counted-range cardinality and upper bounds transfer in order. Source-to-plan H/S/Cp transforms are a separate scientific blocker. | No for explicit plan | Yes, conditional on kind and ID rules |
 | CP unknown 4 bytes and remaining padding | EVIDENCE_REQUIRED | Parsed/preserved; need fresh ID-2 and ID-5 bytes. | Yes | No |
 | CP unused coefficient/power slots for fewer than seven terms | EVIDENCE_REQUIRED | Paired seven-term sources have zero slot 8; shorter lists need controlled native fill evidence. | Yes if admitted | No for shorter profile |
 | Explicit zero base/A physical form | EVIDENCE_REQUIRED | Paired exports sometimes omit zero blocks; rigorous identities retained. Need accepted explicit records or versioned omission behavior. | Yes, zero base/A pair | No for zero objects |
-| General Legacy ordinary phase H/S selection | SCIENTIFIC_SEMANTICS_REQUIRED | The plan accepts explicit fields; source-to-plan derivation beyond paired profile is not established. | Yes if conversion adapter is built | C3 builder yes; full conversion no |
-| Legacy A leading pair → ID-5 and exceptional entropy sign | SCIENTIFIC_SEMANTICS_REQUIRED | Plan accepts explicit A H/S/Cp; paired evidence has one sign exception. Need controlled source-to-target mapping. | Yes if adapter is built | C3 builder yes; full conversion no |
+| General Legacy ordinary H/S/Cp source mapping | SCIENTIFIC_SEMANTICS_REQUIRED | Full local base ranges preserve cardinality and upper bounds but show direct and transformed H/S/Cp values by model/function; the plan accepts explicit target values. | Yes if conversion adapter is built | C3 builder yes; full conversion no |
+| Legacy A leading pair → CP and entropy sign | SCIENTIFIC_SEMANTICS_REQUIRED | In this full translation, emitted ID-5 A H is direct and nonzero S has opposite sign; earlier small paired examples mostly had direct S. ID-2 A source mapping also differs. Determine the governing source/version condition. | Yes if adapter is built | C3 builder yes; full conversion no |
 | Exact conversion of arbitrary source `f64` composition to rational identity | POLICY_REQUIRED | No tolerance is selected. An adapter must preserve source exact fractions or declare a conversion policy. | Domain input may be needed | C3 with exact-rational input yes |
 | NativeFactSage omission choice for zero objects | POLICY_REQUIRED | Only after version behavior is observed; do not silently omit in rigorous plan. | Domain/version policy later | No for zero-object native output |
 | Provider raw constructor and serialize/reparse/domain/thermo pipeline | ENGINEERING_ONLY | Existing lower layers are available; implement after native field gates. | No | Yes once evidence gates close |

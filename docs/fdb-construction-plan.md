@@ -165,7 +165,10 @@ must agree across a base/A pair; the provider still owns its native ID.
 Provider blockers distinguish engineering, native evidence, scientific
 semantics and verification with exact affected objects. The local paired
 translation supports group-local solid ID and CP-link observations, but shows
-that base/A role alone cannot select CP ID-2 versus ID-5. The
+that base/A role alone cannot select CP ID-2 versus ID-5. Every paired FDB
+ID-2 has nonzero Cp and every ID-5 has zero Cp, including the role exceptions;
+this is a tested output invariant pending a controlled source-variation check
+before use as a fresh writer rule. The
 [`FDB-C3 readiness review`](fdb-c3-readiness.md) concludes that no native
 byte-writing subset is safe until fresh header/shared-entry rules and the CP
 kind condition are established.

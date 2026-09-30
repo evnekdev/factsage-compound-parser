@@ -139,13 +139,24 @@ const COMMON_GAPS: &[Gap] = &[
         user_evidence_can_unblock: true,
     },
     Gap {
-        field: "RawCommonHeader.entry_number/reference[2]",
-        class: FdbBlockerClass::NativeFormat,
-        reason: "entry/reference counters cannot be generated from source order alone",
-        known: "the paired FDB entry number varies within groups; both references are zero and group-consistent, while CP references match their owning phase",
-        missing: "fresh entry allocation and reference generation/rollover rules",
+        field: "RawCommonHeader.entry_number",
+        class: FdbBlockerClass::MissingTestEvidence,
+        reason: "the paired FDB record-order counter is not established for fresh files or rollover",
+        known: "every paired FDB group increments entry_number once per ID-1/ID-7/CP record in stream order from a uniform group start; comparison CDB groups do not all follow this pattern",
+        missing: "fresh FDB start, increment and rollover behavior under a named version",
         exact_evidence: Some(
-            "fresh FDBs with one then two functions in a single group, retaining creation order",
+            "controlled fresh FDB with multiple functions and Cp records in one group, preserving creation order",
+        ),
+        user_evidence_can_unblock: true,
+    },
+    Gap {
+        field: "RawCommonHeader.reference[2]",
+        class: FdbBlockerClass::NativeFormat,
+        reason: "the observed zero references are not a proven fresh FDB default",
+        known: "both references are zero across the paired FDB but comparison CDBs contain nonzero references; CP references match the owning phase in all local members",
+        missing: "fresh reference initialization, parent-copy and nonzero/rollover conditions",
+        exact_evidence: Some(
+            "controlled fresh FDB with multiple functions and Cp records, inspecting both references",
         ),
         user_evidence_can_unblock: true,
     },
@@ -153,8 +164,8 @@ const COMMON_GAPS: &[Gap] = &[
         field: "RawCommonHeader.timestamp_ole",
         class: FdbBlockerClass::NativeFormat,
         reason: "the plan's database date does not establish entry timestamp behavior",
-        known: "paired FDB timestamps vary within groups and do not uniformly copy the database date or owning phase; OLE parsing is available",
-        missing: "fresh timestamp source and per-record assignment rule",
+        known: "CP timestamps copy the ID-1 group timestamp in the paired FDB and both comparison CDBs; ID-7 timestamps can differ from ID-1 and CP, and the group timestamp need not equal the ID-9 date",
+        missing: "fresh ID-1 and ID-7 timestamp sources and assignment rule",
         exact_evidence: Some(
             "two controlled fresh FDB creations at distinct times with unchanged function intent",
         ),
@@ -230,28 +241,39 @@ const PHASE_GAPS: &[Gap] = &[
     },
 ];
 
-const CP_GAPS: &[Gap] = &[
-    Gap {
-        field: "CP.kind selection",
-        class: FdbBlockerClass::ScientificSemantics,
-        reason: "base/A role alone does not determine the native CP chunk kind",
-        known: "the paired full translation contains ID-2 and ID-5 under both base and A names in different model families; the shared body layout is parsed",
-        missing: "model- and function-specific condition selecting ID-2 versus ID-5 for an admitted source function",
-        exact_evidence: Some(
-            "controlled same-version Legacy imports varying one source G/A function condition at a time, retaining source and generated FDB CP kinds",
-        ),
-        user_evidence_can_unblock: true,
-    },
-    Gap {
-        field: "CP.unknown_1[4]/padding_remaining[56]",
-        class: FdbBlockerClass::MissingTestEvidence,
-        reason: "observed zero bytes do not prove a fresh construction rule",
-        known: "both regions are zero in every observed paired ID-2 and ID-5 record; the parser preserves them",
-        missing: "fresh unknown/padding bytes for each admitted CP kind and named FactSage version",
-        exact_evidence: Some("controlled fresh FDB with one ID-2 and one ID-5 interval"),
-        user_evidence_can_unblock: true,
-    },
-];
+const CP_BASE_KIND_GAPS: &[Gap] = &[Gap {
+    field: "CP.kind selection for counted base range",
+    class: FdbBlockerClass::MissingTestEvidence,
+    reason: "the paired zero-Cp/nonzero-Cp split has not been confirmed as a fresh writer rule",
+    known: "every identity-and-order-linked counted base range with exact-zero source Cp uses ID-5 and every nonzero one uses ID-2 across the represented model families; the paired FDB and comparison CDBs preserve the same ID-2/ID-5 output split",
+    missing: "controlled fresh/imported FDB confirmation that exact semantic Cp zero status selects the native kind",
+    exact_evidence: Some(
+        "one controlled same-version Legacy import with otherwise equivalent zero-Cp and nonzero-Cp counted base ranges",
+    ),
+    user_evidence_can_unblock: true,
+}];
+
+const CP_ADDED_KIND_GAPS: &[Gap] = &[Gap {
+    field: "CP.kind selection for added range",
+    class: FdbBlockerClass::ScientificSemantics,
+    reason: "added/generated source records do not map directly to the retained target Cp terms",
+    known: "the paired FDB ID-2/ID-5 zero-Cp split holds under A names too, but source leading terms can be nonzero when the emitted ID-5 Cp coefficients are zero",
+    missing: "source-to-target reduction that determines added-range Cp content and then native kind, plus fresh confirmation",
+    exact_evidence: Some(
+        "controlled same-version Legacy import varying the added source Cp contribution while retaining generated FDB and SLN",
+    ),
+    user_evidence_can_unblock: true,
+}];
+
+const CP_SHARED_GAPS: &[Gap] = &[Gap {
+    field: "CP.unknown_1[4]/padding_remaining[56]",
+    class: FdbBlockerClass::MissingTestEvidence,
+    reason: "observed zero bytes do not prove a fresh construction rule",
+    known: "both regions are zero in every observed paired ID-2 and ID-5 record; the parser preserves them",
+    missing: "fresh unknown/padding bytes for each admitted CP kind and named FactSage version",
+    exact_evidence: Some("controlled fresh FDB with one ID-2 and one ID-5 interval"),
+    user_evidence_can_unblock: true,
+}];
 
 fn append_gaps(blockers: &mut Vec<FdbBuildBlocker>, object: &str, gaps: &[Gap]) {
     blockers.extend(gaps.iter().map(|gap| gap.on(object)));
@@ -305,7 +327,8 @@ impl FdbBuildPlan {
                     FdbFunctionPlan::Ordinary(base) => {
                         for (index, range) in base.ranges.iter().enumerate() {
                             let range_object = format!("{object} range {index}");
-                            append_gaps(&mut blockers, &range_object, CP_GAPS);
+                            append_gaps(&mut blockers, &range_object, CP_BASE_KIND_GAPS);
+                            append_gaps(&mut blockers, &range_object, CP_SHARED_GAPS);
                             append_unused_cp_gap(&mut blockers, &range_object, range.cp_terms.len());
                         }
                     }
@@ -323,7 +346,8 @@ impl FdbBuildPlan {
                         FdbAddedContribution::Thermodynamic { ranges, .. } => {
                             for (index, range) in ranges.iter().enumerate() {
                                 let range_object = format!("{object} range {index}");
-                                append_gaps(&mut blockers, &range_object, CP_GAPS);
+                                append_gaps(&mut blockers, &range_object, CP_ADDED_KIND_GAPS);
+                                append_gaps(&mut blockers, &range_object, CP_SHARED_GAPS);
                                 append_unused_cp_gap(&mut blockers, &range_object, range.cp_terms.len());
                             }
                         }

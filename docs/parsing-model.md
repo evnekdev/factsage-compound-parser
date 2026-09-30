@@ -155,6 +155,8 @@ paired Legacy/Modern translation additionally contains phases with mixed ID-2
 and ID-5 records and both kinds under base and A names. The ordinary
 thermodynamic view's one-kind requirement is therefore an admitted-profile
 boundary, not a complete interpretation of all native FDB phases. The
+paired FDB has nonzero Cp in every ID-2 and zero Cp in every ID-5, but this
+output invariant has not been established as a fresh selection rule. The
 source-model condition selecting each kind remains unresolved.
 
 ## Comments

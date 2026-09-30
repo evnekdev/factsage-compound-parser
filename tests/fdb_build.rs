@@ -812,8 +812,17 @@ fn semantic_validity_is_separate_from_native_materialization_readiness() {
         blocker.field == "ID-9.read_flag" && blocker.class == FdbBlockerClass::MissingTestEvidence
     }));
     assert!(blockers.iter().any(|blocker| {
-        blocker.field == "CP.kind selection"
-            && blocker.class == FdbBlockerClass::ScientificSemantics
+        blocker.field == "CP.kind selection for counted base range"
+            && blocker.class == FdbBlockerClass::MissingTestEvidence
+            && blocker.known.contains("exact-zero source Cp")
+    }));
+    assert!(blockers.iter().any(|blocker| {
+        blocker.field == "RawCommonHeader.entry_number"
+            && blocker.class == FdbBlockerClass::MissingTestEvidence
+    }));
+    assert!(blockers.iter().any(|blocker| {
+        blocker.field == "RawCommonHeader.reference[2]"
+            && blocker.class == FdbBlockerClass::NativeFormat
     }));
     assert!(
         !blockers
@@ -826,6 +835,21 @@ fn semantic_validity_is_separate_from_native_materialization_readiness() {
             .any(|blocker| blocker.class == FdbBlockerClass::Verification)
     );
     assert_eq!(blockers, built.native_blockers());
+
+    let mut nonzero_added = pair("PHAS", "source", 0).to_vec();
+    let FdbFunctionPlan::Added(added) = &mut nonzero_added[1] else {
+        panic!()
+    };
+    added.contribution = FdbAddedContribution::Thermodynamic {
+        phase_enthalpy: -100.0,
+        phase_entropy: 10.0,
+        ranges: vec![range()],
+    };
+    let added_blockers = plan(nonzero_added).unwrap().native_blockers();
+    assert!(added_blockers.iter().any(|blocker| {
+        blocker.field == "CP.kind selection for added range"
+            && blocker.class == FdbBlockerClass::ScientificSemantics
+    }));
 
     let mut wide_charge = group(pair("PHAS", "source", 0).to_vec());
     wide_charge.charge = FdbChargeState::new(200);
