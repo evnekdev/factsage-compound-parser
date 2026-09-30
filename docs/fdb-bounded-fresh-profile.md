@@ -264,3 +264,25 @@ Before adding named advanced volumetric families, inspect the historical Legacy
 Python parser for existing family definitions/mappings. If they are absent or
 insufficient, later user-provided snapshots may be used to establish them.
 This does not block ordinary density or the first bounded fresh writer.
+
+
+## Phase-state native ID allocation
+
+Existing provider code and corpus documentation establish the native state bands
+and one-based per-state indexes:
+
+- solid: `100 + index` -> 101, 102, ...
+- liquid: `800 + index` -> 801, 802, ...
+- gas: `900 + index` -> 901, 902, ...
+- aqueous: `990 + index` -> 991, 992, ...
+
+State inference uses the same boundaries (`>800` liquid, `>900` gas,
+`>990` aqueous; otherwise solid), and compact indexes subtract the respective
+base.
+
+For fresh construction, allocate IDs within each formula group using the
+appropriate state base plus a one-based index for that state. Preserve the
+observed group-local allocation behavior. For ordinary phases, write
+`phase_id_raw_neg = -phase_id_raw`. CP links use the exact positive raw phase ID.
+
+This is established provider/corpus behavior and no longer a user-input blocker.
