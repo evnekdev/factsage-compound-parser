@@ -12,7 +12,7 @@ ID-11 physical-property equations.
 | CDB/FDB physical family | established | Both use `CMPD` records. A zero `read_flag` is compatible with every locally examined FDB, but also occurs in valid CDBs. |
 | FDB ordinary CP H/S/Cp definition | established | Finite, contiguous, one-kind CP sequences on ordinary phases whose independently integrated H/S values are continuous at shared boundaries. |
 | Ordinary phase record H/S versus CP H/S | partially established | Both pairs are preserved and unit-convertible. They cannot be universally equated from the available evidence, so the provider thermodynamic view uses CP-range constants. |
-| CP IDs 2–6 | partially established | Every examined FDB phase used one homogeneous kind; ID 2 had multi-range sequences and IDs 4/5 were observed as single-range sequences. The kind's wider provider meaning remains unknown. |
+| CP IDs 2–6 | partially established | An earlier small corpus had one kind per phase. The paired Legacy/Modern translation also has mixed ID-2/ID-5 phases and both kinds under base and A names. The model/function-specific selection rule and wider provider meaning remain unknown. |
 | Transition effective G | unresolved | Parent linkage is structural; an entropy-jump rule and chaining behavior are not established. |
 | Pressure, magnetic, volume and ID-11 contributions | unresolved | Materially active values block complete effective-G eligibility; no equation is guessed. Exact-zero fixed physical-tail slots are inactive. |
 

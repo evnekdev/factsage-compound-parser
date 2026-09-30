@@ -160,11 +160,15 @@ native evidence gaps.
 FDB-C2 hardening replaced the floating ratio-bit key with exact rational
 element ratios plus explicit semantic charge. Formula text remains a separate
 label. A companions now reference typed base identities, and nonzero A plans
-retain both phase and CP H/S fields. Provider blockers distinguish engineering,
-native evidence and verification with exact affected objects. The
+retain both phase and CP H/S fields. The target phase state is explicit and
+must agree across a base/A pair; the provider still owns its native ID.
+Provider blockers distinguish engineering, native evidence, scientific
+semantics and verification with exact affected objects. The local paired
+translation supports group-local solid ID and CP-link observations, but shows
+that base/A role alone cannot select CP ID-2 versus ID-5. The
 [`FDB-C3 readiness review`](fdb-c3-readiness.md) concludes that no native
-byte-writing subset is safe until the minimum header/shared-entry experiment
-establishes fresh values.
+byte-writing subset is safe until fresh header/shared-entry rules and the CP
+kind condition are established.
 
 ### FDB-C1 — construction inventory
 

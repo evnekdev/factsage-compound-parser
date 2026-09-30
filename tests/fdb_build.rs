@@ -4,7 +4,7 @@ use factsage_compound_parser::fdb_build::{
     FdbFormulaGroupPlan, FdbFunctionIdentity, FdbFunctionPlan, FdbFunctionRole,
     FdbOrdinaryFunctionPlan, FdbStoichiometricAmount, FdbThermoRangePlan,
 };
-use factsage_compound_parser::{EnergyUnit, PressureUnit};
+use factsage_compound_parser::{EnergyUnit, PhaseState, PressureUnit};
 use proptest::prelude::*;
 
 fn metadata() -> FdbDatabaseMetadata {
@@ -35,6 +35,7 @@ fn identity(phase: &str, source: &str, index: usize, role: FdbFunctionRole) -> F
         source_phase_id: phase.into(),
         source_token: source.into(),
         source_g_index: index,
+        target_state: PhaseState::Solid,
         target_name: format!(
             "{phase}_{index:04}{}",
             if role == FdbFunctionRole::Added {
@@ -335,6 +336,42 @@ fn typed_pairing_rejects_missing_base_wrong_source_index_and_cross_group() {
         FdbBuildPlan::new(metadata(), vec![first, second]),
         Err(FdbBuildError::InvalidPairing { .. })
     ));
+
+    let mut state_mismatch = pair("PHAS", "source", 0).to_vec();
+    let FdbFunctionPlan::Added(added) = &mut state_mismatch[1] else {
+        panic!()
+    };
+    added.identity.target_state = PhaseState::Gas;
+    assert!(matches!(
+        plan(state_mismatch),
+        Err(FdbBuildError::InvalidPairing { .. })
+    ));
+}
+
+#[test]
+fn target_phase_state_is_explicit_and_shared_by_each_pair() {
+    let mut gas_pair = pair("PHAS", "source", 0).to_vec();
+    for function in &mut gas_pair {
+        match function {
+            FdbFunctionPlan::Ordinary(base) => base.identity.target_state = PhaseState::Gas,
+            FdbFunctionPlan::Added(added) => {
+                added.identity.target_state = PhaseState::Gas;
+                added.base.target_state = PhaseState::Gas;
+            }
+            FdbFunctionPlan::ExplicitZeroOrdinary(_) => unreachable!(),
+        }
+    }
+    let built = plan(gas_pair).unwrap();
+    assert_eq!(
+        built.groups()[0].functions[0].identity().target_state,
+        PhaseState::Gas
+    );
+    assert!(
+        built
+            .native_blockers()
+            .iter()
+            .any(|blocker| blocker.field == "ID-7.phase_id_raw allocation")
+    );
 }
 
 #[test]
@@ -774,6 +811,15 @@ fn semantic_validity_is_separate_from_native_materialization_readiness() {
     assert!(blockers.iter().any(|blocker| {
         blocker.field == "ID-9.read_flag" && blocker.class == FdbBlockerClass::MissingTestEvidence
     }));
+    assert!(blockers.iter().any(|blocker| {
+        blocker.field == "CP.kind selection"
+            && blocker.class == FdbBlockerClass::ScientificSemantics
+    }));
+    assert!(
+        !blockers
+            .iter()
+            .any(|blocker| blocker.field.contains("phase_id_raw_neg"))
+    );
     assert!(
         blockers
             .iter()

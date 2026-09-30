@@ -1,10 +1,11 @@
-# FDB-C3 readiness after FDB-C2 hardening
+# FDB-C3 readiness after local paired-translation audit
 
 **Decision: BLOCKED for native materialization.** The provider can implement
 plan traversal, raw chunk assembly, serialization, strict reparse, domain
 indexing and ordinary thermodynamic verification with existing lower layers.
 It cannot yet assign every native byte for even one neutral, one-range function
-without guessing header, shared-entry, compound, phase and CP fields. No raw
+without guessing header, shared-entry, compound, phase and CP fields. The
+ignored local `data/v1` translation was examined before this decision. No raw
 FDB construction is implemented by this review.
 
 The field-level status checklist is
@@ -51,23 +52,38 @@ experiment is not required.
   within a compound. The parser/serializer preserve unknown and padding bytes;
   that behavior proves no fresh default.
 - **Tracked solution contract:** source charge is modeled separately from
-  formula text (`i32` in solution models). The synthetic SLN parser example
-  distinguishes `Fe3O4` and `Fe3O4[+]` reference labels. Paired G/FDB evidence
-  establishes base/A naming, ordinary ID-2 intervals, nonzero A ID-5 form,
-  omitted zero blocks, and one exceptional A entropy sign. It does not prove
-  fresh native header initialization.
+  formula text (`i32` in solution models). Earlier paired examples establish
+  base/A naming and one exceptional A entropy sign, but do not establish a
+  universal CP kind or fresh native header initialization.
+- **Local paired Legacy/Modern corpus:** receipt-admitted source G entries were
+  matched by source identity and encounter index to FDB names and SLN external
+  references. FILE phase ID, zero-based suffix and A naming held for matched
+  entries. Matching matrix coefficients transferred to endmember references
+  without conversion or value-based merging. Multiple model families, charged
+  groups, base/A cases and zero objects occur. The FDB also has functions not
+  represented by parsed source G entries. Both CP ID-2 and ID-5 occur under
+  base and A names; role does not determine chunk kind. Zero objects can be
+  emitted or omitted. The corpus has no neutral FDB group.
+- **Native field variation:** solid phase IDs increase within each group and
+  repeat across groups; negative IDs are their arithmetic negation in the FDB
+  and comparison CDBs. CP links are group-local. Shared composition and raw
+  charge repeat within groups; entry numbers and timestamps vary. Strict
+  simple integer FDB labels match atomic-number IDs and integer/real
+  coefficients, but comparison CDBs do not follow the same pattern. Repeated
+  zero padding and header fields are observations, not fresh defaults.
 - **Historical Python:** `dbsolution` reads Legacy charge and derives modern
   endmember charge with `chemformula`. No FDB byte constructor, fresh phase-ID
   allocator, entry/reference counter rule, or shared-header padding rule was
   found there. These hints do not override the current Rust provider contract.
 - **API boundary:** The rigorous plan carries exact rational element ratios,
-  explicit semantic charge, source G identity, deterministic target name and a
-  typed base reference. It carries explicit phase H/S for nonzero base and A
-  objects. Target names are unique within a full formula-group namespace;
+  explicit semantic charge, source G identity, deterministic target name,
+  target phase state and a typed base reference. It carries explicit phase H/S
+  for nonzero base and A objects. Target names are unique within a full
+  formula-group namespace;
   source G roles remain globally distinct. It contains no raw offsets or byte
   padding fields.
 
-## Smallest controlled experiments
+## Remaining experiments after the local audit
 
 All inspected native files must remain local and uncommitted. Record the
 FactSage version and creation action; compare only aggregate field decisions in
@@ -76,11 +92,11 @@ project documentation.
 ### E1 — minimal neutral fresh FDB
 
 **Question:** Which non-scientific fields are fixed, generated, copied, or
-versioned in an ID-9/ID-1/ID-7/ID-2 stream?
+versioned in a freshly created ID-9/ID-1/ID-7/CP stream?
 
 **Input and action:** In FactSage, create one fresh Function Database with one
 neutral formula group, one ordinary function named from a known phase ID, one
-ID-2 Cp interval, known H/S/Cp, known units and explicit date/comment if the
+Cp interval, known H/S/Cp, known units and explicit date/comment if the
 UI allows them. Create a second file under the same version with one added
 ordinary function in the same group; retain creation order and timestamps.
 
@@ -88,12 +104,13 @@ ordinary function in the same group; retain creation order and timestamps.
 semantic inputs. Inspect ID-9 padding/unknown/read flag/date; every shared
 header's element IDs, integer coefficients, charge, entry/reference values,
 timestamp, padding; ID-1 compound/formula names, real coefficients, reserved
-bytes; ID-7 positive/negative phase IDs and padding; ID-2 unknown/padding and
+bytes; ID-7 positive/negative phase IDs and padding; CP kind, unknown/padding and
 phase link. The second file separates generated counters from constants.
 
 **Decision enabled:** Write explicit field rules and deterministic ID/link
-allocation for the minimal neutral subset. If any bytes vary without an
-identified input or version rule, keep that field blocked.
+allocation for the minimal neutral subset and test the paired solid allocation
+against fresh creation. If any bytes vary without an identified input or
+version rule, keep that field blocked.
 
 ### E2 — charge and exact-ratio variation
 
@@ -118,7 +135,7 @@ admitted native charge range separately from the wider semantic `i32` type.
 ### E3 — base/A and zero-object native form
 
 **Question:** Which zero objects are physically representable or omitted under
-a named FactSage version, and how are nonzero A ID-5 fields chosen?
+a named FactSage version, and what selects ID-2 versus ID-5 for base/A Cp?
 
 **Input and action:** Use a controlled Legacy source with two G entries: one
 nonzero base/A pair and one zero base/A pair. Import to Modern with FactSage;
@@ -126,21 +143,23 @@ retain the source Legacy text, resulting FDB and SLN, version and importer
 settings. Include a deliberate A entropy sign probe if possible.
 
 **Files and fields to compare:** Source G leading pairs and counted intervals,
-generated ID-7/ID-2/ID-5 records, A phase H/S, ID-5 bounds/powers, zero-object
+generated ID-7/ID-2/ID-5 records, A phase H/S, CP bounds/powers, zero-object
 presence, and external SLN references. Compare source and target structurally
 and numerically without printing proprietary record contents in logs.
 
-**Decision enabled:** Establish a versioned NativeFactSage policy separately
-from rigorous semantic identity. Resolve the exceptional A entropy sign rule
-before the solution adapter claims scientific equivalence.
+**Decision enabled:** Establish the model/function-specific CP kind condition
+and versioned NativeFactSage zero-object policy separately from rigorous
+semantic identity. Resolve the exceptional A entropy sign rule before the
+solution adapter claims scientific equivalence.
 
 ## Safe engineering work now
 
 The existing parser already knows the chunk grammar, exact ID-2/ID-5 body
 shape, raw serialization, strict reparse, grouping and ordinary H/S/Cp
-validation. A builder skeleton, plan-order traversal, typed generated-ID map
-and post-build verification pipeline could be implemented without writing
-native chunks. Actual byte materialization waits for E1; charged support waits
-for E2; zero base/A and Legacy A conversion wait for E3. This review leaves
-those engineering tasks unimplemented because no complete bounded native
-profile is yet evidenced.
+validation. The semantic plan now records target phase state and rejects a
+base/A pair with mismatched states. A builder skeleton, plan-order traversal,
+typed generated-ID map and post-build verification pipeline could be
+implemented without writing native chunks. Actual byte materialization waits
+for E1 and a CP kind rule; charged support waits for E2; zero base/A and Legacy
+A conversion wait for E3. This review leaves those engineering tasks
+unimplemented because no complete bounded native profile is yet evidenced.

@@ -8,6 +8,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 
+use crate::PhaseState;
 use crate::thermo::{EnergyUnit, OleAutomationDate, PressureUnit};
 
 mod blockers;
@@ -120,6 +121,8 @@ pub struct FdbFunctionIdentity {
     pub source_token: String,
     /// Zero-based source G-entry encounter index.
     pub source_g_index: usize,
+    /// Explicit semantic target state; the provider owns the native ID encoding.
+    pub target_state: PhaseState,
     /// Exact target name, `<PHASEID>_<NNNN>` with optional `A` suffix.
     pub target_name: String,
     /// Base or added role.
@@ -171,7 +174,7 @@ pub struct FdbOrdinaryFunctionPlan {
     pub phase_enthalpy: f64,
     /// ID-7 phase S field; its relation to CP anchors is not assumed.
     pub phase_entropy: f64,
-    /// Ordered ID-2-style thermodynamic intervals.
+    /// Ordered thermodynamic intervals; native CP kind is selected by the provider.
     pub ranges: Vec<FdbThermoRangePlan>,
     /// Explicit disposition of auxiliary physics.
     pub auxiliary: FdbAuxiliaryIntent,
@@ -182,7 +185,7 @@ pub struct FdbOrdinaryFunctionPlan {
 pub enum FdbAddedContribution {
     /// The source A section is zero, but the A identity still exists.
     ExplicitZero,
-    /// Explicit H/S/Cp contribution retained as ordered ranges for later ID-5 mapping.
+    /// Explicit H/S/Cp contribution; native CP kind needs source-model evidence.
     Thermodynamic {
         /// Explicit ID-7 phase H field in the group energy convention.
         phase_enthalpy: f64,
@@ -461,13 +464,14 @@ impl FdbBuildPlan {
                 || base.source_token != id.source_token
                 || base.source_phase_id != id.source_phase_id
                 || base.source_g_index != id.source_g_index
+                || base.target_state != id.target_state
                 || id.target_name != format!("{}A", base.target_name)
             {
                 return Err(FdbBuildError::InvalidPairing {
                     added: id.target_name.clone(),
                     base: base.target_name.clone(),
                     reason:
-                        "A must share source G entry and formula group and use the base name plus A"
+                        "A must share source G entry, target state and formula group and use the base name plus A"
                             .into(),
                 });
             }

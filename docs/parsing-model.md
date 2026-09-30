@@ -149,10 +149,13 @@ enum CpChunkKind {
 
 The unusual numbering above reproduces the names used by the Python constants. Since their semantic differences are unknown, public API names such as `Id2` through `Id6` may be less misleading.
 
-The locally examined FDB corpus used one CP kind per phase. ID 2 supplied
-multi-range sequences; IDs 4 and 5 appeared as single ranges. This is
-validation evidence for the current provider view, not a universal semantic
-meaning for the five IDs.
+An earlier small FDB corpus used one CP kind per phase: ID 2 supplied
+multi-range sequences, while IDs 4 and 5 appeared as single ranges. The local
+paired Legacy/Modern translation additionally contains phases with mixed ID-2
+and ID-5 records and both kinds under base and A names. The ordinary
+thermodynamic view's one-kind requirement is therefore an admitted-profile
+boundary, not a complete interpretation of all native FDB phases. The
+source-model condition selecting each kind remains unresolved.
 
 ## Comments
 

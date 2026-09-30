@@ -8,7 +8,7 @@ use super::range::{HeatCapacityRangeView, PhysicalPropertyRangeView};
 use super::{TextDecodeError, text::decode_ascii};
 
 /// The phase state inferred from a stored FactSage phase ID.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum PhaseState {
     /// A solid phase.
     Solid,

@@ -73,7 +73,7 @@ const HEADER_GAPS: &[Gap] = &[
         field: "ID-9.read_flag",
         class: FdbBlockerClass::MissingTestEvidence,
         reason: "the observed zero guardrail has not been confirmed for freshly created FDBs",
-        known: "zero is compatible with every locally examined FDB but also occurs in CDBs",
+        known: "zero occurs in the paired FDB and both local CDBs, so it is a compatibility guardrail rather than an FDB classifier",
         missing: "the fresh FDB read-flag rule under an identified FactSage version",
         exact_evidence: Some(
             "one controlled newly created FDB header with FactSage version and creation action recorded",
@@ -84,7 +84,7 @@ const HEADER_GAPS: &[Gap] = &[
         field: "ID-9.padding_1/padding_2/padding_3",
         class: FdbBlockerClass::NativeFormat,
         reason: "fresh header bytes cannot be chosen from the parser's preservation behavior",
-        known: "the parser and serializer preserve all three padding fields",
+        known: "all three fields are zero in the paired FDB and both local CDBs; the parser preserves them",
         missing: "the native fresh-output byte pattern for each padding field",
         exact_evidence: Some(
             "one controlled newly created FDB header with FactSage version and creation action recorded",
@@ -95,7 +95,7 @@ const HEADER_GAPS: &[Gap] = &[
         field: "ID-9.unknown_1/unknown_2",
         class: FdbBlockerClass::NativeFormat,
         reason: "uninterpreted header fields cannot receive an invented default",
-        known: "the parser preserves eleven and twelve bytes respectively",
+        known: "both fields differ between the paired FDB and CDBs; the parser preserves eleven and twelve bytes respectively",
         missing: "whether these fields are fixed, versioned, or derived for new FDBs",
         exact_evidence: Some(
             "two controlled fresh FDB headers created under the same FactSage version with one changed input",
@@ -109,8 +109,8 @@ const COMMON_GAPS: &[Gap] = &[
         field: "RawCommonHeader.element_ids[7]/element_coefficients[7]",
         class: FdbBlockerClass::NativeFormat,
         reason: "source symbols and exact ratios are not yet mapped to repeated native element slots",
-        known: "seven ID and integer-coefficient slots are parsed and preserved in every entry header",
-        missing: "element ID dictionary/order, coefficient scaling and unused-slot convention per record kind",
+        known: "the paired FDB copies both arrays unchanged within each formula group; strict simple integer formula labels match atomic-number IDs, written coefficients and zero unused slots",
+        missing: "a construction rule for fractional, charged-label and pseudocomponent groups, plus independent confirmation of the simple-integer profile",
         exact_evidence: Some(
             "paired fresh FDBs with one neutral formula and one changed elemental ratio, inspecting ID-1/ID-7/CP headers",
         ),
@@ -118,10 +118,10 @@ const COMMON_GAPS: &[Gap] = &[
     },
     Gap {
         field: "RawCommonHeader.coefficient_padding/unknown[2]",
-        class: FdbBlockerClass::NativeFormat,
-        reason: "uninterpreted shared-header bytes have no evidenced fresh default",
-        known: "the parser preserves all three bytes in each entry record",
-        missing: "fresh values and whether they vary by record kind or FactSage version",
+        class: FdbBlockerClass::MissingTestEvidence,
+        reason: "paired repeated values do not prove a fresh-construction rule",
+        known: "coefficient padding is zero throughout the paired FDB; the two unknown bytes vary by record kind but are uniform within each observed kind",
+        missing: "fresh values by record kind under an identified FactSage version",
         exact_evidence: Some(
             "controlled fresh FDB with one group, one ordinary function and one Cp interval",
         ),
@@ -131,8 +131,8 @@ const COMMON_GAPS: &[Gap] = &[
         field: "RawCommonHeader.charge_raw",
         class: FdbBlockerClass::NativeFormat,
         reason: "semantic group charge is not yet proved to map directly to every repeated signed-byte header",
-        known: "the provider parses and serializes a signed i8 charge in every non-database record",
-        missing: "charge value/repetition rule for ID-1, ID-7 and CP records, including neutral zero",
+        known: "the signed i8 field varies between paired FDB groups and repeats unchanged on ID-1, ID-7 and CP within each group; this corpus has no zero-charge group and some unmarked labels have nonzero raw charge",
+        missing: "source semantic charge to native signed-byte mapping and neutral/opposite-charge behavior",
         exact_evidence: Some(
             "controlled neutral and charged fresh FDB groups with equal element ratios, comparing shared headers",
         ),
@@ -142,8 +142,8 @@ const COMMON_GAPS: &[Gap] = &[
         field: "RawCommonHeader.entry_number/reference[2]",
         class: FdbBlockerClass::NativeFormat,
         reason: "entry/reference counters cannot be generated from source order alone",
-        known: "one u8 entry number and two u16 references are preserved in each entry header",
-        missing: "fresh allocation, linkage, rollover and per-record repetition rules",
+        known: "the paired FDB entry number varies within groups; both references are zero and group-consistent, while CP references match their owning phase",
+        missing: "fresh entry allocation and reference generation/rollover rules",
         exact_evidence: Some(
             "fresh FDBs with one then two functions in a single group, retaining creation order",
         ),
@@ -153,8 +153,8 @@ const COMMON_GAPS: &[Gap] = &[
         field: "RawCommonHeader.timestamp_ole",
         class: FdbBlockerClass::NativeFormat,
         reason: "the plan's database date does not establish entry timestamp behavior",
-        known: "OLE timestamps are parsed and convertible independently of the database date",
-        missing: "whether entries copy the header date, source timestamp or creation time",
+        known: "paired FDB timestamps vary within groups and do not uniformly copy the database date or owning phase; OLE parsing is available",
+        missing: "fresh timestamp source and per-record assignment rule",
         exact_evidence: Some(
             "two controlled fresh FDB creations at distinct times with unchanged function intent",
         ),
@@ -167,7 +167,7 @@ const GROUP_GAPS: &[Gap] = &[
         field: "ID-1.formula_name semantic correspondence",
         class: FdbBlockerClass::NativeFormat,
         reason: "the opaque target label is not parsed into or proved equivalent to exact composition plus charge",
-        known: "the plan keeps label, canonical ratio and semantic charge separately",
+        known: "the plan keeps label, canonical ratio and semantic charge separately; the paired FDB has charged labels and unmarked labels with nonzero raw charge",
         missing: "provider-accepted formula-label grammar and consistency rule for the admitted profile",
         exact_evidence: Some(
             "controlled fresh neutral and charged groups with recorded formula labels, composition and charge",
@@ -178,8 +178,8 @@ const GROUP_GAPS: &[Gap] = &[
         field: "ID-1.compound_name",
         class: FdbBlockerClass::NativeFormat,
         reason: "the formula label alone does not establish the compound-name field",
-        known: "ID-1 stores separate 40-byte compound and formula names",
-        missing: "fresh FDB compound-name rule for an arbitrary formula group",
+        known: "ID-1 stores separate 40-byte names; they differ for some paired groups, and modern references can use either stored name",
+        missing: "fresh compound-name selection and reference-alias rule for a requested group",
         exact_evidence: Some(
             "fresh FDB with a deliberately different display name and formula label",
         ),
@@ -189,7 +189,7 @@ const GROUP_GAPS: &[Gap] = &[
         field: "ID-1.real_stoichiometric_coefficients[7]",
         class: FdbBlockerClass::NativeFormat,
         reason: "exact semantic ratios do not determine native coefficient scale or slots",
-        known: "ID-1 stores seven f64 real coefficients in addition to shared-header integer coefficients",
+        known: "strict simple integer labels in the paired FDB carry matching real and integer coefficients in label order with zero unused slots; other labels remain unproved",
         missing: "native scale, order and integer-versus-real selection for fresh groups",
         exact_evidence: Some(
             "fresh FDB groups with equivalent proportional formulas and one fractional stoichiometry",
@@ -200,7 +200,7 @@ const GROUP_GAPS: &[Gap] = &[
         field: "ID-1.reserved_string_1/reserved_string_2/unknown[4]/padding_final[24]",
         class: FdbBlockerClass::NativeFormat,
         reason: "preserved native fields have no verified constructor values",
-        known: "all fields have distinct parsed byte ranges and round-trip exactly",
+        known: "reserved strings are uniform but nonzero across paired FDB groups; adjacent unknown and final padding fields are zero in that translation and round-trip exactly",
         missing: "fresh values and whether any depend on formula, charge, version or creation order",
         exact_evidence: Some("controlled fresh FDB with one neutral and one charged formula group"),
         user_evidence_can_unblock: true,
@@ -209,13 +209,13 @@ const GROUP_GAPS: &[Gap] = &[
 
 const PHASE_GAPS: &[Gap] = &[
     Gap {
-        field: "ID-7.phase_id_raw/phase_id_raw_neg",
-        class: FdbBlockerClass::NativeFormat,
-        reason: "CP links require exact IDs but fresh ID allocation and negative-ID meaning are unproved",
-        known: "domain indexing links CP by exact phase_id_raw within the compound group",
-        missing: "fresh ID sequence, state convention and phase_id_raw_neg rule",
+        field: "ID-7.phase_id_raw allocation",
+        class: FdbBlockerClass::MissingTestEvidence,
+        reason: "the paired group-local solid allocation pattern has not been confirmed for a newly created FDB",
+        known: "paired solid groups allocate consecutive IDs from the first solid index; IDs repeat across groups, CP links are group-local, and phase_id_raw_neg equals the negative ID in the paired FDB and CDBs",
+        missing: "independent fresh-FDB confirmation of solid allocation and a rule for other target states",
         exact_evidence: Some(
-            "fresh FDB with two base/A pairs under one formula group, inspecting ID-7 and CP links",
+            "fresh FDB with two solid functions in one group and one non-solid function in another, inspecting ID-7 and CP IDs",
         ),
         user_evidence_can_unblock: true,
     },
@@ -223,22 +223,35 @@ const PHASE_GAPS: &[Gap] = &[
         field: "ID-7.physical.padding_1/padding_2",
         class: FdbBlockerClass::NativeFormat,
         reason: "inactive physical coefficients do not establish the adjacent padding bytes",
-        known: "the pure H/S/Cp profile rejects active physical tails; raw padding is preserved",
+        known: "the pure H/S/Cp profile rejects active physical tails; both padding regions are zero throughout the paired FDB but remain raw-preserved",
         missing: "fresh padding bytes for ordinary and added ID-7 records",
         exact_evidence: Some("controlled fresh FDB with one ordinary function and one A companion"),
         user_evidence_can_unblock: true,
     },
 ];
 
-const CP_GAPS: &[Gap] = &[Gap {
-    field: "CP.unknown_1[4]/padding_remaining[56]",
-    class: FdbBlockerClass::NativeFormat,
-    reason: "the parser preserves these bytes but has no fresh construction rule",
-    known: "ID-2 and ID-5 share the parsed CP body layout",
-    missing: "fresh unknown/padding bytes for each admitted CP kind",
-    exact_evidence: Some("controlled fresh FDB with one ID-2 and one ID-5 interval"),
-    user_evidence_can_unblock: true,
-}];
+const CP_GAPS: &[Gap] = &[
+    Gap {
+        field: "CP.kind selection",
+        class: FdbBlockerClass::ScientificSemantics,
+        reason: "base/A role alone does not determine the native CP chunk kind",
+        known: "the paired full translation contains ID-2 and ID-5 under both base and A names in different model families; the shared body layout is parsed",
+        missing: "model- and function-specific condition selecting ID-2 versus ID-5 for an admitted source function",
+        exact_evidence: Some(
+            "controlled same-version Legacy imports varying one source G/A function condition at a time, retaining source and generated FDB CP kinds",
+        ),
+        user_evidence_can_unblock: true,
+    },
+    Gap {
+        field: "CP.unknown_1[4]/padding_remaining[56]",
+        class: FdbBlockerClass::MissingTestEvidence,
+        reason: "observed zero bytes do not prove a fresh construction rule",
+        known: "both regions are zero in every observed paired ID-2 and ID-5 record; the parser preserves them",
+        missing: "fresh unknown/padding bytes for each admitted CP kind and named FactSage version",
+        exact_evidence: Some("controlled fresh FDB with one ID-2 and one ID-5 interval"),
+        user_evidence_can_unblock: true,
+    },
+];
 
 fn append_gaps(blockers: &mut Vec<FdbBuildBlocker>, object: &str, gaps: &[Gap]) {
     blockers.extend(gaps.iter().map(|gap| gap.on(object)));
