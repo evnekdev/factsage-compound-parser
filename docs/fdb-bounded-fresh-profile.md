@@ -204,16 +204,15 @@ blocker for ordinary density support.
 
 For the first profile:
 
-- admit nonzero Cp only;
-- use native ID-2, which is the observed direct-modern form for all fresh
-  nonzero-Cp ranges;
+- use native ID-2 for fresh Cp ranges, including zero-Cp ranges;
+- represent zero-Cp by writing zero to all Cp coefficient slots and zero to all
+  corresponding power slots;
 - preserve range order and chained bounds;
 - require a term shape already supported by the provider/native slot layout;
 - write zero to every unused Cp coefficient slot and zero to the corresponding
   unused power slot;
 - use observed zero/default padding for other unused native bytes;
-- reject fresh zero-Cp construction until the later policy/acceptance path is
-  implemented.
+- do not use a separate fresh zero-Cp record kind in the bounded profile.
 
 Fresh zero-Cp, ID-5 selection and Legacy A reduction are therefore not blockers
 for this bounded profile.
