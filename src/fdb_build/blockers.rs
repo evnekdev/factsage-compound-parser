@@ -1,6 +1,7 @@
 //! Actionable FDB-C3 blockers. These are not semantic-plan validation errors.
 
-use super::{FdbAddedContribution, FdbBuildPlan, FdbFunctionPlan};
+use super::{FdbAddedContribution, FdbBuildPlan, FdbConstructionProfile, FdbFunctionPlan};
+use crate::PhaseState;
 
 /// Provider-neutral blocker category, translatable to application reporting.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -72,9 +73,9 @@ const HEADER_GAPS: &[Gap] = &[
     Gap {
         field: "ID-9.read_flag",
         class: FdbBlockerClass::MissingTestEvidence,
-        reason: "the observed zero guardrail has not been confirmed for freshly created FDBs",
-        known: "zero occurs in the paired FDB and both local CDBs, so it is a compatibility guardrail rather than an FDB classifier",
-        missing: "the fresh FDB read-flag rule under an identified FactSage version",
+        reason: "fresh snapshots agree, but their creation version and read-flag policy are not recorded",
+        known: "the directly authored FDB snapshots and the translated FDB share the same read flag",
+        missing: "a version-scoped fresh initialization rule, independently accepted after provider construction",
         exact_evidence: Some(
             "one controlled newly created FDB header with FactSage version and creation action recorded",
         ),
@@ -83,9 +84,9 @@ const HEADER_GAPS: &[Gap] = &[
     Gap {
         field: "ID-9.padding_1/padding_2/padding_3",
         class: FdbBlockerClass::NativeFormat,
-        reason: "fresh header bytes cannot be chosen from the parser's preservation behavior",
-        known: "all three fields are zero in the paired FDB and both local CDBs; the parser preserves them",
-        missing: "the native fresh-output byte pattern for each padding field",
+        reason: "matching fresh and translated padding is observed but not a universal constructor policy",
+        known: "all three padding regions are zero in every receipt-admitted fresh FDB and the translated FDB",
+        missing: "version-scoped initialization and independent acceptance of provider-written padding",
         exact_evidence: Some(
             "one controlled newly created FDB header with FactSage version and creation action recorded",
         ),
@@ -95,10 +96,10 @@ const HEADER_GAPS: &[Gap] = &[
         field: "ID-9.unknown_1/unknown_2",
         class: FdbBlockerClass::NativeFormat,
         reason: "uninterpreted header fields cannot receive an invented default",
-        known: "both fields differ between the paired FDB and CDBs; the parser preserves eleven and twelve bytes respectively",
-        missing: "whether these fields are fixed, versioned, or derived for new FDBs",
+        known: "both fields are stable across the fresh edit sequence; the first matches the translated FDB, while the second differs",
+        missing: "the recorded FactSage version and a rule for assigning both fields in a new file",
         exact_evidence: Some(
-            "two controlled fresh FDB headers created under the same FactSage version with one changed input",
+            "one independently created fresh FDB with version, action and complete semantic input recorded",
         ),
         user_evidence_can_unblock: true,
     },
@@ -109,8 +110,8 @@ const COMMON_GAPS: &[Gap] = &[
         field: "RawCommonHeader.element_ids[7]/element_coefficients[7]",
         class: FdbBlockerClass::NativeFormat,
         reason: "source symbols and exact ratios are not yet mapped to repeated native element slots",
-        known: "the paired FDB copies both arrays unchanged within each formula group; strict simple integer formula labels match atomic-number IDs, written coefficients and zero unused slots",
-        missing: "a construction rule for fractional, charged-label and pseudocomponent groups, plus independent confirmation of the simple-integer profile",
+        known: "fresh ID-1/ID-7/CP records copy both arrays within the group; the controlled fresh edits leave them unchanged; simple translated integer labels matched native IDs and coefficients",
+        missing: "an input-linked element order, coefficient scale and charge-aware mapping for even a bounded fresh composition profile",
         exact_evidence: Some(
             "paired fresh FDBs with one neutral formula and one changed elemental ratio, inspecting ID-1/ID-7/CP headers",
         ),
@@ -119,11 +120,11 @@ const COMMON_GAPS: &[Gap] = &[
     Gap {
         field: "RawCommonHeader.coefficient_padding/unknown[2]",
         class: FdbBlockerClass::MissingTestEvidence,
-        reason: "paired repeated values do not prove a fresh-construction rule",
-        known: "coefficient padding is zero throughout the paired FDB; the two unknown bytes vary by record kind but are uniform within each observed kind",
-        missing: "fresh values by record kind under an identified FactSage version",
+        reason: "observed record-kind constants lack versioned constructor provenance",
+        known: "fresh coefficient padding and per-kind unknown bytes are stable through the controlled edits and match translated FDB counterparts",
+        missing: "version-scoped fresh assignment and independent acceptance of provider-written bytes",
         exact_evidence: Some(
-            "controlled fresh FDB with one group, one ordinary function and one Cp interval",
+            "named-version FactSage acceptance of a provider-built one-function fresh FDB",
         ),
         user_evidence_can_unblock: true,
     },
@@ -131,8 +132,8 @@ const COMMON_GAPS: &[Gap] = &[
         field: "RawCommonHeader.charge_raw",
         class: FdbBlockerClass::NativeFormat,
         reason: "semantic group charge is not yet proved to map directly to every repeated signed-byte header",
-        known: "the signed i8 field varies between paired FDB groups and repeats unchanged on ID-1, ID-7 and CP within each group; this corpus has no zero-charge group and some unmarked labels have nonzero raw charge",
-        missing: "source semantic charge to native signed-byte mapping and neutral/opposite-charge behavior",
+        known: "the signed byte repeats on fresh ID-1/ID-7/CP records and across the controlled edits; neither local corpus declares a neutral-versus-charged semantic pair",
+        missing: "independently recorded semantic charge to signed-byte mapping, including neutral charge",
         exact_evidence: Some(
             "controlled neutral and charged fresh FDB groups with equal element ratios, comparing shared headers",
         ),
@@ -141,9 +142,9 @@ const COMMON_GAPS: &[Gap] = &[
     Gap {
         field: "RawCommonHeader.entry_number",
         class: FdbBlockerClass::MissingTestEvidence,
-        reason: "the paired FDB record-order counter is not established for fresh files or rollover",
-        known: "every paired FDB group increments entry_number once per ID-1/ID-7/CP record in stream order from a uniform group start; comparison CDB groups do not all follow this pattern",
-        missing: "fresh FDB start, increment and rollover behavior under a named version",
+        reason: "the small fresh sequence confirms the counter pattern, but larger groups and rollover remain outside evidence",
+        known: "fresh and translated FDBs start each group alike and increment entry_number once per ID-1/ID-7/CP record in stream order",
+        missing: "a bounded maximum or overflow/restart rule for larger groups, plus provider-written acceptance",
         exact_evidence: Some(
             "controlled fresh FDB with multiple functions and Cp records in one group, preserving creation order",
         ),
@@ -152,9 +153,9 @@ const COMMON_GAPS: &[Gap] = &[
     Gap {
         field: "RawCommonHeader.reference[2]",
         class: FdbBlockerClass::NativeFormat,
-        reason: "the observed zero references are not a proven fresh FDB default",
-        known: "both references are zero across the paired FDB but comparison CDBs contain nonzero references; CP references match the owning phase in all local members",
-        missing: "fresh reference initialization, parent-copy and nonzero/rollover conditions",
+        reason: "the fresh reference edit changes only the phase header's reference slots; input-to-slot mapping is unproved",
+        known: "fresh group and CP references remain zero in the controlled edit, while phase references change; fresh snapshots without references have zero slots",
+        missing: "input-linked phase reference encoding for active references or versioned zero-reference initialization for a bounded profile",
         exact_evidence: Some(
             "controlled fresh FDB with multiple functions and Cp records, inspecting both references",
         ),
@@ -163,9 +164,9 @@ const COMMON_GAPS: &[Gap] = &[
     Gap {
         field: "RawCommonHeader.timestamp_ole",
         class: FdbBlockerClass::NativeFormat,
-        reason: "the plan's database date does not establish entry timestamp behavior",
-        known: "CP timestamps copy the ID-1 group timestamp in the paired FDB and both comparison CDBs; ID-7 timestamps can differ from ID-1 and CP, and the group timestamp need not equal the ID-9 date",
-        missing: "fresh ID-1 and ID-7 timestamp sources and assignment rule",
+        reason: "fresh entry timestamps change on edit while the ID-9 date stays fixed, without a source-time policy",
+        known: "fresh ID-1, ID-7 and CP timestamps agree within each snapshot; translated CP copies ID-1 but ID-7 can differ",
+        missing: "fresh timestamp source, rounding and deterministic assignment policy",
         exact_evidence: Some(
             "two controlled fresh FDB creations at distinct times with unchanged function intent",
         ),
@@ -178,7 +179,7 @@ const GROUP_GAPS: &[Gap] = &[
         field: "ID-1.formula_name semantic correspondence",
         class: FdbBlockerClass::NativeFormat,
         reason: "the opaque target label is not parsed into or proved equivalent to exact composition plus charge",
-        known: "the plan keeps label, canonical ratio and semantic charge separately; the paired FDB has charged labels and unmarked labels with nonzero raw charge",
+        known: "the fresh FDB has a populated formula label and an empty compound-name field; formula/group composition remains stored separately, and translated labels are not a charge oracle",
         missing: "provider-accepted formula-label grammar and consistency rule for the admitted profile",
         exact_evidence: Some(
             "controlled fresh neutral and charged groups with recorded formula labels, composition and charge",
@@ -188,9 +189,9 @@ const GROUP_GAPS: &[Gap] = &[
     Gap {
         field: "ID-1.compound_name",
         class: FdbBlockerClass::NativeFormat,
-        reason: "the formula label alone does not establish the compound-name field",
-        known: "ID-1 stores separate 40-byte names; they differ for some paired groups, and modern references can use either stored name",
-        missing: "fresh compound-name selection and reference-alias rule for a requested group",
+        reason: "the formula label alone does not establish the compound-name policy across construction profiles",
+        known: "fresh snapshots keep the compound-name field empty while the formula label is populated; translated groups can have distinct populated names",
+        missing: "bounded fresh policy for omitted or supplied compound names and reference resolution",
         exact_evidence: Some(
             "fresh FDB with a deliberately different display name and formula label",
         ),
@@ -200,7 +201,7 @@ const GROUP_GAPS: &[Gap] = &[
         field: "ID-1.real_stoichiometric_coefficients[7]",
         class: FdbBlockerClass::NativeFormat,
         reason: "exact semantic ratios do not determine native coefficient scale or slots",
-        known: "strict simple integer labels in the paired FDB carry matching real and integer coefficients in label order with zero unused slots; other labels remain unproved",
+        known: "fresh coefficients stay stable through edits; simple translated integer labels matched native real and integer coefficients in label order",
         missing: "native scale, order and integer-versus-real selection for fresh groups",
         exact_evidence: Some(
             "fresh FDB groups with equivalent proportional formulas and one fractional stoichiometry",
@@ -211,7 +212,7 @@ const GROUP_GAPS: &[Gap] = &[
         field: "ID-1.reserved_string_1/reserved_string_2/unknown[4]/padding_final[24]",
         class: FdbBlockerClass::NativeFormat,
         reason: "preserved native fields have no verified constructor values",
-        known: "reserved strings are uniform but nonzero across paired FDB groups; adjacent unknown and final padding fields are zero in that translation and round-trip exactly",
+        known: "fresh reserved strings are stable and nonzero through edits, while adjacent unknown and final padding are zero; translated strings may follow another profile",
         missing: "fresh values and whether any depend on formula, charge, version or creation order",
         exact_evidence: Some("controlled fresh FDB with one neutral and one charged formula group"),
         user_evidence_can_unblock: true,
@@ -222,11 +223,11 @@ const PHASE_GAPS: &[Gap] = &[
     Gap {
         field: "ID-7.phase_id_raw allocation",
         class: FdbBlockerClass::MissingTestEvidence,
-        reason: "the paired group-local solid allocation pattern has not been confirmed for a newly created FDB",
-        known: "paired solid groups allocate consecutive IDs from the first solid index; IDs repeat across groups, CP links are group-local, and phase_id_raw_neg equals the negative ID in the paired FDB and CDBs",
-        missing: "independent fresh-FDB confirmation of solid allocation and a rule for other target states",
+        reason: "one fresh function confirms stable ID and negative/link relation but cannot establish multi-function allocation",
+        known: "fresh ID-7 phase ID stays fixed through empty, single-range and multi-range edits; its negative is the arithmetic opposite and every CP links to it; translated solid groups allocate consecutive local IDs",
+        missing: "fresh allocation for a second function in one group and any admitted non-solid state",
         exact_evidence: Some(
-            "fresh FDB with two solid functions in one group and one non-solid function in another, inspecting ID-7 and CP IDs",
+            "fresh FDB with a second solid function in the same group; test non-solid allocation only if admitted",
         ),
         user_evidence_can_unblock: true,
     },
@@ -234,9 +235,11 @@ const PHASE_GAPS: &[Gap] = &[
         field: "ID-7.physical.padding_1/padding_2",
         class: FdbBlockerClass::NativeFormat,
         reason: "inactive physical coefficients do not establish the adjacent padding bytes",
-        known: "the pure H/S/Cp profile rejects active physical tails; both padding regions are zero throughout the paired FDB but remain raw-preserved",
-        missing: "fresh padding bytes for ordinary and added ID-7 records",
-        exact_evidence: Some("controlled fresh FDB with one ordinary function and one A companion"),
+        known: "both padding regions are zero in fresh and translated FDB phases; the fresh density edit changes the density field without changing other physical-tail fields",
+        missing: "version-scoped writer acceptance for ordinary ID-7 padding; added A requires separate translation evidence",
+        exact_evidence: Some(
+            "FactSage acceptance of a provider-built fresh ordinary function with the observed padding",
+        ),
         user_evidence_can_unblock: true,
     },
 ];
@@ -244,11 +247,11 @@ const PHASE_GAPS: &[Gap] = &[
 const CP_BASE_KIND_GAPS: &[Gap] = &[Gap {
     field: "CP.kind selection for counted base range",
     class: FdbBlockerClass::MissingTestEvidence,
-    reason: "the paired zero-Cp/nonzero-Cp split has not been confirmed as a fresh writer rule",
-    known: "every identity-and-order-linked counted base range with exact-zero source Cp uses ID-5 and every nonzero one uses ID-2 across the represented model families; the paired FDB and comparison CDBs preserve the same ID-2/ID-5 output split",
-    missing: "controlled fresh/imported FDB confirmation that exact semantic Cp zero status selects the native kind",
+    reason: "the translated zero/nonzero split is not yet established as the direct-modern writer rule",
+    known: "all observed fresh nonzero-Cp ranges use ID-2; identity-linked translated zero-Cp counted bases use ID-5 and nonzero ones ID-2",
+    missing: "controlled fresh zero-Cp output or independent acceptance of a candidate canonical encoding",
     exact_evidence: Some(
-        "one controlled same-version Legacy import with otherwise equivalent zero-Cp and nonzero-Cp counted base ranges",
+        "one controlled fresh-modern zero-Cp range under the same recorded version as a nonzero-Cp range",
     ),
     user_evidence_can_unblock: true,
 }];
@@ -265,13 +268,27 @@ const CP_ADDED_KIND_GAPS: &[Gap] = &[Gap {
     user_evidence_can_unblock: true,
 }];
 
+const CP_FRESH_ZERO_KIND_GAPS: &[Gap] = &[Gap {
+    field: "CP.kind selection for fresh zero-Cp range",
+    class: FdbBlockerClass::UserPolicyDecision,
+    reason: "the controlled fresh ranges all have nonzero Cp and use ID-2; no direct-modern zero-Cp range was admitted",
+    known: "ID-2 is the observed fresh nonzero-Cp form; the translated output uses ID-5 for exact-zero Cp, but that is not a direct-modern constructor rule",
+    missing: "a fresh zero-Cp selector, or a canonical ID-2 fresh-write policy validated by strict reparse, independent FactSage acceptance and load/open/save stability",
+    exact_evidence: Some(
+        "one same-version fresh zero-Cp range with recorded UI inputs and a FactSage load/open/save check",
+    ),
+    user_evidence_can_unblock: true,
+}];
+
 const CP_SHARED_GAPS: &[Gap] = &[Gap {
     field: "CP.unknown_1[4]/padding_remaining[56]",
     class: FdbBlockerClass::MissingTestEvidence,
-    reason: "observed zero bytes do not prove a fresh construction rule",
-    known: "both regions are zero in every observed paired ID-2 and ID-5 record; the parser preserves them",
-    missing: "fresh unknown/padding bytes for each admitted CP kind and named FactSage version",
-    exact_evidence: Some("controlled fresh FDB with one ID-2 and one ID-5 interval"),
+    reason: "matching observed zero bytes still require version-scoped provider-written acceptance",
+    known: "both regions are zero in every observed fresh ID-2 and translated ID-2/ID-5 record",
+    missing: "fresh rule for each admitted CP kind and independent acceptance of provider-written bytes",
+    exact_evidence: Some(
+        "FactSage acceptance of provider-built fresh ID-2; test ID-5 only if admitted",
+    ),
     user_evidence_can_unblock: true,
 }];
 
@@ -296,8 +313,33 @@ impl FdbBuildPlan {
         append_gaps(&mut blockers, "database header", HEADER_GAPS);
         for group in &self.groups {
             let group_object = group.formula.as_str();
-            append_gaps(&mut blockers, group_object, COMMON_GAPS);
-            append_gaps(&mut blockers, group_object, GROUP_GAPS);
+            let bounded_fresh_group = self.profile == FdbConstructionProfile::FreshModern
+                && group.functions.len() == 1
+                && group.functions.first().is_some_and(|function| {
+                    function.identity().target_state == PhaseState::Solid
+                        && match function {
+                            FdbFunctionPlan::Ordinary(base) => base.ranges.len() <= 3,
+                            FdbFunctionPlan::ExplicitZeroOrdinary(_) => true,
+                            FdbFunctionPlan::Added(_) => false,
+                        }
+                });
+            for gap in COMMON_GAPS {
+                if bounded_fresh_group
+                    && matches!(
+                        gap.field,
+                        "RawCommonHeader.entry_number" | "RawCommonHeader.reference[2]"
+                    )
+                {
+                    continue;
+                }
+                blockers.push(gap.on(group_object));
+            }
+            for gap in GROUP_GAPS {
+                if bounded_fresh_group && gap.field == "ID-1.compound_name" {
+                    continue;
+                }
+                blockers.push(gap.on(group_object));
+            }
             if i8::try_from(group.charge.value()).is_err() {
                 blockers.push(FdbBuildBlocker {
                     object: group.formula.clone(),
@@ -312,9 +354,15 @@ impl FdbBuildPlan {
             }
             for function in &group.functions {
                 let object = function.identity().target_name.as_str();
-                append_gaps(&mut blockers, object, PHASE_GAPS);
+                for gap in PHASE_GAPS {
+                    if bounded_fresh_group && gap.field == "ID-7.phase_id_raw allocation" {
+                        continue;
+                    }
+                    blockers.push(gap.on(object));
+                }
                 match function {
-                    FdbFunctionPlan::ExplicitZeroOrdinary(_) => blockers.push(FdbBuildBlocker {
+                    FdbFunctionPlan::ExplicitZeroOrdinary(_)
+                        if self.profile == FdbConstructionProfile::LegacyTranslation => blockers.push(FdbBuildBlocker {
                         object: object.into(),
                         field: "zero-base physical encoding",
                         class: FdbBlockerClass::NativeFormat,
@@ -324,10 +372,15 @@ impl FdbBuildPlan {
                         exact_evidence: Some("controlled paired Legacy import with a zero-range G entry and generated FDB/SLN references"),
                         user_evidence_can_unblock: true,
                     }),
+                    FdbFunctionPlan::ExplicitZeroOrdinary(_) => {}
                     FdbFunctionPlan::Ordinary(base) => {
                         for (index, range) in base.ranges.iter().enumerate() {
                             let range_object = format!("{object} range {index}");
-                            append_gaps(&mut blockers, &range_object, CP_BASE_KIND_GAPS);
+                            if self.profile == FdbConstructionProfile::LegacyTranslation {
+                                append_gaps(&mut blockers, &range_object, CP_BASE_KIND_GAPS);
+                            } else if range.cp_terms.iter().all(|term| term.coefficient == 0.0) {
+                                append_gaps(&mut blockers, &range_object, CP_FRESH_ZERO_KIND_GAPS);
+                            }
                             append_gaps(&mut blockers, &range_object, CP_SHARED_GAPS);
                             append_unused_cp_gap(&mut blockers, &range_object, range.cp_terms.len());
                         }

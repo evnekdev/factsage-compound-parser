@@ -2,8 +2,9 @@
 
 ## Purpose
 
-Legacy -> Modern FactSage conversion requires creation of a new solution-side
-Function Database (FDB), not only edits to an existing CDB/FDB byte stream.
+Direct-modern authoring and Legacy -> Modern FactSage conversion both require
+creation of a solution-side Function Database (FDB), with distinct naming and
+zero-object policies.
 
 The current crate is deliberately raw-authoritative and is strong at parsing,
 validation, controlled edits, structural insertion/removal, and exact
@@ -60,8 +61,9 @@ raw byte offsets, reserved fields, chunk padding, or physical record order.
 
 ## Minimum construction intent
 
-The first builder should support the bounded subset required by the audited
-Legacy -> Modern conversion profile.
+The first builder may support a smaller direct-modern profile before the
+Legacy translation profile, provided every required native byte is evidenced.
+The two profiles must remain explicit.
 
 A function construction request needs:
 
@@ -94,6 +96,13 @@ contribute entries to the same formula group.
 
 The builder itself should not infer A companions from value equality. The
 solution-provider conversion plan supplies explicit base/A identities.
+
+Direct-modern functions are caller named and need no automatic A companion.
+`FdbBuildPlan::new_fresh_modern` admits those base functions with empty Legacy
+provenance. `FdbBuildPlan::new` preserves the strict translated
+`<FILE phase ID>_<NNNN>[A]` naming and explicit one-to-one base/A pair.
+Neither an omitted SLN formula qualifier nor an empty FDB compound-name field
+removes the separate FDB composition group or formula label.
 
 For rigorous Legacy -> Modern construction, callers may request both:
 
@@ -154,8 +163,9 @@ FDB-C2 is represented by the sealed `fdb_build::FdbBuildPlan`: caller-provided
 ordered groups and objects are validated without native records; typed errors
 identify the object and field. Semantic validity and `native_blockers()` are
 separate. The plan preserves explicit zero A objects and rejects active
-auxiliary physics. FDB-C3 is not implemented; the inventory lists its exact
-native evidence gaps.
+auxiliary physics in the Legacy translation profile. The fresh-modern profile
+uses caller-supplied names without Legacy source fields or an automatic A.
+FDB-C3 is not implemented; the inventory lists its exact native evidence gaps.
 
 FDB-C2 hardening replaced the floating ratio-bit key with exact rational
 element ratios plus explicit semantic charge. Formula text remains a separate
@@ -166,12 +176,15 @@ Provider blockers distinguish engineering, native evidence, scientific
 semantics and verification with exact affected objects. The local paired
 translation supports group-local solid ID and CP-link observations, but shows
 that base/A role alone cannot select CP ID-2 versus ID-5. Every paired FDB
-ID-2 has nonzero Cp and every ID-5 has zero Cp, including the role exceptions;
-this is a tested output invariant pending a controlled source-variation check
-before use as a fresh writer rule. The
-[`FDB-C3 readiness review`](fdb-c3-readiness.md) concludes that no native
-byte-writing subset is safe until fresh header/shared-entry rules and the CP
-kind condition are established.
+ID-2 has nonzero Cp and every ID-5 has zero Cp, including role exceptions.
+The direct-modern edit sequence has one named solid function, no hidden A,
+fresh ID-2 nonzero-Cp ranges, chained multi-range bounds and stream-order
+entry numbers. It confirms fresh header/shared-field patterns without
+supplying semantic charge/composition mapping, versioned unknown-byte and
+timestamp policies, or independent acceptance of a provider-built file.
+The [`FDB-C3 readiness review`](fdb-c3-readiness.md) therefore keeps native
+materialization blocked. A conditional canonical ID-2 policy for fresh
+zero-Cp ranges is described there; it is not a universal semantic equivalence.
 
 ### FDB-C1 — construction inventory
 

@@ -1,7 +1,7 @@
 use factsage_compound_parser::fdb_build::{
     FdbAddedContribution, FdbAddedFunctionPlan, FdbAuxiliaryIntent, FdbBlockerClass, FdbBuildError,
-    FdbBuildPlan, FdbChargeState, FdbCpTerm, FdbDatabaseMetadata, FdbElementAmount,
-    FdbFormulaGroupPlan, FdbFunctionIdentity, FdbFunctionPlan, FdbFunctionRole,
+    FdbBuildPlan, FdbChargeState, FdbConstructionProfile, FdbCpTerm, FdbDatabaseMetadata,
+    FdbElementAmount, FdbFormulaGroupPlan, FdbFunctionIdentity, FdbFunctionPlan, FdbFunctionRole,
     FdbOrdinaryFunctionPlan, FdbStoichiometricAmount, FdbThermoRangePlan,
 };
 use factsage_compound_parser::{EnergyUnit, PhaseState, PressureUnit};
@@ -96,6 +96,102 @@ fn group(functions: Vec<FdbFunctionPlan>) -> FdbFormulaGroupPlan {
 
 fn plan(functions: Vec<FdbFunctionPlan>) -> Result<FdbBuildPlan, FdbBuildError> {
     FdbBuildPlan::new(metadata(), vec![group(functions)])
+}
+
+#[test]
+fn fresh_modern_names_are_independent_of_legacy_provenance() {
+    let fresh = FdbFunctionIdentity::fresh_modern("Caller Function", PhaseState::Solid);
+    let function = FdbFunctionPlan::Ordinary(FdbOrdinaryFunctionPlan {
+        identity: fresh.clone(),
+        phase_enthalpy: -100.0,
+        phase_entropy: 10.0,
+        ranges: vec![range()],
+        auxiliary: FdbAuxiliaryIntent::Inactive,
+    });
+    let built =
+        FdbBuildPlan::new_fresh_modern(metadata(), vec![group(vec![function.clone()])]).unwrap();
+    assert_eq!(built.profile(), FdbConstructionProfile::FreshModern);
+    assert_eq!(
+        built.groups()[0].functions[0].identity().target_name,
+        "Caller Function"
+    );
+    assert!(matches!(
+        FdbBuildPlan::new(metadata(), vec![group(vec![function])]),
+        Err(FdbBuildError::InvalidField {
+            field: "source_phase_id",
+            ..
+        })
+    ));
+
+    let mut false_provenance = fresh;
+    false_provenance.source_phase_id = "LEGACY".into();
+    assert!(matches!(
+        FdbBuildPlan::new_fresh_modern(
+            metadata(),
+            vec![group(vec![FdbFunctionPlan::ExplicitZeroOrdinary(
+                false_provenance
+            )])]
+        ),
+        Err(FdbBuildError::InvalidField {
+            field: "source_provenance",
+            ..
+        })
+    ));
+}
+
+#[test]
+fn fresh_nonzero_cp_uses_a_distinct_kind_blocker_policy() {
+    let mut nonzero_range = range();
+    nonzero_range.cp_terms[0].coefficient = 1.0;
+    let identity = FdbFunctionIdentity::fresh_modern("FreshSolid", PhaseState::Solid);
+    let function = FdbFunctionPlan::Ordinary(FdbOrdinaryFunctionPlan {
+        identity,
+        phase_enthalpy: -100.0,
+        phase_entropy: 10.0,
+        ranges: vec![nonzero_range],
+        auxiliary: FdbAuxiliaryIntent::Inactive,
+    });
+    let fresh = FdbBuildPlan::new_fresh_modern(metadata(), vec![group(vec![function])]).unwrap();
+    assert!(
+        !fresh
+            .native_blockers()
+            .iter()
+            .any(|b| b.field.contains("CP.kind selection"))
+    );
+    for resolved in [
+        "RawCommonHeader.entry_number",
+        "RawCommonHeader.reference[2]",
+        "ID-1.compound_name",
+        "ID-7.phase_id_raw allocation",
+    ] {
+        assert!(!fresh.native_blockers().iter().any(|b| b.field == resolved));
+    }
+    let zero_range_function = FdbFunctionPlan::Ordinary(FdbOrdinaryFunctionPlan {
+        identity: FdbFunctionIdentity::fresh_modern("ZeroCp", PhaseState::Solid),
+        phase_enthalpy: -100.0,
+        phase_entropy: 10.0,
+        ranges: vec![range()],
+        auxiliary: FdbAuxiliaryIntent::Inactive,
+    });
+    let zero_cp =
+        FdbBuildPlan::new_fresh_modern(metadata(), vec![group(vec![zero_range_function])]).unwrap();
+    assert!(zero_cp.native_blockers().iter().any(|b| {
+        b.field == "CP.kind selection for fresh zero-Cp range"
+            && b.class == FdbBlockerClass::UserPolicyDecision
+    }));
+    let zero = FdbBuildPlan::new_fresh_modern(
+        metadata(),
+        vec![group(vec![FdbFunctionPlan::ExplicitZeroOrdinary(
+            FdbFunctionIdentity::fresh_modern("EmptyFresh", PhaseState::Solid),
+        )])],
+    )
+    .unwrap();
+    assert!(
+        !zero
+            .native_blockers()
+            .iter()
+            .any(|b| b.field.contains("zero-base"))
+    );
 }
 
 fn iron_oxide_group(label: &str, charge: i32, phase: &str) -> FdbFormulaGroupPlan {
@@ -814,7 +910,7 @@ fn semantic_validity_is_separate_from_native_materialization_readiness() {
     assert!(blockers.iter().any(|blocker| {
         blocker.field == "CP.kind selection for counted base range"
             && blocker.class == FdbBlockerClass::MissingTestEvidence
-            && blocker.known.contains("exact-zero source Cp")
+            && blocker.known.contains("zero-Cp")
     }));
     assert!(blockers.iter().any(|blocker| {
         blocker.field == "RawCommonHeader.entry_number"

@@ -1,12 +1,14 @@
-# FDB-C3 readiness after local paired-translation audit
+# FDB-C3 readiness after joint fresh-modern and translation audit
 
 **Decision: BLOCKED for native materialization.** The provider can implement
 plan traversal, raw chunk assembly, serialization, strict reparse, domain
 indexing and ordinary thermodynamic verification with existing lower layers.
-It cannot yet assign every native byte for even one neutral, one-range function
-without guessing header, shared-entry, compound, phase and CP fields. The
-ignored local `data/v1` translation was examined before this decision. No raw
-FDB construction is implemented by this review.
+It cannot yet assign every native byte for a bounded fresh, one-function FDB
+without guessing header, semantic charge/composition, timestamp and some
+record-kind fields. The ignored `data/v0` direct-modern snapshots and `data/v1`
+official Legacy translation were examined separately. No raw FDB construction
+is implemented by this review. FDB-C1 and FDB-C2 remain GO; FDB-C3 remains
+BLOCKED.
 
 The field-level status checklist is
 [`fdb-construction-field-inventory.md`](fdb-construction-field-inventory.md).
@@ -19,18 +21,17 @@ are not misclassified as new evidence needs.
 
 ## Evidence precedence
 
-Before requesting any new manual FactSage experiment, inspect the existing
-local-only paired Legacy -> Modern translation corpus recorded in
-`database-compare/architecture/local-v1-translation-evidence.md` and stored
-under ignored `database-compare/data/v1/`.
-
-This local corpus is the primary evidence source for current FDB-C3 blockers.
-The intended order is:
+The directly authored modern snapshots under ignored `database-compare/data/v0/`
+are the primary evidence for fresh writing. The paired translation under ignored
+`database-compare/data/v1/` is primary for Legacy conversion behavior. Provider
+code and tracked contracts constrain both. The intended order is:
 
 ```text
 provider code and tracked contracts
     +
-local paired data/v1 translation evidence
+direct-modern data/v0 construction evidence
+    +
+paired data/v1 Legacy translation evidence
     +
 historical dbsolution evidence where useful
         ↓
@@ -39,10 +40,10 @@ resolve or narrow blockers
 only then request the smallest new controlled FactSage experiment
 ```
 
-The corpus itself remains confidential and untracked. Only generalized,
+Both corpora remain confidential and untracked. Only generalized,
 redacted structural conclusions may enter tracked code, tests, or
-documentation. If `data/v1/` already answers an E1/E2/E3 question, that
-experiment is not required.
+documentation. The local receipts alone select included native members; ignored
+members were not read.
 
 ## Evidence audit
 
@@ -85,6 +86,32 @@ experiment is not required.
   formula-group namespace;
   source G roles remain globally distinct. It contains no raw offsets or byte
   padding fields.
+
+## Direct-modern fresh construction audit
+
+The receipt-admitted sequence contains a header-only database, an empty named
+function, the same function with one nonzero-Cp range, a reference/density edit,
+and a three-range edit. These are direct-modern snapshots, not Legacy imports.
+The files round-trip through the provider parser and serializer byte-for-byte.
+The observations below are bounded to this one controlled edit sequence; the
+FactSage version, original UI inputs, and independent creation history were
+not recorded in the receipt.
+
+| Object | Fresh-modern observation | Remaining rule |
+| --- | --- | --- |
+| ID-9 | One header exists even in the empty file. Read flag and all three padding regions are zero; the two unknown regions are stable and contain nonzero bytes, while date/comment remain unchanged through edits. The first unknown region agrees with the translated FDB; the second differs. | Version-specific initialization of unknowns, read flag and date/comment policy; equality across edits does not prove a universal constant. |
+| Shared headers | Element identifiers, integer coefficients, charge and coefficient padding repeat from ID-1 through ID-7 and CP. Per-kind unknown bytes are stable and agree with translated counterparts. Entry numbers advance with record order from a common group start, including added ranges. | Input-linked composition/charge mapping, versioned unknowns, larger-group counter limits and fresh writer acceptance. |
+| Names and composition | The fresh ID-1 compound-name field is empty while its formula label is populated. Real coefficients, reserved strings, units and composition slots remain stable through these edits. The phase name remains a nonempty caller-style name. | Formula/compound alias policy and input-linked element order, scale, charge and unit assignment. A blank SLN formula qualifier never means absent FDB group metadata. |
+| Phase | Each nonempty snapshot has one solid-region ID-7. The ID stays fixed as ranges are added, its negative field is its arithmetic negative, and all CP ranges link to that same ID. The empty function has ID-7 but no CP. No hidden A companion appears. | Allocation for a second fresh function and non-solid states. Fresh empty-function form is observed; translated zero-object omission remains separate. |
+| Reference and density edit | The phase density and phase shared-reference fields change. The group and CP reference fields remain zero; the CP body otherwise remains unchanged apart from its timestamp. Other physical-tail fields remain the same. | Mapping of a user reference to the two native slots; no-reference and inactive-density policies can be bounded, but active metadata cannot yet be generated. |
+| Timestamps | Fresh ID-1, ID-7 and CP timestamps agree within each snapshot and change with edits. The ID-9 database date does not change with those entry timestamps. | Clock source, rounding, creation-versus-save semantics and deterministic policy. Translation CP copies ID-1, but translated ID-7 can differ. |
+| CP | Every fresh nonzero-Cp range uses ID-2. The three-range file stores separate CP records under one phase, with adjacent bounds chained, local entry progression, copied group timestamp, and distinct range H/S anchors. The last coefficient and power slots are zero in this sequence, but a zero coefficient does not imply a zero power in every slot. | A fresh zero-Cp kind selector; source-input mapping for the eight stored Cp slots and unused-power policy. |
+
+No fresh semantic neutral/charged pair is declared. The observed raw charge
+cannot be interpreted as semantic charge from formula spelling. No controlled
+ratio change or second function was admitted. The user-observed UI behavior
+around empty/zero Cp and later ranges is useful for experiment design, but it
+does not establish a binary rule.
 
 ## Exhaustive CP-kind falsification pass
 
@@ -131,99 +158,58 @@ conversion table therefore remains a bounded observation, not a universal
 Legacy-to-FDB transform. The native builder can accept explicit target H/S/Cp
 without solving the later source-to-plan adapter.
 
-## Remaining experiments after the local audit
+## CP-kind decision and fresh-write policy
 
-All inspected native files must remain local and uncommitted. Record the
-FactSage version and creation action; compare only aggregate field decisions in
-project documentation.
+The translation corpus has a reproducible output split: every observed ID-2
+range has nonzero Cp, every ID-5 range has exactly zero Cp, and every
+identity-linked counted base source range follows that split. The direct-modern
+corpus exercises nonzero Cp only, using ID-2 in both single- and multi-range
+functions. These observations support ID-2 for the admitted fresh nonzero-Cp
+profile. They do not prove that Cp zero status causes the native kind choice in
+a fresh writer. No observed native or provider thermodynamic interpretation
+establishes a broader semantic difference between the two same-shaped bodies.
 
-### E0 — controlled CP-kind discriminator
+The candidate serialization policy is: preserve the original kind when editing
+an existing file; use ID-2 for fresh nonzero-Cp ranges; consider canonical ID-2
+for fresh zero-Cp ranges only after strict provider reparse/domain/thermodynamic
+verification, independent FactSage acceptance, and load/open/save stability of
+values and references. This is a policy candidate, not a claim that ID-2 and
+ID-5 are universally interchangeable. Fresh zero-Cp construction remains a
+policy/evidence blocker until those checks pass.
 
-**Question:** Does zero versus nonzero semantic Cp select ID-5 versus ID-2
-when all other function inputs are held fixed?
+## Remaining FDB-C3 gates
 
-**Input and action:** Make one same-version controlled Legacy import with two
-otherwise equivalent functions that differ only in whether the source Cp
-coefficients are all exactly zero. Retain the local source, generated FDB and
-SLN, version and import settings. Inspect the generated Cp coefficients and
-kind under their identity-linked functions, including any omitted objects.
+| Object or capability | Class | Exact missing rule or action |
+| --- | --- | --- |
+| ID-9 and per-kind uninterpreted bytes | EVIDENCE_REQUIRED | Record the FactSage version and fresh initialization policy; observed stable bytes cannot be copied into a general constructor without provenance and independent acceptance. |
+| Shared composition and charge | EVIDENCE_REQUIRED | Pair recorded semantic neutral and charged fresh inputs with their native element IDs, integer/real coefficients and signed charge. Neither corpus supplies that correspondence for a fresh neutral group. |
+| Formula and compound names | EVIDENCE_REQUIRED | Define fresh label and absent/present compound-name policy separately from optional SLN formula qualification. Translation aliases are a different profile. |
+| Timestamp assignment | POLICY_REQUIRED | Choose and validate a versioned fresh timestamp source/rounding rule. The ID-9 date remains stable while entry timestamps change; translation follows another phase-timestamp pattern. |
+| More than one fresh function and non-solid states | EVIDENCE_REQUIRED | Confirm fresh phase-ID allocation and links beyond the observed one solid function. A one-solid-function profile can exclude these. |
+| Active references and density | EVIDENCE_REQUIRED | Map user reference inputs to phase reference slots and density units. A bounded no-reference, inactive-density profile can exclude these. |
+| Fresh zero-Cp kind and shorter Cp term lists | POLICY_REQUIRED | Either prove a fresh selector or validate canonical ID-2; establish unused coefficient/power filling. A nonzero, explicit eight-slot profile can exclude these. |
+| Legacy A conversion and zero-object omission | SCIENTIFIC_SEMANTICS_REQUIRED / POLICY_REQUIRED | Retain rigorous identities; resolve source-to-target A reduction/sign and versioned omission separately. Fresh functions have no automatic A companion. |
+| Provider materializer and verification pipeline | ENGINEERING_ONLY | Implement only after every byte for an admitted profile is supported; then serialize, strict-reparse, index and verify thermodynamics. |
+| Provider-built file acceptance | EVIDENCE_REQUIRED | Open the constructed FDB in FactSage and verify reference/value stability through load/open/save. Self-reparse is insufficient. |
 
-**Decision enabled:** Confirm or reject the paired FDB zero/nonzero kind
-candidate as a construction rule. A counterexample leaves CP kind as a
-scientific-semantics blocker; a confirmation narrows the writer to the
-tested profile but does not establish other native bytes.
+No nontrivial profile has every required native byte and input mapping. In
+particular, restricting to one solid function, nonzero Cp, no active references
+or density, and explicit H/S/Cp still leaves charge/composition, timestamps,
+versioned uninterpreted bytes and fresh label policy unresolved. The
+materializer is therefore not implemented. The semantic plan now explicitly
+separates fresh caller names from Legacy-derived names without weakening the
+Legacy pairing contract.
 
-### E1 — minimal neutral fresh FDB
+## Smallest next controlled experiment
 
-**Question:** Which non-scientific fields are fixed, generated, copied, or
-versioned in a freshly created ID-9/ID-1/ID-7/CP stream?
-
-**Input and action:** In FactSage, create one fresh Function Database with one
-neutral formula group, one ordinary function named from a known phase ID, one
-Cp interval, known H/S/Cp, known units and explicit date/comment if the
-UI allows them. Create a second file under the same version with one added
-ordinary function in the same group; retain creation order and timestamps.
-
-**Files and fields to compare:** The two generated FDBs and their recorded
-semantic inputs. Inspect ID-9 padding/unknown/read flag/date; every shared
-header's element IDs, integer coefficients, charge, entry/reference values,
-timestamp, padding; ID-1 compound/formula names, real coefficients, reserved
-bytes; ID-7 positive/negative phase IDs and padding; CP kind, unknown/padding and
-phase link. The second file separates generated counters from constants.
-
-**Decision enabled:** Write explicit field rules and deterministic ID/link
-allocation for the minimal neutral subset and test the paired solid allocation
-against fresh creation. If any bytes vary without an identified input or
-version rule, keep that field blocked.
-
-### E2 — charge and exact-ratio variation
-
-**Question:** Does semantic charge map directly to `charge_raw` and repeat on
-ID-1/ID-7/CP? How do integer and real native coefficients encode scale?
-
-**Input and action:** Under the same FactSage version, create otherwise equal
-neutral and +1 charged groups with the same Fe/O ratio, then a second group
-whose written coefficients are proportional (for example 3:4 versus 6:8) and
-one fractional-ratio group if the UI admits it. Use the smallest possible
-single-function definition in each group.
-
-**Files and fields to compare:** Paired FDBs and source composition/charge
-entries. Inspect `charge_raw`, `element_ids[7]`, integer coefficients,
-`real_stoichiometric_coefficients[7]`, compound/formula labels, and repetition
-on phase/CP shared headers.
-
-**Decision enabled:** Confirm or reject direct charge mapping, neutral zero,
-record repetition, element ordering, and ratio/scale encoding. Decide the
-admitted native charge range separately from the wider semantic `i32` type.
-
-### E3 — base/A and zero-object native form
-
-**Question:** Which zero objects are physically representable or omitted under
-a named FactSage version, and what selects ID-2 versus ID-5 for base/A Cp?
-
-**Input and action:** Use a controlled Legacy source with two G entries: one
-nonzero base/A pair and one zero base/A pair. Import to Modern with FactSage;
-retain the source Legacy text, resulting FDB and SLN, version and importer
-settings. Include a deliberate A entropy sign probe if possible.
-
-**Files and fields to compare:** Source G leading pairs and counted intervals,
-generated ID-7/ID-2/ID-5 records, A phase H/S, CP bounds/powers, zero-object
-presence, and external SLN references. Compare source and target structurally
-and numerically without printing proprietary record contents in logs.
-
-**Decision enabled:** Establish the model/function-specific CP kind condition
-and versioned NativeFactSage zero-object policy separately from rigorous
-semantic identity. Resolve the exceptional A entropy sign rule before the
-solution adapter claims scientific equivalence.
-
-## Safe engineering work now
-
-The existing parser already knows the chunk grammar, exact ID-2/ID-5 body
-shape, raw serialization, strict reparse, grouping and ordinary H/S/Cp
-validation. The semantic plan now records target phase state and rejects a
-base/A pair with mismatched states. A builder skeleton, plan-order traversal,
-typed generated-ID map and post-build verification pipeline could be
-implemented without writing native chunks. Actual byte materialization waits
-for E0 and E1; charged support waits for E2; zero base/A and Legacy
-A conversion wait for E3. This review leaves those engineering tasks
-unimplemented because no complete bounded native profile is yet evidenced.
+Create two otherwise identical, directly authored modern one-function FDBs in
+one recorded FactSage version: one explicitly neutral and one explicitly +1
+charged, with the same simple integer composition, one nonzero-Cp interval and
+no active reference or density. Keep a local receipt declaring each included
+FDB and record the exact UI composition, charge, formula/function labels,
+creation action, save action and times. The files remain ignored under `data/`.
+Compare only categorical field behavior in tracked results. This pair can
+establish the first input-linked fresh charge/composition rule, test whether
+header and per-kind unknown bytes are version constants, and narrow the
+entry-timestamp source. It does not by itself authorize a writer or settle
+fresh zero-Cp policy.

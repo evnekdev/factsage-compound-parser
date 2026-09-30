@@ -1,7 +1,8 @@
 //! Rigorous, ordered FDB construction intent. This module does not create native records.
 //!
-//! A [`crate::fdb_build::FdbBuildPlan`] is sealed by validation. Target names and provenance are
-//! structural identities; thermodynamic equality never participates in grouping
+//! A [`crate::fdb_build::FdbBuildPlan`] is sealed by validation. Target names are
+//! structural identities; Legacy provenance is required only for the translation profile.
+//! Thermodynamic equality never participates in grouping
 //! or pairing. [`crate::fdb_build::FdbBuildPlan::native_blockers`] reports remaining construction
 //! evidence separately from semantic validity.
 
@@ -112,21 +113,44 @@ pub enum FdbFunctionRole {
     Added,
 }
 
-/// Caller-owned source identity and deterministic target name.
+/// Naming and pairing contract for the construction request.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FdbConstructionProfile {
+    /// Legacy G entries retain FILE phase ID, encounter index, and base/A pairing.
+    LegacyTranslation,
+    /// Directly authored modern functions retain caller-supplied names.
+    FreshModern,
+}
+
+/// Target function identity with profile-specific source provenance.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct FdbFunctionIdentity {
-    /// Exact FactSage phase ID from the Legacy FILE header, not its display name.
+    /// Exact Legacy FILE phase ID; empty for fresh-modern construction.
     pub source_phase_id: String,
-    /// Stable source solution/provenance token; distinct source solutions need distinct tokens.
+    /// Stable Legacy source token; empty for fresh-modern construction.
     pub source_token: String,
-    /// Zero-based source G-entry encounter index.
+    /// Zero-based Legacy G-entry index; zero for fresh-modern construction.
     pub source_g_index: usize,
     /// Explicit semantic target state; the provider owns the native ID encoding.
     pub target_state: PhaseState,
-    /// Exact target name, `<PHASEID>_<NNNN>` with optional `A` suffix.
+    /// Exact native function name. Legacy translation constrains its spelling.
     pub target_name: String,
     /// Base or added role.
     pub role: FdbFunctionRole,
+}
+
+impl FdbFunctionIdentity {
+    /// Names a directly authored modern function without inventing Legacy provenance.
+    pub fn fresh_modern(target_name: impl Into<String>, target_state: PhaseState) -> Self {
+        Self {
+            source_phase_id: String::new(),
+            source_token: String::new(),
+            source_g_index: 0,
+            target_state,
+            target_name: target_name.into(),
+            role: FdbFunctionRole::Base,
+        }
+    }
 }
 
 /// One coefficient and power in `Cp(T) = Σ coefficient × T^power`.
@@ -297,6 +321,7 @@ impl std::error::Error for FdbBuildError {}
 /// Validated, immutable rigorous-semantic FDB intent.
 #[derive(Debug, Clone, PartialEq)]
 pub struct FdbBuildPlan {
+    profile: FdbConstructionProfile,
     metadata: FdbDatabaseMetadata,
     groups: Vec<FdbFormulaGroupPlan>,
 }
@@ -307,9 +332,34 @@ impl FdbBuildPlan {
         metadata: FdbDatabaseMetadata,
         groups: Vec<FdbFormulaGroupPlan>,
     ) -> Result<Self, FdbBuildError> {
-        let plan = Self { metadata, groups };
+        Self::with_profile(FdbConstructionProfile::LegacyTranslation, metadata, groups)
+    }
+
+    /// Seals direct-modern intent with caller-supplied function names and no Legacy A pairing.
+    pub fn new_fresh_modern(
+        metadata: FdbDatabaseMetadata,
+        groups: Vec<FdbFormulaGroupPlan>,
+    ) -> Result<Self, FdbBuildError> {
+        Self::with_profile(FdbConstructionProfile::FreshModern, metadata, groups)
+    }
+
+    fn with_profile(
+        profile: FdbConstructionProfile,
+        metadata: FdbDatabaseMetadata,
+        groups: Vec<FdbFormulaGroupPlan>,
+    ) -> Result<Self, FdbBuildError> {
+        let plan = Self {
+            profile,
+            metadata,
+            groups,
+        };
         plan.validate()?;
         Ok(plan)
+    }
+
+    /// Returns the source-specific naming and pairing contract.
+    pub const fn profile(&self) -> FdbConstructionProfile {
+        self.profile
     }
 
     /// Returns validated database-level input.
@@ -381,7 +431,7 @@ impl FdbBuildPlan {
             }
             for function in &group.functions {
                 let id = function.identity();
-                validate_identity(id)?;
+                validate_identity(id, self.profile)?;
                 if let Some(previous) = names.insert(id.target_name.clone(), group.formula.clone())
                 {
                     return Err(FdbBuildError::DuplicateIdentity {
@@ -389,12 +439,14 @@ impl FdbBuildPlan {
                         previous,
                     });
                 }
-                if !source_roles.insert((
-                    id.source_token.clone(),
-                    id.source_phase_id.clone(),
-                    id.source_g_index,
-                    id.role,
-                )) {
+                if self.profile == FdbConstructionProfile::LegacyTranslation
+                    && !source_roles.insert((
+                        id.source_token.clone(),
+                        id.source_phase_id.clone(),
+                        id.source_g_index,
+                        id.role,
+                    ))
+                {
                     return Err(FdbBuildError::DuplicateIdentity {
                         object: id.target_name.clone(),
                         previous: "source G-entry role already present".into(),
@@ -426,6 +478,15 @@ impl FdbBuildPlan {
                         bases.insert(id.clone(), key.clone());
                     }
                     FdbFunctionPlan::Added(added) => {
+                        if self.profile == FdbConstructionProfile::FreshModern {
+                            return Err(FdbBuildError::InvalidField {
+                                object: id.target_name.clone(),
+                                field: "role",
+                                reason:
+                                    "fresh-modern construction has no evidenced A-companion policy"
+                                        .into(),
+                            });
+                        }
                         if id.role != FdbFunctionRole::Added {
                             return Err(FdbBuildError::InvalidField {
                                 object: id.target_name.clone(),
@@ -451,7 +512,7 @@ impl FdbBuildPlan {
         }
         let mut paired = BTreeSet::new();
         for (id, base, group_key) in additions {
-            validate_identity(base)?;
+            validate_identity(base, self.profile)?;
             let Some(base_group) = bases.get(base) else {
                 return Err(FdbBuildError::InvalidPairing {
                     added: id.target_name.clone(),
@@ -483,13 +544,16 @@ impl FdbBuildPlan {
                 });
             }
         }
-        for base in bases.keys() {
-            if !paired.contains(base) {
-                return Err(FdbBuildError::InvalidPairing {
-                    added: format!("{}A", base.target_name),
-                    base: base.target_name.clone(),
-                    reason: "rigorous profile requires one explicit A companion per base".into(),
-                });
+        if self.profile == FdbConstructionProfile::LegacyTranslation {
+            for base in bases.keys() {
+                if !paired.contains(base) {
+                    return Err(FdbBuildError::InvalidPairing {
+                        added: format!("{}A", base.target_name),
+                        base: base.target_name.clone(),
+                        reason: "rigorous profile requires one explicit A companion per base"
+                            .into(),
+                    });
+                }
             }
         }
         Ok(())
@@ -593,7 +657,21 @@ fn gcd_u128(mut left: u128, mut right: u128) -> u128 {
     left
 }
 
-fn validate_identity(id: &FdbFunctionIdentity) -> Result<(), FdbBuildError> {
+fn validate_identity(
+    id: &FdbFunctionIdentity,
+    profile: FdbConstructionProfile,
+) -> Result<(), FdbBuildError> {
+    if profile == FdbConstructionProfile::FreshModern {
+        check_text(&id.target_name, "target_name", &id.target_name, 40, false)?;
+        if !id.source_phase_id.is_empty() || !id.source_token.is_empty() || id.source_g_index != 0 {
+            return Err(FdbBuildError::InvalidField {
+                object: id.target_name.clone(),
+                field: "source_provenance",
+                reason: "fresh-modern identity must not claim Legacy FILE/G provenance".into(),
+            });
+        }
+        return Ok(());
+    }
     check_text(
         &id.target_name,
         "source_phase_id",
