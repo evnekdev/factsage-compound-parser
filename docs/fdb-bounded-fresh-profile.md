@@ -80,14 +80,17 @@ already provides:
 For the bounded profile:
 
 1. parse the formula with `chemformula`;
-2. use element first-appearance / parser encounter order as the candidate native
-   slot order;
+2. preserve element first-appearance / parser encounter order as the native slot
+   order;
 3. encode each real element ID as its periodic-table atomic number in one `u8`;
 4. align integer and real coefficient slots with those element slots;
-5. automatically verify encounter order against the existing local fresh and
-   translated FDB corpus before enabling materialization.
+5. verify this rule against the existing local fresh and translated FDB corpus as
+   an implementation regression check.
 
-Element-order confirmation is an automated evidence check, not a user-input gate.
+**Domain policy confirmed by the user:** equivalent formulas are not reordered or
+canonicalized for native element-slot construction. The native slot order follows
+the order in which elements first appear in the parsed formula. Corpus checking is
+verification of the implementation, not a remaining user-input blocker.
 
 Vacancies and phase electrons are outside this first ordinary-composition profile
 unless the native FDB encoding is already independently established.
