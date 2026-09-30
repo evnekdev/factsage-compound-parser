@@ -45,7 +45,7 @@ across groups.
 | `Fe3O4` and `Fe3O4[+]` must remain distinct groups. | CONFIRMED_BY_DOMAIN_CONTRACT | Label syntax is not parsed as semantic charge. |
 | Solution parser models source charge as `i32` and keeps bracketed charge spelling in external references. | CONFIRMED_BY_PROVIDER_CODE | Its SLN parser test is synthetic, not paired FDB evidence. |
 | Historical `dbsolution` parses Legacy charge and derives SLN endmember charge from `chemformula`. | HISTORICAL_PYTHON_HINT | This does not prove FDB `charge_raw` initialization. |
-| Numeric `charge_raw` mapping in a controlled neutral/charged FDB pair. | UNKNOWN | The local pair has differing raw charges but no neutral group; unmarked formula labels can have a nonzero raw charge. |
+| A user-declared fresh neutral/charged pair has equal native element IDs and integer/real coefficients but different `charge_raw`; the declared neutral raw byte is nonzero. | CONFIRMED_BY_LOCAL_FRESH_PAIR | Charge-sensitive storage is established for this pair; a direct semantic-charge cast is refuted. Exact entered signed magnitude and native code mapping remain unknown. |
 
 Exact rational identity is a bounded semantic profile, not a claim that every
 FactSage source coefficient has a `u64` rational representation. A future
@@ -112,9 +112,16 @@ bounds and stream-order entry numbers. The density/reference edit changes
 phase density and phase references, not group or CP references. ID-1, ID-7 and
 CP timestamps agree within a fresh snapshot, whereas translated ID-7 may
 differ. ID-9 date stays fixed through the fresh edits while entry timestamps
-change. No semantically declared neutral/charged pair, ratio change or second
-fresh function is available. All conclusions are bounded to the observed
-sequence and do not establish a universal FactSage-version default.
+change. The later fresh charged-function probe supplies two singleton solid
+groups with equal native element arrays and differing raw charge. The original
+neutral function's CP upper bound also changes between snapshots, so the
+cross-snapshot comparison is not a pure add-only edit. Within the new file,
+the two groups differ only in raw charge, formula label and per-group timestamp;
+their local function names are equal. Their phase IDs and entry starts reset
+to the same values, while shared composition/charge copy within each group.
+The exact signed UI charge magnitude, input stoichiometry and version are not
+declared. These observations do not establish a universal version default or
+a second-function allocation rule inside one group.
 
 `FdbBuildPlan::new` retains translated naming and explicit base/A pairing.
 `new_fresh_modern` accepts caller-supplied names without invented Legacy
@@ -142,13 +149,13 @@ header field). No invented database ID is in the semantic plan.
 
 | Native field | Class | Evidence and required disposition |
 | --- | --- | --- |
-| `element_ids[7]` | UNRESOLVED_BLOCKER | `V0`: repeated unchanged on ID-1/ID-7/CP through edits. `V1`: strict simple integer labels matched atomic-number IDs. Input-linked fresh element ordering remains unproved. |
-| `element_coefficients[7]` | UNRESOLVED_BLOCKER | `V0`: group-wide repetition and stability. `V1`: bounded integer-label matches. Fresh scale and charge-aware mapping remain unproved. |
+| `element_ids[7]` | UNRESOLVED_BLOCKER | `V0`: repeat on ID-1/ID-7/CP and remain identical across the declared neutral/charged groups. `V1`: strict simple integer labels matched atomic-number IDs. Input-linked fresh element ordering remains unproved. |
+| `element_coefficients[7]` | UNRESOLVED_BLOCKER | `V0`: group-wide repetition and equality across the neutral/charged groups. `V1`: bounded integer-label matches. Fresh input-to-slot scale remains unproved. |
 | `coefficient_padding` | UNRESOLVED_BLOCKER | `V0`/`V1`: observed stable pattern; versioned fresh assignment and writer acceptance remain unproved. |
-| `charge_raw` | UNRESOLVED_BLOCKER | `V0`/`V1`: signed byte repeats within groups. Neither corpus contains a semantically declared neutral/charged fresh pair, so direct charge mapping is unproved. |
-| `entry_number` | UNRESOLVED_BLOCKER | `V0`/`V1`: same group start and consecutive ID-1/ID-7/CP stream-order progression. Small-group rule is supported; larger groups and rollover remain outside evidence. |
+| `charge_raw` | UNRESOLVED_BLOCKER | `V0`: declared neutral/charged groups have different raw bytes with identical native element arrays; each byte repeats within its group. The declared neutral raw byte is nonzero, refuting a direct semantic-charge cast. Exact signed-charge coding is unknown. |
+| `entry_number` | UNRESOLVED_BLOCKER | `V0`/`V1`: same group start and consecutive ID-1/ID-7/CP stream-order progression. Two fresh singleton groups independently restart the sequence; larger groups and rollover remain outside evidence. |
 | `reference[2]` | UNRESOLVED_BLOCKER | `V0`: group and CP slots remain zero when reference metadata is added, while phase slots change. No-reference pattern is supported; active input-to-slot mapping remains unproved. |
-| `timestamp_ole` | UNRESOLVED_BLOCKER | `V0`: ID-1/ID-7/CP timestamps agree within each snapshot and change through edits, while ID-9 date remains stable. `V1`: CP copies ID-1, but ID-7 can differ. Fresh timestamp source/rounding unknown. |
+| `timestamp_ole` | UNRESOLVED_BLOCKER | `V0`: ID-1/ID-7/CP timestamps agree within each group, and two groups in one file have distinct timestamps. ID-9 date stays fixed. `V1`: CP copies ID-1, but ID-7 can differ. Fresh clock source/rounding unknown. |
 | `unknown[2]` | UNRESOLVED_BLOCKER | `V0`/`V1`: stable by record kind and matching between profiles; versioned assignment and writer acceptance remain unproved. |
 
 These slots are `RAW_PRESERVED_ONLY` when editing existing databases, but
@@ -162,9 +169,9 @@ through caller input.
 | --- | --- | --- |
 | chunk ID, group position | PROVIDER_GENERATED | `CODE`: ID 1 and database → group → phases → ranges → comments ordering. |
 | shared header | UNRESOLVED_BLOCKER | See preceding table. |
-| `compound_name` | UNRESOLVED_BLOCKER | `V0`: empty while formula label is populated. `V1`: may differ from formula and serve as a reference alias. Fresh omitted/supplied policy requires explicit scope. |
+| `compound_name` | UNRESOLVED_BLOCKER | `V0`: empty in both user-declared neutral/charged groups, while their formula labels differ and the local function name is reused. `V1`: compound name may serve as a separate alias. Fresh omitted/supplied policy requires explicit scope. |
 | `formula_name` | CALLER_PROVIDED | `CODE`/`CONTRACT`: target formula **label**, max 40 printable ASCII bytes. Full semantic identity is exact elemental ratio plus charge; the label is neither parsed for charge nor used as the sole key. |
-| `real_stoichiometric_coefficients[7]` | UNRESOLVED_BLOCKER | `V0`: stable through edits. `V1`: simple integer labels matched written amounts; fresh input-to-slot scale and order remain unproved. |
+| `real_stoichiometric_coefficients[7]` | UNRESOLVED_BLOCKER | `V0`: stable through edits and identical across the neutral/charged groups. `V1`: simple integer labels matched written amounts; fresh input-to-slot scale and order remain unproved. |
 | `unit_energy` | CALLER_PROVIDED | `CODE`: codes 0 calorie and 1 joule; paired Legacy/FDB samples use 1 (`PAIR`). No implicit conversion in the plan. |
 | `unit_pressure` | CALLER_PROVIDED | `CODE`: codes 0 atmosphere and 1 bar; the source/provider must choose a known convention. This does not imply a reference pressure. |
 | `reserved_string_1`, `reserved_string_2` | UNRESOLVED_BLOCKER | `V0`: stable and nonzero across edits; assignment policy and version scope unknown. |
@@ -183,7 +190,7 @@ different charges are allowed. Numerically equal functions remain distinct.
 | shared header | UNRESOLVED_BLOCKER | See shared-entry table. |
 | `phase_name` | CALLER_PROVIDED | `V0`: direct-modern function name is a nonempty caller/native-modern name. `V1`: matched translations use `<FILE phase ID>_<zero-based four digits>[A]`. These are separate naming policies. |
 | `enthalpy`, `entropy` | CALLER_PROVIDED | `CODE`: independent ID-7 H/S values. The plan retains them on both ordinary and nonzero A functions; C3 can write supplied values without choosing an anchor. Legacy source-to-plan selection remains a later scientific integration question. |
-| `phase_id_raw` | UNRESOLVED_BLOCKER | `V0`: one solid function keeps its ID through empty/single/multi-range edits; all CP links agree. `V1`: multiple solid functions are consecutive and group-local. A second fresh function and other states remain unproved. |
+| `phase_id_raw` | UNRESOLVED_BLOCKER | `V0`: fresh solid singleton groups reuse the same phase ID, including a declared neutral/charged pair; negatives and CP links are group-local. `V1`: multiple solid functions are consecutive within groups. A second fresh function inside one group and other states remain unproved. |
 | `phase_id_raw_neg` | PROVIDER_GENERATED | `LOCAL_PAIR`: arithmetic negation of positive ID holds in the paired FDB and comparison CDBs; no independent blocker after positive ID allocation. |
 | `density_raw`, thermal-expansion, compressibility, bulk-modulus, magnetic temperature/moment, `p_factor` | EVIDENCED_DEFAULT | `CODE`: exact numeric zero is the inactive pure H/S/Cp pattern. Any requested active contribution is a typed semantic blocker; zero is only a profile-specific inactive value, not a default for general FDBs. |
 | `padding_1`, `padding_2` | UNRESOLVED_BLOCKER | `V0`/`V1`: zero in observed phases, pending versioned writer acceptance. |
@@ -237,17 +244,17 @@ controlled experiments and dependencies, see
 | ID-9 chunk ID, `CMPD`, comment, caller OLE date | RESOLVED | Parser's required magic, fixed text and date validator; write supplied date/comment. | No | Yes |
 | ID-9 `read_flag` | EVIDENCE_REQUIRED | Fresh and translated FDBs agree on zero; named-version initialization and provider-written acceptance remain. | Yes, versioned acceptance | No |
 | ID-9 padding 1/2/3 and unknown 1/2 | EVIDENCE_REQUIRED | Fresh padding is zero; both unknown regions are stable through edits, but the second differs from translation. Need versioned assignment and writer acceptance. | Yes, versioned fresh input | No |
-| Shared `element_ids[7]`, integer `element_coefficients[7]` | EVIDENCE_REQUIRED | Fresh group-wide copying is confirmed; input-linked code/order/scale and semantic charge mapping remain. | Yes, neutral/charged input pair | No |
+| Shared `element_ids[7]`, integer `element_coefficients[7]` | EVIDENCE_REQUIRED | Fresh group-wide copying and equality across neutral/charged groups are confirmed; input-linked code/order/scale remain. | Yes, recorded stoichiometry inputs | No |
 | Shared coefficient padding and unknown 2 bytes | EVIDENCE_REQUIRED | Stable by kind in fresh edits and matching translated counterparts; versioned writer assignment remains. | Yes | No |
-| Shared `charge_raw` | EVIDENCE_REQUIRED | Signed `i8` repeats within fresh groups; no declared neutral/charged semantic pair establishes its mapping. | Yes, neutral/charged pair | No |
+| Shared `charge_raw` | EVIDENCE_REQUIRED | Declared neutral/charged groups have distinct raw bytes despite equal native element arrays; neutral raw is nonzero. Exact signed-charge mapping needs recorded UI magnitude/sign. | Yes, provenance for existing pair | No |
 | Shared `entry_number` | RESOLVED | Fresh and translated FDBs share group start and consecutive stream-order increments within the observed small profile; rollover remains outside it. | No for one-function profile | Yes for bounded small profile |
 | Shared `reference[2]` | EVIDENCE_REQUIRED | No-reference fresh group/CP slots are zero; active reference edit changes only phase slots. Input-to-slot assignment remains. | Yes for active references | No for active; bounded no-reference policy possible |
-| Shared `timestamp_ole` | POLICY_REQUIRED | Fresh ID-1/7/CP agree and change with edits while ID-9 date stays fixed; timestamp source/rounding remain unproved. | Yes, versioned action times | No |
+| Shared `timestamp_ole` | POLICY_REQUIRED | Fresh ID-1/7/CP agree per group; two groups in one file differ while ID-9 date stays fixed. Clock source/rounding remain unproved. | Yes, versioned action times | No |
 | ID-1 formula label bytes and energy/pressure codes | RESOLVED | Supplied printable label; known code enums; pressure reference is not inferred. | No | Yes |
-| ID-1 formula label correspondence to semantic composition/charge | EVIDENCE_REQUIRED | The label is opaque; establish provider-accepted grammar and consistency rule with a controlled neutral/charged pair. | Yes | No |
-| ID-1 `compound_name`, real coefficients, reserved strings, unknown/padding | EVIDENCE_REQUIRED | Fresh compound name is empty with populated formula; coefficients/reserved bytes are stable through edits, but input-linked scale and versioned assignment remain. | Yes, declared input pair | No |
+| ID-1 formula label correspondence to semantic composition/charge | EVIDENCE_REQUIRED | Neutral/charged groups differ in formula label and raw charge but share native element arrays. Label spelling is not authority for signed charge or composition. Record exact UI inputs and alias policy. | Yes | No |
+| ID-1 `compound_name`, real coefficients, reserved strings, unknown/padding | EVIDENCE_REQUIRED | Fresh compound name stays empty; real coefficients and reserved fields are unchanged across charge contrast. Input-linked scale and versioned assignment remain. | Yes, recorded stoichiometry/version | No |
 | ID-7 target phase name and explicit H/S | RESOLVED | Fresh names are caller supplied; translated names derive from FILE phase ID/G encounter index. The plan keeps explicit H/S. | No | Yes |
-| ID-7 `phase_id_raw` allocation and physical padding | EVIDENCE_REQUIRED | One fresh solid ID stays fixed across range edits, negation/link confirmed; second-function allocation and versioned padding acceptance remain. | Yes, two fresh functions if admitted | No |
+| ID-7 `phase_id_raw` allocation and physical padding | EVIDENCE_REQUIRED | Two fresh singleton groups reuse a solid phase ID with correct negatives/links. Allocation inside one group and versioned padding acceptance remain. | Yes, same-group pair if admitted | No |
 | ID-7 `phase_id_raw_neg` relation | RESOLVED | Compute arithmetic negative after allocating the positive ID; observed in paired FDB and comparison CDBs. | No | Yes, conditional on positive ID |
 | ID-7 inactive magnetic/pressure-volume tail for pure H/S/Cp | RESOLVED | Provider eligibility code accepts exact numeric zero; active intent fails plan validation. | No | Yes for admitted profile |
 | CP ID-2/ID-5 kind for counted base ranges | EVIDENCE_REQUIRED | Fresh nonzero Cp uses ID-2; translated counted bases split ID-2 nonzero / ID-5 zero. Fresh zero-Cp selector or accepted canonical policy remains. | Fresh zero-Cp output or acceptance | Yes for bounded fresh nonzero Cp |

@@ -140,6 +140,39 @@ fn fresh_modern_names_are_independent_of_legacy_provenance() {
 }
 
 #[test]
+fn fresh_groups_keep_charge_identity_when_function_names_repeat() {
+    let function = || {
+        FdbFunctionPlan::Ordinary(FdbOrdinaryFunctionPlan {
+            identity: FdbFunctionIdentity::fresh_modern("SharedName", PhaseState::Solid),
+            phase_enthalpy: -100.0,
+            phase_entropy: 10.0,
+            ranges: vec![range()],
+            auxiliary: FdbAuxiliaryIntent::Inactive,
+        })
+    };
+    let mut neutral = group(vec![function()]);
+    neutral.formula = "SyntheticNeutral".into();
+    let mut charged = group(vec![function()]);
+    charged.formula = "SyntheticCharged".into();
+    charged.charge = FdbChargeState::new(1);
+
+    let built = FdbBuildPlan::new_fresh_modern(metadata(), vec![neutral, charged]).unwrap();
+    assert_eq!(built.groups().len(), 2);
+    assert_eq!(built.groups()[0].elements, built.groups()[1].elements);
+    assert_ne!(built.groups()[0].charge, built.groups()[1].charge);
+    assert_eq!(
+        built.groups()[0].functions[0].identity().target_name,
+        built.groups()[1].functions[0].identity().target_name
+    );
+    assert!(built.native_blockers().iter().any(|blocker| {
+        blocker.field == "RawCommonHeader.charge_raw"
+            && blocker
+                .known
+                .contains("direct semantic-charge cast is refuted")
+    }));
+}
+
+#[test]
 fn fresh_nonzero_cp_uses_a_distinct_kind_blocker_policy() {
     let mut nonzero_range = range();
     nonzero_range.cp_terms[0].coefficient = 1.0;
