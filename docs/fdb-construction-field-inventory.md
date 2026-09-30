@@ -414,3 +414,14 @@ does establish that the added leading pair must **not** inherit ordinary
 Consequently, Legacy conversion must model the uncounted added-leading pair as a
 distinct raw source structure and derive any target `xxxxA` Function/ID-5
 thermodynamics from evidence, rather than reusing the ordinary range decoder.
+
+
+**Paired unit-scaling evidence:** the leading pair is not merely an ordinary
+range with an omitted count. In the tracked paired fixtures, an ordinary
+counted range's first field is the legacy `H / 1000` representation and maps
+to FDB enthalpy with `×4184` J/mol. The added leading pair's first field maps
+to the emitted `xxxxA` ID-7 and ID-5 enthalpy anchors with `×4.184` J/mol.
+That factor-of-1000 difference independently proves distinct field semantics
+for at least the first position. The second leading value maps directly with
+`×4.184` in 13/14 emitted A blocks, with one known opposite-sign exception,
+so it remains S-like evidence rather than a universal entropy rule.
