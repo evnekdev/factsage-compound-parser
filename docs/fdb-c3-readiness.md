@@ -293,7 +293,7 @@ policy/evidence blocker until those checks pass.
 | Active references and density | EVIDENCE_REQUIRED | Map user reference inputs to phase reference slots and density units. A bounded no-reference, inactive-density profile can exclude these. |
 | Fresh zero-Cp kind and shorter Cp term lists | POLICY_REQUIRED | Either prove a fresh selector or validate canonical ID-2; establish unused coefficient/power filling. A nonzero, explicit eight-slot profile can exclude these. |
 | Fresh empty-function verification | ENGINEERING_ONLY | The native empty function has ID-7 without CP; verify it by strict reparse and domain structure because the ordinary thermodynamic view requires a CP range. |
-| Legacy A conversion and zero-object omission | SCIENTIFIC_SEMANTICS_REQUIRED / POLICY_REQUIRED | Retain rigorous identities; resolve source-to-target A reduction/sign and versioned omission separately. Fresh functions have no automatic A companion. |
+| Legacy A conversion and zero-object omission | PARTIALLY_RESOLVED | **Zero-object omission policy resolved:** physically zero base/A Function objects may be omitted in `NativeFactSage`, while rigorous semantic identities remain internal. Remaining Legacy A source-to-target reduction/sign semantics are separate. |
 | Provider materializer and verification pipeline | ENGINEERING_ONLY | Implement only after every byte for an admitted profile is supported; then serialize, strict-reparse, index and verify thermodynamics. |
 | Provider-built file acceptance | EVIDENCE_REQUIRED | Open the constructed FDB in FactSage and verify reference/value stability through load/open/save. Self-reparse is insufficient. |
 
