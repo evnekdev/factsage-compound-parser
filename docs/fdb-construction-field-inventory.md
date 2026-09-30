@@ -123,6 +123,13 @@ The exact signed UI charge magnitude, input stoichiometry and version are not
 declared. These observations do not establish a universal version default or
 a second-function allocation rule inside one group.
 
+User-supplied FactSage 7.3 Solution screenshots show an unmarked and a
+bracket-plus group in an SLN file, each with one same-named function and equal
+visible thermodynamic inputs. They corroborate separate UI groups and reused
+local function names. They do not show numeric charge entry, the composition
+editor, FDB creation, or the FDB writer version; no native field mapping is
+promoted on the basis of label spelling or the viewer title.
+
 `FdbBuildPlan::new` retains translated naming and explicit base/A pairing.
 `new_fresh_modern` accepts caller-supplied names without invented Legacy
 provenance or automatic A companions. An SLN reference may omit its formula
