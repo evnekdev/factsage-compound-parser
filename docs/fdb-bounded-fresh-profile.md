@@ -303,3 +303,16 @@ group before byte rollover rather than inventing wraparound semantics.
 
 This rule is confirmed by both fresh and translated FDB observations and is not
 a human-in-the-loop blocker.
+
+
+## Function/CP physical stream order
+
+**Confirmed bounded FDB policy:** within one formula group, emit records in
+function encounter order as:
+
+`ID-1 group header -> ID-7 function 1 -> its CP records -> ID-7 function 2 -> its CP records -> ...`
+
+Each function's CP records immediately follow that function and retain their
+range order. Function IDs and entry numbers advance consistently with this
+physical order. This matches the observed grouped FDB structure and is now the
+writer rule for the bounded profile.
