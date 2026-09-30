@@ -311,7 +311,7 @@ In particular:
 | Compound name | **CONFIRMED DOMAIN POLICY:** leave ID-1 `compound_name` empty by default for fresh-modern construction. Translated FDB alias/population behavior is separate. |
 | Function name | Caller supplied; no Legacy naming rule. |
 | References/density | **CONFIRMED DOMAIN POLICY:** references default to zero. Density is a common optional property: the low portion of `density_raw` carries density while the high packed portion selects an advanced volumetric equation family. Ordinary density can be supported with the default/no-advanced-family code; advanced volumetric families are extensions, not blockers. |
-| Function topology | One ordinary solid function per formula group. |
+| Function topology | First implementation tranche may admit one ordinary function per formula group; native FDB Function IDs always use the group-local pseudo-solid `101, 102, ...` series regardless of semantic aggregate state. |
 | Cp kind | **CONFIRMED DOMAIN POLICY:** use ID-2 for fresh Cp ranges. Zero-Cp is represented by zero coefficients and zero corresponding powers; unused slots are also zero-filled. |
 | Per-record opaque padding/defaults | **CONFIRMED DOMAIN POLICY:** copy the corresponding values from the controlled fresh FDB record template for each record kind; do not infer semantics. Validate by provider-built FactSage acceptance. |
 
