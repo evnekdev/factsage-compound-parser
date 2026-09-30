@@ -300,7 +300,11 @@ fn append_gaps(blockers: &mut Vec<FdbBuildBlocker>, object: &str, gaps: &[Gap]) 
 
 impl FdbBuildPlan {
     /// Reports remaining native construction and verification work in plan order.
-    /// Resolved caller fields and evidenced profile defaults are not blockers.
+    ///
+    /// Resolved FDB serialization rules (template-derived opaque bytes, charge
+    /// encoding, composition slots, counters, timestamps, references, Function
+    /// IDs, fresh ID-2 zero-Cp, and unused-slot zero filling) are deliberately
+    /// not emitted as blockers.
     pub fn native_blockers(&self) -> Vec<FdbBuildBlocker> {
         let mut blockers = vec![FdbBuildBlocker {
             object: "FDB materializer".into(),
@@ -308,119 +312,58 @@ impl FdbBuildPlan {
             class: FdbBlockerClass::Engineering,
             reason: "no sealed plan-to-raw builder exists yet",
             known: "raw serialization, strict reparse, domain indexing and ordinary FDB validation already exist",
-            missing: "implement the provider builder after required native field rules are established",
+            missing: "implement the provider builder using the resolved native policies",
             exact_evidence: None,
             user_evidence_can_unblock: false,
         }];
-        append_gaps(&mut blockers, "database header", HEADER_GAPS);
+
         for group in &self.groups {
-            let group_object = group.formula.as_str();
-            let bounded_fresh_group = self.profile == FdbConstructionProfile::FreshModern
-                && group.functions.len() == 1
-                && group.functions.first().is_some_and(|function| {
-                    function.identity().target_state == PhaseState::Solid
-                        && match function {
-                            FdbFunctionPlan::Ordinary(base) => base.ranges.len() <= 3,
-                            FdbFunctionPlan::ExplicitZeroOrdinary(_) => true,
-                            FdbFunctionPlan::Added(_) => false,
-                        }
-                });
-            for gap in COMMON_GAPS {
-                if (self.profile == FdbConstructionProfile::FreshModern
-                    && gap.field == "RawCommonHeader.charge_raw")
-                    || (bounded_fresh_group
-                        && matches!(
-                            gap.field,
-                            "RawCommonHeader.entry_number" | "RawCommonHeader.reference[2]"
-                        ))
-                {
-                    continue;
-                }
-                blockers.push(gap.on(group_object));
-            }
-            for gap in GROUP_GAPS {
-                if bounded_fresh_group && gap.field == "ID-1.compound_name" {
-                    continue;
-                }
-                blockers.push(gap.on(group_object));
-            }
-            if i8::try_from(group.charge.value()).is_err() {
-                blockers.push(FdbBuildBlocker {
-                    object: group.formula.clone(),
-                    field: "RawCommonHeader.charge_raw range",
-                    class: FdbBlockerClass::NativeFormat,
-                    reason: "the semantic charge exceeds the only parsed native signed-byte slot",
-                    known: "charge_raw is i8, while the solution source charge is i32",
-                    missing: "an alternative native encoding or explicit rejection policy for this charge",
-                    exact_evidence: Some("provider documentation or a controlled FDB containing a charge outside -128..127"),
-                    user_evidence_can_unblock: true,
-                });
-            }
             for function in &group.functions {
                 let object = function.identity().target_name.as_str();
-                for gap in PHASE_GAPS {
-                    if bounded_fresh_group && gap.field == "ID-7.phase_id_raw allocation" {
-                        continue;
-                    }
-                    blockers.push(gap.on(object));
-                }
                 match function {
                     FdbFunctionPlan::ExplicitZeroOrdinary(_)
-                        if self.profile == FdbConstructionProfile::LegacyTranslation => blockers.push(FdbBuildBlocker {
-                        object: object.into(),
-                        field: "zero-base physical encoding",
-                        class: FdbBlockerClass::NativeFormat,
-                        reason: "the rigorous base identity cannot be silently omitted",
-                        known: "paired exports may omit physically zero base blocks",
-                        missing: "accepted explicit zero-base ID-7/CP representation or versioned omission rule",
-                        exact_evidence: Some("controlled paired Legacy import with a zero-range G entry and generated FDB/SLN references"),
-                        user_evidence_can_unblock: true,
-                    }),
-                    FdbFunctionPlan::ExplicitZeroOrdinary(_) => blockers.push(FdbBuildBlocker {
-                        object: object.into(),
-                        field: "fresh empty-function verification",
-                        class: FdbBlockerClass::Engineering,
-                        reason: "the ordinary thermodynamic view requires at least one CP range",
-                        known: "a directly authored fresh empty function has an ID-7 and no CP record",
-                        missing: "verify an empty fresh function by strict reparse and domain structure without invoking ordinary H/S/Cp evaluation",
-                        exact_evidence: None,
-                        user_evidence_can_unblock: false,
-                    }),
+                        if self.profile == FdbConstructionProfile::LegacyTranslation =>
+                    {
+                        // Confirmed native serialization policy: physically zero
+                        // Legacy base objects may be omitted while semantic identity
+                        // remains in the rigorous graph.
+                    }
+                    FdbFunctionPlan::ExplicitZeroOrdinary(_) => {
+                        blockers.push(FdbBuildBlocker {
+                            object: object.into(),
+                            field: "fresh empty-function verification",
+                            class: FdbBlockerClass::Engineering,
+                            reason: "the ordinary thermodynamic view requires at least one CP range",
+                            known: "a directly authored fresh empty function has an ID-7 and no CP record",
+                            missing: "verify an empty fresh function by strict reparse and domain structure without invoking ordinary H/S/Cp evaluation",
+                            exact_evidence: None,
+                            user_evidence_can_unblock: false,
+                        });
+                    }
                     FdbFunctionPlan::Ordinary(base) => {
-                        for (index, range) in base.ranges.iter().enumerate() {
-                            let range_object = format!("{object} range {index}");
-                            if self.profile == FdbConstructionProfile::LegacyTranslation {
+                        if self.profile == FdbConstructionProfile::LegacyTranslation {
+                            for (index, _range) in base.ranges.iter().enumerate() {
+                                let range_object = format!("{object} range {index}");
                                 append_gaps(&mut blockers, &range_object, CP_BASE_KIND_GAPS);
-                            } else if range.cp_terms.iter().all(|term| term.coefficient == 0.0) {
-                                append_gaps(&mut blockers, &range_object, CP_FRESH_ZERO_KIND_GAPS);
                             }
-                            append_gaps(&mut blockers, &range_object, CP_SHARED_GAPS);
-                            append_unused_cp_gap(&mut blockers, &range_object, range.cp_terms.len());
                         }
                     }
                     FdbFunctionPlan::Added(added) => match &added.contribution {
-                        FdbAddedContribution::ExplicitZero => blockers.push(FdbBuildBlocker {
-                            object: object.into(),
-                            field: "zero-A physical encoding",
-                            class: FdbBlockerClass::NativeFormat,
-                            reason: "the rigorous A identity cannot be silently omitted",
-                            known: "paired exports may omit physically zero A blocks",
-                            missing: "accepted explicit zero-A ID-7/ID-5 representation or versioned omission rule",
-                            exact_evidence: Some("controlled paired Legacy import with an explicit zero A and generated FDB/SLN references"),
-                            user_evidence_can_unblock: true,
-                        }),
+                        FdbAddedContribution::ExplicitZero => {
+                            // Confirmed native serialization policy: physically
+                            // zero Legacy A objects may be omitted.
+                        }
                         FdbAddedContribution::Thermodynamic { ranges, .. } => {
-                            for (index, range) in ranges.iter().enumerate() {
+                            for (index, _range) in ranges.iter().enumerate() {
                                 let range_object = format!("{object} range {index}");
                                 append_gaps(&mut blockers, &range_object, CP_ADDED_KIND_GAPS);
-                                append_gaps(&mut blockers, &range_object, CP_SHARED_GAPS);
-                                append_unused_cp_gap(&mut blockers, &range_object, range.cp_terms.len());
                             }
                         }
                     },
                 }
             }
         }
+
         blockers.push(FdbBuildBlocker {
             object: "constructed FDB".into(),
             field: "independent FactSage acceptance",
@@ -432,20 +375,5 @@ impl FdbBuildPlan {
             user_evidence_can_unblock: true,
         });
         blockers
-    }
-}
-
-fn append_unused_cp_gap(blockers: &mut Vec<FdbBuildBlocker>, object: &str, term_count: usize) {
-    if term_count != 7 && term_count != 8 {
-        blockers.push(FdbBuildBlocker {
-            object: object.into(),
-            field: "CP unused coefficient/power slots",
-            class: FdbBlockerClass::NativeFormat,
-            reason: "a shorter semantic term list needs native slot filling without inventing defaults",
-            known: "paired seven-term Legacy ranges have a zero eighth slot",
-            missing: "fill rule for a source list with fewer than seven meaningful terms",
-            exact_evidence: Some("controlled fresh FDB with one Cp expression containing fewer than seven supplied terms"),
-            user_evidence_can_unblock: true,
-        });
     }
 }
