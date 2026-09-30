@@ -205,3 +205,13 @@ The following should remain raw and clearly marked as unknown or reserved:
 - ID-11 formula and property meaning.
 
 A knowledge base should distinguish facts derived from executable code from hypotheses derived from UI labels or field names.
+
+
+### Packed density high-order code
+
+Domain clarification: the high-order packed portion of `density_raw` identifies
+the advanced volumetric-property thermodynamic equation family. The lower
+remainder carries the density value. The encoding reuses the density field
+because realistic densities remain far below the packing scale. Ordinary density
+therefore does not require an advanced volumetric family; the default/no-advanced
+family code can be used when only density is supplied.
