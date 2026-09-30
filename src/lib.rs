@@ -21,6 +21,8 @@ pub mod edit;
 pub mod error;
 /// Validation-first plans for fresh Function Database construction.
 pub mod fdb_build;
+/// Provider-owned, dependency-preserving compound selection.
+pub mod filter;
 /// Lossless physical CDB chunk representations and serialization support.
 pub mod raw;
 /// Read-only thermodynamic decoding and stored-expression evaluation.
