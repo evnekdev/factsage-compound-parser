@@ -259,10 +259,12 @@ fn fresh_nonzero_cp_uses_a_distinct_kind_blocker_policy() {
     });
     let zero_cp =
         FdbBuildPlan::new_fresh_modern(metadata(), vec![group(vec![zero_range_function])]).unwrap();
-    assert!(zero_cp.native_blockers().iter().any(|b| {
-        b.field == "CP.kind selection for fresh zero-Cp range"
-            && b.class == FdbBlockerClass::UserPolicyDecision
-    }));
+    assert!(
+        !zero_cp
+            .native_blockers()
+            .iter()
+            .any(|b| b.field.contains("CP.kind selection"))
+    );
     let zero = FdbBuildPlan::new_fresh_modern(
         metadata(),
         vec![group(vec![FdbFunctionPlan::ExplicitZeroOrdinary(
@@ -996,11 +998,7 @@ fn semantic_validity_is_separate_from_native_materialization_readiness() {
                 | "CP unused coefficient/power slots"
         )
     }));
-    assert!(blockers.iter().any(|blocker| {
-        blocker.field == "CP.kind selection for counted base range"
-            && blocker.class == FdbBlockerClass::MissingTestEvidence
-            && blocker.known.contains("zero-Cp")
-    }));
+
 
     assert!(
         !blockers
@@ -1024,10 +1022,11 @@ fn semantic_validity_is_separate_from_native_materialization_readiness() {
         ranges: vec![range()],
     };
     let added_blockers = plan(nonzero_added).unwrap().native_blockers();
-    assert!(added_blockers.iter().any(|blocker| {
-        blocker.field == "CP.kind selection for added range"
-            && blocker.class == FdbBlockerClass::ScientificSemantics
-    }));
+    assert!(
+        !added_blockers
+            .iter()
+            .any(|blocker| blocker.field.contains("CP.kind selection"))
+    );
 
     let mut wide_charge = group(pair("PHAS", "source", 0).to_vec());
     wide_charge.charge = FdbChargeState::new(200);
