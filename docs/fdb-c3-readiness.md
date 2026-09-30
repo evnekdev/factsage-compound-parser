@@ -168,6 +168,8 @@ functions. These observations support ID-2 for the admitted fresh nonzero-Cp
 profile. They do not prove that Cp zero status causes the native kind choice in
 a fresh writer. No observed native or provider thermodynamic interpretation
 establishes a broader semantic difference between the two same-shaped bodies.
+The provider's ordinary view does require one native kind across a function's
+ranges; canonical ID-2 would satisfy that structural constraint.
 
 The candidate serialization policy is: preserve the original kind when editing
 an existing file; use ID-2 for fresh nonzero-Cp ranges; consider canonical ID-2
@@ -188,6 +190,7 @@ policy/evidence blocker until those checks pass.
 | More than one fresh function and non-solid states | EVIDENCE_REQUIRED | Confirm fresh phase-ID allocation and links beyond the observed one solid function. A one-solid-function profile can exclude these. |
 | Active references and density | EVIDENCE_REQUIRED | Map user reference inputs to phase reference slots and density units. A bounded no-reference, inactive-density profile can exclude these. |
 | Fresh zero-Cp kind and shorter Cp term lists | POLICY_REQUIRED | Either prove a fresh selector or validate canonical ID-2; establish unused coefficient/power filling. A nonzero, explicit eight-slot profile can exclude these. |
+| Fresh empty-function verification | ENGINEERING_ONLY | The native empty function has ID-7 without CP; verify it by strict reparse and domain structure because the ordinary thermodynamic view requires a CP range. |
 | Legacy A conversion and zero-object omission | SCIENTIFIC_SEMANTICS_REQUIRED / POLICY_REQUIRED | Retain rigorous identities; resolve source-to-target A reduction/sign and versioned omission separately. Fresh functions have no automatic A companion. |
 | Provider materializer and verification pipeline | ENGINEERING_ONLY | Implement only after every byte for an admitted profile is supported; then serialize, strict-reparse, index and verify thermodynamics. |
 | Provider-built file acceptance | EVIDENCE_REQUIRED | Open the constructed FDB in FactSage and verify reference/value stability through load/open/save. Self-reparse is insufficient. |

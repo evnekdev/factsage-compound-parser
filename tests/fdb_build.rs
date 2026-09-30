@@ -192,6 +192,9 @@ fn fresh_nonzero_cp_uses_a_distinct_kind_blocker_policy() {
             .iter()
             .any(|b| b.field.contains("zero-base"))
     );
+    assert!(zero.native_blockers().iter().any(|b| {
+        b.field == "fresh empty-function verification" && b.class == FdbBlockerClass::Engineering
+    }));
 }
 
 fn iron_oxide_group(label: &str, charge: i32, phase: &str) -> FdbFormulaGroupPlan {

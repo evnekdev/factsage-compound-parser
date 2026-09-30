@@ -214,6 +214,10 @@ nonzero A may carry explicit ordered H/S/Cp interval intent, but its Legacy
 leading-pair → CP bounds, powers, phase anchors, and exceptional entropy-sign
 behavior are not yet a general rule.
 
+The fresh empty function needs a structural verification path: the ordinary
+thermodynamic view deliberately rejects a phase with no CP ranges. This is
+engineering work, separate from the observed native empty-function form.
+
 ID-10 comments and ID-11 extended-property records are
 `NOT_REQUIRED_FOR_PROFILE`. Existing records remain `RAW_PRESERVED_ONLY` in the
 parser/editor. Active ID-11 data is a typed blocker for fresh pure H/S/Cp plans.
@@ -252,6 +256,7 @@ controlled experiments and dependencies, see
 | CP unknown 4 bytes and remaining padding | EVIDENCE_REQUIRED | Zero in fresh ID-2 and translated ID-2/5; versioned writer acceptance remains. | Yes | No |
 | CP unused coefficient/power slots for fewer than seven terms | EVIDENCE_REQUIRED | Paired seven-term sources have zero slot 8; shorter lists need controlled native fill evidence. | Yes if admitted | No for shorter profile |
 | Explicit zero base/A physical form | EVIDENCE_REQUIRED | Fresh empty function has ID-7 without CP and no A; translated zero blocks may be emitted or omitted. Keep profile policies separate. | Yes for translation policy | Fresh empty form observed; translation blocked |
+| Fresh empty-function verification | ENGINEERING_ONLY | Strict reparse and domain validation can check the ID-7-only structure; ordinary H/S/Cp evaluation requires a CP range and must be skipped for this form. | No | Yes after builder implementation |
 | General Legacy ordinary H/S/Cp source mapping | SCIENTIFIC_SEMANTICS_REQUIRED | Full local base ranges preserve cardinality and upper bounds but show direct and transformed H/S/Cp values by model/function; the plan accepts explicit target values. | Yes if conversion adapter is built | C3 builder yes; full conversion no |
 | Legacy A leading pair → CP and entropy sign | SCIENTIFIC_SEMANTICS_REQUIRED | In this full translation, emitted ID-5 A H is direct and nonzero S has opposite sign; earlier small paired examples mostly had direct S. ID-2 A source mapping also differs. Determine the governing source/version condition. | Yes if adapter is built | C3 builder yes; full conversion no |
 | Exact conversion of arbitrary source `f64` composition to rational identity | POLICY_REQUIRED | No tolerance is selected. An adapter must preserve source exact fractions or declare a conversion policy. | Domain input may be needed | C3 with exact-rational input yes |

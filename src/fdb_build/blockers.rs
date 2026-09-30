@@ -372,7 +372,16 @@ impl FdbBuildPlan {
                         exact_evidence: Some("controlled paired Legacy import with a zero-range G entry and generated FDB/SLN references"),
                         user_evidence_can_unblock: true,
                     }),
-                    FdbFunctionPlan::ExplicitZeroOrdinary(_) => {}
+                    FdbFunctionPlan::ExplicitZeroOrdinary(_) => blockers.push(FdbBuildBlocker {
+                        object: object.into(),
+                        field: "fresh empty-function verification",
+                        class: FdbBlockerClass::Engineering,
+                        reason: "the ordinary thermodynamic view requires at least one CP range",
+                        known: "a directly authored fresh empty function has an ID-7 and no CP record",
+                        missing: "verify an empty fresh function by strict reparse and domain structure without invoking ordinary H/S/Cp evaluation",
+                        exact_evidence: None,
+                        user_evidence_can_unblock: false,
+                    }),
                     FdbFunctionPlan::Ordinary(base) => {
                         for (index, range) in base.ranges.iter().enumerate() {
                             let range_object = format!("{object} range {index}");
