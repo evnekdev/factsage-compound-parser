@@ -327,3 +327,19 @@ each range's `temperature_max_k` must equal the next range's
 
 Reject overlaps, gaps, or reordered ranges in the bounded writer rather than
 silently sorting or repairing them.
+
+
+## Empty fresh Function policy
+
+**Provisional bounded policy:** for a fresh Function with no Cp ranges, emit the
+observed native empty form: one ID-7 Function record and no CP record.
+
+This matches the controlled fresh-modern snapshot already present in the local
+evidence. Do not synthesize an artificial zero-Cp interval merely to satisfy a
+thermodynamic evaluator. Structural verification for this case should use
+strict reparse/domain checks rather than an ordinary H/S/Cp view that requires a
+range.
+
+This is a bounded implementation choice and remains subject to FactSage
+acceptance; no additional human decision is required unless that acceptance
+fails.
