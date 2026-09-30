@@ -157,6 +157,15 @@ separate. The plan preserves explicit zero A objects and rejects active
 auxiliary physics. FDB-C3 is not implemented; the inventory lists its exact
 native evidence gaps.
 
+FDB-C2 hardening replaced the floating ratio-bit key with exact rational
+element ratios plus explicit semantic charge. Formula text remains a separate
+label. A companions now reference typed base identities, and nonzero A plans
+retain both phase and CP H/S fields. Provider blockers distinguish engineering,
+native evidence and verification with exact affected objects. The
+[`FDB-C3 readiness review`](fdb-c3-readiness.md) concludes that no native
+byte-writing subset is safe until the minimum header/shared-entry experiment
+establishes fresh values.
+
 ### FDB-C1 — construction inventory
 
 Map every field required to synthesize:
