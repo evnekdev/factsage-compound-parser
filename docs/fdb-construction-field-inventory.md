@@ -10,13 +10,15 @@ audit on `factsage-solution-parser` branch
 conversion-blocker contract controls the quality of the remaining questions.
 No private database bytes are included here.
 
-Classification vocabulary: `CALLER_PROVIDED`, `PROVIDER_GENERATED`,
-`EVIDENCED_DEFAULT`, `NOT_REQUIRED_FOR_PROFILE`, `RAW_PRESERVED_ONLY`, and
-`UNRESOLVED_BLOCKER`. A field marked unresolved is **not** assigned zero by
-construction. Evidence tags: `CODE` = provider parser/domain/thermo code;
-`PAIR` = tracked paired Legacy/FDB audit; `CONTRACT` = cross-repository domain
-contract; `UNKNOWN` = no sufficient fresh-construction evidence. A parsed zero
-alone never establishes a construction default.
+This document contains both the original field-by-field evidence ledger and the
+later resolved bounded-construction policy. In the older ledger,
+`UNRESOLVED_BLOCKER` records the state *at the time that evidence was
+collected*; it is not necessarily a current blocker. The authoritative current
+status is the resolved-policy section below together with
+[`fdb-c3-readiness.md`](fdb-c3-readiness.md) and
+`FdbBuildPlan::native_blockers()`. Resolved rules such as template-derived
+opaque bytes supersede older evidence requests without rewriting the historical
+observation itself.
 
 ## FDB-C2 semantic identity and evidence level
 
@@ -238,15 +240,16 @@ ID-10 comments and ID-11 extended-property records are
 `NOT_REQUIRED_FOR_PROFILE`. Existing records remain `RAW_PRESERVED_ONLY` in the
 parser/editor. Active ID-11 data is a typed blocker for fresh pure H/S/Cp plans.
 
-## Exact evidence needed for FDB-C3
+## Historical FDB-C3 evidence ledger
 
-The table below is the C3 field disposition checklist. `RESOLVED` means the
-semantic/caller value and native location are established for this profile;
-it does not mean the builder has been written. `ENGINEERING_ONLY` means a
-provider-owned implementation can proceed using existing code. `EVIDENCE_REQUIRED`
-and `SCIENTIFIC_SEMANTICS_REQUIRED` forbid a guessed native value. For exact
-controlled experiments and dependencies, see
-[`fdb-c3-readiness.md`](fdb-c3-readiness.md).
+The table below is retained as an evidence-history ledger. Several rows marked
+`EVIDENCE_REQUIRED`, `POLICY_REQUIRED`, or `UNRESOLVED_BLOCKER` were later
+resolved by explicit construction policy (for example template-derived opaque
+bytes, charge, composition, timestamps, Function IDs, fresh zero-Cp, and
+zero-object omission). Do **not** treat those historical labels as current
+blockers. Current blocker authority is
+[`fdb-c3-readiness.md`](fdb-c3-readiness.md) plus
+`FdbBuildPlan::native_blockers()`.
 
 | Field/capability | C3 disposition | Current evidence and exact remaining action | User/domain input? | Can native construction proceed without it? |
 | --- | --- | --- | --- | --- |
