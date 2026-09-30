@@ -371,3 +371,10 @@ Empty fresh Function: **PROVISIONAL BOUNDED POLICY**. Emit ID-7 with no CP recor
 matching the observed direct-modern empty-function snapshot. Verify structurally
 rather than forcing an ordinary thermodynamic view that requires a range. If
 FactSage rejects the provider-built form, revisit this policy.
+
+
+Legacy zero base/A omission: **CONFIRMED DOMAIN POLICY**. In the
+`NativeFactSage` serialization profile, physically zero base/A Function objects
+may be omitted, matching observed FactSage behavior. The rigorous semantic graph
+may retain the identities internally; native references must remain consistent
+with the emitted object set.
