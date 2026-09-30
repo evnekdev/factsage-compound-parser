@@ -14,9 +14,11 @@ Automation dates, parse formulas with `chemformula`, encode periodic-table
 atomic numbers as one-byte element IDs, use formula encounter order subject to
 automatic corpus confirmation, use integral formula coefficients with matching
 `f64` real coefficients, and retain the established bounded charge offset.
-Advanced real-stoichiometry, zero-Cp, active references/density, non-solid
-functions and Legacy A reduction are outside the first profile rather than
-blocking it.
+Advanced real-stoichiometry, active nonzero references, advanced volumetric
+families and Legacy source-to-target H/S/Cp/A reduction remain outside the first
+profile rather than blocking it. Fresh zero-Cp is admitted as ID-2. Semantic
+aggregate state does not select FDB Function ID bands: FDB Functions use the
+group-local pseudo-solid 101+ series.
 
 FDB-C3 is not yet a completed GO because the materializer and independent
 FactSage acceptance have not been executed. Those are engineering/verification
@@ -127,13 +129,13 @@ not recorded in the receipt.
 
 | Object | Fresh-modern observation | Remaining rule |
 | --- | --- | --- |
-| ID-9 | One header exists even in the empty file. Read flag and all three padding regions are zero; the two unknown regions are stable and contain nonzero bytes, while date/comment remain unchanged through edits. The first unknown region agrees with the translated FDB; the second differs. | Version-specific initialization of unknowns, read flag and date/comment policy; equality across edits does not prove a universal constant. |
-| Shared headers | Element identifiers, integer coefficients, charge and coefficient padding repeat from ID-1 through ID-7 and CP. Per-kind unknown bytes are stable and agree with translated counterparts. Entry numbers advance with record order from a common group start, including added ranges. | Input-linked composition mapping, versioned unknowns, larger-group counter limits and fresh writer acceptance. The bounded charge rule is adopted below. |
-| Names and composition | The fresh ID-1 compound-name field is empty while its formula label is populated. Real coefficients, reserved strings, units and composition slots remain stable through these edits. The phase name remains a nonempty caller-style name. | Formula/compound alias policy and input-linked element order, scale, charge and unit assignment. A blank SLN formula qualifier never means absent FDB group metadata. |
-| Phase | Each nonempty snapshot has one solid-region ID-7. The ID stays fixed as ranges are added, its negative field is its arithmetic negative, and all CP ranges link to that same ID. The empty function has ID-7 but no CP. No hidden A companion appears. | Allocation for a second fresh function and non-solid states. Fresh empty-function form is observed; translated zero-object omission remains separate. |
-| Reference and density edit | The phase density and phase shared-reference fields change. The group and CP reference fields remain zero; the CP body otherwise remains unchanged apart from its timestamp. Other physical-tail fields remain the same. | Mapping of a user reference to the two native slots; no-reference and inactive-density policies can be bounded, but active metadata cannot yet be generated. |
-| Timestamps | Fresh ID-1, ID-7 and CP timestamps agree within each snapshot and change with edits. The ID-9 database date does not change with those entry timestamps. | Clock source, rounding, creation-versus-save semantics and deterministic policy. Translation CP copies ID-1, but translated ID-7 can differ. |
-| CP | Every fresh nonzero-Cp range uses ID-2. The three-range file stores separate CP records under one phase, with adjacent bounds chained, local entry progression, copied group timestamp, and distinct range H/S anchors. The last coefficient and power slots are zero in this sequence, but a zero coefficient does not imply a zero power in every slot. | A fresh zero-Cp kind selector; source-input mapping for the eight stored Cp slots and unused-power policy. |
+| ID-9 | One header exists even in the empty file. Read flag and padding are stable; unknown regions are opaque. | Bounded writer copies the complete controlled empty-FDB ID-9 template and changes only established fields such as date/comment. No semantic interpretation is required. |
+| Shared headers | Element identifiers, coefficients, charge and per-kind opaque bytes repeat consistently within groups; entry numbers advance in physical record order from a common group start. | Bounded writer uses `chemformula`, first-appearance order, atomic-number IDs, native charge `semantic + 50`, template-derived opaque bytes, and rejects before entry-number rollover. |
+| Names and composition | Fresh ID-1 compound name is empty while the formula label is populated; simple integer cases align integer and real stoichiometry. | Preserve exact validated caller formula spelling, first-appearance element order, integral coefficients and matching `f64` coefficients; fresh `compound_name` defaults empty. |
+| Phase | Observed fresh Functions occupy the 100-series, negatives are arithmetic negations, and CP links use the exact positive Function ID. Empty fresh Function is ID-7 without CP. | FDB construction uses group-local pseudo-solid IDs `101, 102, 103, ...` in Function encounter order regardless of semantic aggregate state. |
+| Reference and density edit | Phase density is active in ordinary files; reference slots can be zero. | References default to zero. Ordinary density uses the low/remainder density portion with no advanced family code; advanced volumetric families and active references are extensions. |
+| Timestamps | Fresh ID-1, ID-7 and CP timestamps agree within each changed group; ID-9 date is independent. | OLE Automation dates. New/materially changed groups use current save/build time consistently; unchanged groups may preserve timestamps. |
+| CP | Fresh observed nonzero-Cp ranges use ID-2; multi-range bounds are chained and retain source order. | Fresh construction uses ID-2 including zero-Cp. Preserve supplied coefficient/power pairs; zero-fill only unused coefficient and unused power slots. |
 
 The original edit sequence had no declared neutral/charged pair or controlled
 ratio change. The later charged-function probe below adds a user-declared
@@ -239,17 +241,18 @@ group-local and consecutive, and their negative fields are arithmetic
 negations. CP links point within the group. Entry numbers are consecutive in
 ID-1/ID-7/CP stream order from a uniform group start. Both reference slots
 are zero in the FDB, but comparison CDBs include nonzero references. These
-relationships narrow fresh-format tests without proving version defaults or
-non-solid allocation.
+relationships support the FDB-specific pseudo-solid Function-ID rule; generic
+CDB aggregate-state bands are not projected onto FDB construction.
 
 The emitted ID-5 A objects in this translation retain the source leading H
 anchor and reverse the sign of nonzero source S. Earlier small paired examples
 mostly retained the S sign. ID-2 A objects do not follow that direct leading
 anchor mapping. No universal A sign condition follows from the combined
-evidence. Emitted objects are referenced by Modern SLN and omitted objects
-are not, but tested source-side zero, matrix, model and range features still
-leave ambiguous emission cases. A NativeFactSage zero-object policy remains
-blocked.
+evidence. Emitted objects are referenced by Modern SLN and omitted objects are not.
+Physically zero Legacy base/A Function objects may be omitted in
+`NativeFactSage`; the rigorous semantic graph may retain their identities.
+The remaining uncertainty is the source-to-target scientific reduction for
+nonzero Legacy objects, not the zero-object serialization policy.
 
 For identity-linked base functions, counted source-range cardinality and
 upper-temperature bounds transfer in encounter order across represented
@@ -261,24 +264,15 @@ without solving the later source-to-plan adapter.
 
 ## CP-kind decision and fresh-write policy
 
-The translation corpus has a reproducible output split: every observed ID-2
-range has nonzero Cp, every ID-5 range has exactly zero Cp, and every
-identity-linked counted base source range follows that split. The direct-modern
-corpus exercises nonzero Cp only, using ID-2 in both single- and multi-range
-functions. These observations support ID-2 for the admitted fresh nonzero-Cp
-profile. They do not prove that Cp zero status causes the native kind choice in
-a fresh writer. No observed native or provider thermodynamic interpretation
-establishes a broader semantic difference between the two same-shaped bodies.
-The provider's ordinary view does require one native kind across a function's
-ranges; canonical ID-2 would satisfy that structural constraint.
+FreshModern construction uses native ID-2 for every Cp range, including an
+exact-zero Cp range. Preserve caller/function-definition range order and require
+contiguous boundaries. Preserve every supplied coefficient/power pair exactly;
+zero-fill only unused coefficient slots and the corresponding unused power slots.
 
-The candidate serialization policy is: preserve the original kind when editing
-an existing file; use ID-2 for fresh nonzero-Cp ranges; consider canonical ID-2
-for fresh zero-Cp ranges only after strict provider reparse/domain/thermodynamic
-verification, independent FactSage acceptance, and load/open/save stability of
-values and references. This is a policy candidate, not a claim that ID-2 and
-ID-5 are universally interchangeable. Fresh zero-Cp construction remains a
-policy/evidence blocker until those checks pass.
+LegacyTranslation is distinct: observed translated output uses ID-2 for nonzero
+Cp and ID-5 for exact-zero Cp, but source-to-target H/S/Cp/A reduction can be
+model/function dependent. That scientific conversion problem belongs upstream of
+native materialization when the target plan has not already been made explicit.
 
 ## Remaining FDB-C3 gates
 
@@ -289,7 +283,7 @@ policy/evidence blocker until those checks pass.
 | Shared composition | RESOLVED_FOR_BOUNDED_CONSTRUCTION | Parse with `chemformula`; preserve first element appearance; use atomic numbers as one-byte IDs; mirror ordinary integral stoichiometry into integer and `f64` arrays. Advanced real-stoichiometry overrides remain outside scope. |
 | Formula and compound names | RESOLVED_FOR_BOUNDED_CONSTRUCTION | Preserve exact validated caller formula spelling; fresh `compound_name` defaults empty. Formula-qualified semantic identity remains separate from local Function naming. |
 | Timestamp assignment | RESOLVED_POLICY | OLE Automation dates. New/materially changed groups use current save/build time consistently across ID-1/ID-7/CP; unchanged groups may preserve timestamps. |
-| More than one function within a group and non-solid states | EVIDENCE_REQUIRED | Two fresh singleton groups restart the same solid phase ID and entry sequence. Allocation of a second phase inside one group and non-solid states remains untested. A singleton-solid-group profile can exclude these. |
+| Function ID allocation | RESOLVED_POLICY | FDB Functions use group-local pseudo-solid IDs `101, 102, 103, ...` in Function encounter order regardless of semantic aggregate state; negative IDs are arithmetic negations and CP links use exact positive IDs. |
 | References and density | PARTIALLY_RESOLVED | References default to zero. Ordinary density is supported using the low/remainder density portion with no advanced family code; advanced volumetric-family mappings are extensions and active nonzero references remain outside the bounded profile. |
 | Fresh zero-Cp kind and shorter Cp term lists | RESOLVED_POLICY | Fresh ranges use ID-2, including zero Cp. Unused coefficient and power slots are written as zero. |
 | Fresh empty-function verification | ENGINEERING_ONLY | The native empty function has ID-7 without CP; verify it by strict reparse and domain structure because the ordinary thermodynamic view requires a CP range. |
@@ -297,14 +291,12 @@ policy/evidence blocker until those checks pass.
 | Provider materializer and verification pipeline | ENGINEERING_ONLY | Implement only after every byte for an admitted profile is supported; then serialize, strict-reparse, index and verify thermodynamics. |
 | Provider-built file acceptance | EVIDENCE_REQUIRED | Open the constructed FDB in FactSage and verify reference/value stability through load/open/save. Self-reparse is insufficient. |
 
-No nontrivial profile has every required native byte and input mapping. In
-particular, restricting to one solid function per group, nonzero Cp, no active
-references or density, and explicit H/S/Cp still leaves input-linked
-composition, timestamps, versioned uninterpreted bytes and fresh
-label policy unresolved. The
-materializer is therefore not implemented. The semantic plan now explicitly
-separates fresh caller names from Legacy-derived names without weakening the
-Legacy pairing contract.
+The bounded FreshModern profile now has all required construction rules.
+Remaining FDB-C3 work is implementation plus verification: build the materializer,
+strict-reparse and index the result, verify the thermodynamic view where
+applicable, and perform controlled FactSage open/load/save acceptance. Legacy
+source-to-target scientific conversion remains a separate upstream problem and
+does not block native serialization of an already explicit target plan.
 
 ## Smallest next controlled evidence action
 
