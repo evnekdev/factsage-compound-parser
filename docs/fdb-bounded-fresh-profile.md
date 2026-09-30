@@ -288,3 +288,18 @@ group.
 
 If future FDB evidence shows use of another state band, add that as an explicit
 profile extension rather than inheriting generic CDB phase-state semantics.
+
+
+## Entry-number allocation
+
+Observed fresh-modern and translated FDB evidence agrees on the bounded rule:
+each formula group starts from the same native group-start value, then
+`entry_number` increments by one for every emitted ID-1, ID-7 and CP record in
+physical stream order. A new formula group restarts from the group-start value.
+
+For construction, obtain the native group-start value from the controlled fresh
+record template and apply consecutive increments. The bounded writer rejects a
+group before byte rollover rather than inventing wraparound semantics.
+
+This rule is confirmed by both fresh and translated FDB observations and is not
+a human-in-the-loop blocker.
