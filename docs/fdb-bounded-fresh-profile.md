@@ -117,17 +117,18 @@ automatically confirm this against the local corpus.
 
 ## Charge
 
-For the bounded fresh-modern profile:
+FDB uses the native charge encoding:
 
 `raw_charge = semantic_charge + 50`
 
-with semantic charge restricted to `-50..=50`, yielding raw bytes `0..=100`.
-Copy the resulting byte consistently through the ID-1, ID-7 and CP shared
+with semantic charge restricted to `-50..=50`, yielding raw values `0..=100`.
+Copy the resulting value consistently through the ID-1, ID-7 and CP shared
 headers.
 
-The observed fresh `-1, 0, +1` cases support the central mapping. Extending it
-over the admitted range is the explicit bounded profile policy. This does not
-claim the same encoding for Legacy translation or every historical database.
+This is a property of the FDB representation, not of the source construction
+profile. FreshModern and LegacyTranslation therefore use the same mapping once
+semantic charge is known. The observed fresh `-1, 0, +1` cases provide direct
+corpus confirmation around the neutral offset.
 
 ## Timestamps
 
@@ -242,7 +243,7 @@ For this bounded profile, the following older blocker categories are superseded
 by the policies above:
 
 - ID-9 opaque/default initialization;
-- fresh charge encoding;
+- FDB charge encoding;
 - timestamp format;
 - ordinary element-ID mapping;
 - ordinary integer/real stoichiometry default;
@@ -307,15 +308,16 @@ a human-in-the-loop blocker.
 
 ## Function/CP physical stream order
 
-**Confirmed bounded FDB policy:** within one formula group, emit records in
-function encounter order as:
+**Confirmed parser/native ordering rule:** within one formula group, all
+Function (ID-7) records precede all CP/ID-11 records:
 
-`ID-1 group header -> ID-7 function 1 -> its CP records -> ID-7 function 2 -> its CP records -> ...`
+`ID-1 group header -> ID-7 function 1 -> ID-7 function 2 -> ... -> CP/ID-11 records -> ...`
 
-Each function's CP records immediately follow that function and retain their
-range order. Function IDs and entry numbers advance consistently with this
-physical order. This matches the observed grouped FDB structure and is now the
-writer rule for the bounded profile.
+This ordering is enforced by `DomainIndex`: once a CP/ID-11 range has occurred,
+a later Function record is a fatal ordering error. Function records retain caller
+encounter order. CP records retain their owning function/range order and link to
+the exact positive Function ID. Entry numbers advance in the actual emitted
+physical stream order.
 
 
 ## Cp range ordering and continuity
