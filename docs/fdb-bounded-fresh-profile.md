@@ -31,8 +31,8 @@ unless the evidence demonstrates a genuinely new semantic choice.
 The first writer may intentionally admit only:
 
 - direct `FreshModern` construction;
-- one ordinary solid function per formula group;
-- one to three nonzero-Cp ranges;
+- one ordinary function per formula group for the first implementation tranche; native Function IDs still use the FDB pseudo-solid series regardless of semantic aggregate state;
+- zero to three Cp ranges; zero-Cp ranges use the normal fresh ID-2 representation;
 - no automatic A companion;
 - inactive magnetic/PV/transition/ID-11 physics;
 - no active references;
