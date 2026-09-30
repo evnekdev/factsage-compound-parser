@@ -316,3 +316,14 @@ Each function's CP records immediately follow that function and retain their
 range order. Function IDs and entry numbers advance consistently with this
 physical order. This matches the observed grouped FDB structure and is now the
 writer rule for the bounded profile.
+
+
+## Cp range ordering and continuity
+
+**Confirmed domain policy:** preserve Cp ranges in caller-supplied/function-definition
+order. For a multi-range function, require contiguous temperature boundaries:
+each range's `temperature_max_k` must equal the next range's
+`temperature_min_k`.
+
+Reject overlaps, gaps, or reordered ranges in the bounded writer rather than
+silently sorting or repairing them.
