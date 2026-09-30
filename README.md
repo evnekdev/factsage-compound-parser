@@ -161,6 +161,7 @@ this project does not promise `1.0` stability yet.
 - [Fresh FDB construction plan](docs/fdb-construction-plan.md)
 - [Fresh FDB field inventory](docs/fdb-construction-field-inventory.md)
 - [FDB-C3 readiness and controlled evidence experiments](docs/fdb-c3-readiness.md)
+- [`docs/fdb-bounded-fresh-profile.md`](docs/fdb-bounded-fresh-profile.md) — normative no-human-input policy for the first bounded fresh-modern FDB writer.
 - [Raw serialization](docs/serialization.md)
 - [Controlled editing](docs/editing.md)
 - [Python parity](docs/python-parity.md)
