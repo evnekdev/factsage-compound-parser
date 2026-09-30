@@ -313,7 +313,7 @@ In particular:
 | References/density | **CONFIRMED DOMAIN POLICY:** references default to zero. Density is a common optional property: the low portion of `density_raw` carries density while the high packed portion selects an advanced volumetric equation family. Ordinary density can be supported with the default/no-advanced-family code; advanced volumetric families are extensions, not blockers. |
 | Function topology | One ordinary solid function per formula group. |
 | Cp kind | **CONFIRMED DOMAIN POLICY:** use ID-2 for fresh Cp ranges. Zero-Cp is represented by zero coefficients and zero corresponding powers; unused slots are also zero-filled. |
-| Per-record opaque padding/defaults | Use the controlled fresh record-kind values and validate by provider-built FactSage acceptance. |
+| Per-record opaque padding/defaults | **CONFIRMED DOMAIN POLICY:** copy the corresponding values from the controlled fresh FDB record template for each record kind; do not infer semantics. Validate by provider-built FactSage acceptance. |
 
 No item in this bounded table requires a new human/domain decision. Remaining
 uncertainty must be handled by automated corpus checks, a narrower capability
