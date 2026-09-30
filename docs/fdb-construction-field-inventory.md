@@ -425,3 +425,37 @@ That factor-of-1000 difference independently proves distinct field semantics
 for at least the first position. The second leading value maps directly with
 `×4.184` in 13/14 emitted A blocks, with one known opposite-sign exception,
 so it remains S-like evidence rather than a universal entropy rule.
+
+
+### Statistical evidence from existing paired Legacy records
+
+A corpus count over the 34 tracked paired G entries
+(`Leucite` 6, `Mullite` 23, `Nepheline` 5) gives two exact fixture-scoped
+serialization predicates:
+
+- physical `xxxxA` emission occurs iff the first value of the uncounted
+  leading first line is nonzero: 14 emitted/nonzero, 0 emitted/zero,
+  0 omitted/nonzero, 20 omitted/zero;
+- physical base `xxxx` emission occurs iff either the counted ordinary range
+  count is nonzero **or** that first added-leading value is nonzero. This rule
+  matches all 34 entries. All five emitted zero-range bases accompany a
+  nonzero leading first value; all 15 omitted bases have both zero counted
+  ranges and a zero leading first value.
+
+Other observed fields do not select A emission in this corpus:
+
+- the second leading first-line value is nonzero in only 1/34 entries, so its
+  scientific meaning cannot be inferred statistically from emission;
+- the added second line is nonzero in 18/34 entries, but only 3 of those emit
+  `xxxxA` while 15 do not;
+- emitted and omitted entries both occur at ordinary range counts 0, 1, 2 and
+  3, so ordinary range count alone is not an A-emission selector;
+- the only added-second-line patterns in these fixtures are all-zero and
+  `[0, 0, 3, 4, 0, 0]`; the latter is therefore structural/default evidence,
+  not thermodynamic-emission evidence.
+
+These are exact observations for the tracked paired corpus, not yet a universal
+FactSage rule. They are strong enough to guide the Legacy serializer and the
+next falsification search: look specifically for any existing paired record
+with nonzero leading first value but omitted A, or zero leading first value but
+emitted A.
