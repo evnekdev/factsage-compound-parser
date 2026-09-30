@@ -343,3 +343,19 @@ range.
 This is a bounded implementation choice and remains subject to FactSage
 acceptance; no additional human decision is required unless that acceptance
 fails.
+
+
+## Legacy-translated zero-object omission
+
+**Confirmed domain policy:** when serializing Legacy-translated FDB content,
+physically zero base/A Function objects may be omitted in the native
+`NativeFactSage` representation, matching observed FactSage behavior.
+
+The rigorous semantic layer may still retain those identities for provenance,
+dependency accounting, and exact source reconstruction, but the native FDB
+serializer does not need to emit zero-valued Function records merely to preserve
+the internal semantic graph.
+
+Any SLN/native references must remain consistent with the emitted native object
+set. This is a serialization policy, not a change to the rigorous semantic
+identity model.
