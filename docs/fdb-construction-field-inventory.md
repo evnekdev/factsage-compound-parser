@@ -312,7 +312,7 @@ In particular:
 | Function name | Caller supplied; no Legacy naming rule. |
 | References/density | **CONFIRMED DOMAIN POLICY:** references default to zero. Density is a common optional property: the low portion of `density_raw` carries density while the high packed portion selects an advanced volumetric equation family. Ordinary density can be supported with the default/no-advanced-family code; advanced volumetric families are extensions, not blockers. |
 | Function topology | One ordinary solid function per formula group. |
-| Cp kind | Nonzero Cp only; ID-2. Unused Cp coefficient slots and their corresponding power slots are written as zero. Fresh zero-Cp is outside the first profile. |
+| Cp kind | **CONFIRMED DOMAIN POLICY:** use ID-2 for fresh Cp ranges. Zero-Cp is represented by zero coefficients and zero corresponding powers; unused slots are also zero-filled. |
 | Per-record opaque padding/defaults | Use the controlled fresh record-kind values and validate by provider-built FactSage acceptance. |
 
 No item in this bounded table requires a new human/domain decision. Remaining
