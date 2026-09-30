@@ -384,3 +384,33 @@ with the emitted object set.
 ### Legacy A leading-block caution
 
 The uncounted two-line `xxxxA` leading block and counted ordinary `xxxx` ranges are not presumed semantically identical. Similar physical layout is insufficient evidence. Field meanings, H/S interpretation, Cp contribution, bounds, defaults, and emitted FDB reduction must be established independently.
+
+
+### Historical `dbsolution` evidence for Legacy added-leading records
+
+Historical `evnekdev/dbsolution` code provides implementation evidence that the
+uncounted leading two-line record and the counted ordinary ranges were treated
+as different grammars:
+
+- `parse_range` reads an ordinary counted range as H/S, four fixed Cp fields,
+  explicit upper temperature, density, then three variable coefficient/power
+  pairs plus four magnetic fields;
+- `parse_range_added` marks a distinct added Function/range, reads H/S plus
+  four leading fixed fields, assigns `TMIN = 298.15` and `TMAX = 6000.0`
+  internally rather than reading ordinary range bounds, then reads the second
+  line as two 15-character unknown values followed by four 10-character unknown
+  values;
+- `write_range_added` likewise emits a separate fixed added-record shape and
+  writes zeros for those six trailing fields rather than using the ordinary
+  variable-Cp/magnetic writer.
+
+This is historical parser/writer evidence, not proof that every provisional
+field name used by that old code is scientifically correct. In particular, the
+old code calling the first two values `H` and `S` does not by itself establish
+that the second leading value is universally an FDB entropy anchor. However, it
+does establish that the added leading pair must **not** inherit ordinary
+`xxxx` range field semantics position-by-position.
+
+Consequently, Legacy conversion must model the uncounted added-leading pair as a
+distinct raw source structure and derive any target `xxxxA` Function/ID-5
+thermodynamics from evidence, rather than reusing the ordinary range decoder.
