@@ -308,7 +308,7 @@ In particular:
 | Integer stoichiometry | Parsed integral formula coefficients. |
 | Real stoichiometry | **CONFIRMED NATIVE TYPE:** `f8[7]` / `[f64; 7]`. Default to the same formula coefficients as `f64`; advanced real-stoichiometry overrides are outside the first profile. |
 | Charge | `raw = semantic + 50` for semantic `-50..=50`. |
-| Compound name | Empty for the bounded fresh profile, matching the direct-modern evidence. |
+| Compound name | **CONFIRMED DOMAIN POLICY:** leave ID-1 `compound_name` empty by default for fresh-modern construction. Translated FDB alias/population behavior is separate. |
 | Function name | Caller supplied; no Legacy naming rule. |
 | References/density | **CONFIRMED DOMAIN POLICY:** references default to zero. Density is a common optional property: the low portion of `density_raw` carries density while the high packed portion selects an advanced volumetric equation family. Ordinary density can be supported with the default/no-advanced-family code; advanced volumetric families are extensions, not blockers. |
 | Function topology | One ordinary solid function per formula group. |
