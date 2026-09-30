@@ -38,7 +38,7 @@ pub struct FdbStoichiometricAmount {
 pub struct FdbChargeState(i32);
 
 impl FdbChargeState {
-    /// Retains the exact signed source charge without assuming native encoding.
+    /// Retains the exact signed source charge independently of native encoding.
     pub const fn new(value: i32) -> Self {
         Self(value)
     }
@@ -46,6 +46,25 @@ impl FdbChargeState {
     /// Returns the exact signed semantic charge.
     pub const fn value(self) -> i32 {
         self.0
+    }
+
+    /// Encodes the bounded fresh-modern charge profile as one native byte.
+    /// The admitted range is -50..=50; its output also fits the parser's `i8` slot.
+    pub const fn fresh_modern_raw_byte(self) -> Option<u8> {
+        if self.0 < -50 || self.0 > 50 {
+            None
+        } else {
+            Some((self.0 + 50) as u8)
+        }
+    }
+
+    /// Decodes one byte under the bounded fresh-modern charge rule.
+    pub const fn from_fresh_modern_raw_byte(raw: u8) -> Option<Self> {
+        if raw > 100 {
+            None
+        } else {
+            Some(Self(raw as i32 - 50))
+        }
     }
 }
 
@@ -396,6 +415,15 @@ impl FdbBuildPlan {
         for group in &self.groups {
             let mut names = BTreeMap::<String, String>::new();
             check_text(&group.formula, "formula", &group.formula, 40, false)?;
+            if self.profile == FdbConstructionProfile::FreshModern
+                && group.charge.fresh_modern_raw_byte().is_none()
+            {
+                return Err(FdbBuildError::InvalidField {
+                    object: group.formula.clone(),
+                    field: "charge",
+                    reason: "fresh-modern charge must be within -50..=50".into(),
+                });
+            }
             if !formula_names.insert(group.formula.clone()) {
                 return Err(FdbBuildError::AmbiguousGroup {
                     group: group.formula.clone(),

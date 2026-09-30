@@ -40,12 +40,13 @@ across groups.
 
 | Charge fact | Evidence level | Limit |
 | --- | --- | --- |
-| Every non-database raw record has `RawCommonHeader.charge_raw: i8`; parser and serializer preserve it. | CONFIRMED_BY_PROVIDER_CODE | There is no semantic charge accessor on `CompoundView`; a fresh writing rule is not established. |
+| Every non-database raw record has `RawCommonHeader.charge_raw: i8`; parser and serializer preserve it. | CONFIRMED_BY_PROVIDER_CODE | The fresh-modern plan now has a bounded conversion rule; the raw parser remains lossless. |
 | Formula label and composition are separately stored in ID-1; shared headers occur on ID-1, ID-7 and CP records. | CONFIRMED_BY_PROVIDER_CODE_AND_LOCAL_PAIR | The paired FDB repeats its raw charge within each group; this does not prove semantic charge encoding or a fresh constructor rule. |
 | `Fe3O4` and `Fe3O4[+]` must remain distinct groups. | CONFIRMED_BY_DOMAIN_CONTRACT | Label syntax is not parsed as semantic charge. |
 | Solution parser models source charge as `i32` and keeps bracketed charge spelling in external references. | CONFIRMED_BY_PROVIDER_CODE | Its SLN parser test is synthetic, not paired FDB evidence. |
 | Historical `dbsolution` parses Legacy charge and derives SLN endmember charge from `chemformula`. | HISTORICAL_PYTHON_HINT | This does not prove FDB `charge_raw` initialization. |
 | A user-declared fresh neutral/charged pair has equal native element IDs and integer/real coefficients but different `charge_raw`; the declared neutral raw byte is neither zero nor the eight-bit complement of zero. | CONFIRMED_BY_LOCAL_FRESH_PAIR | Direct cast and bitwise-complement encoding are refuted for this pair. The bytes differ in one bit, but the exact signed magnitude and native code mapping remain unknown. |
+| A later fresh group declared as charge `-1` fits subtraction of the observed neutral raw offset; the earlier unmarked and positive-marked groups fit zero and conditional `+1`. | CONFIRMED_BY_LOCAL_FRESH_TRIPLE | The user adopts `raw = charge + 50` for fresh-modern semantic charge `-50..=50`; extending the linear rule beyond observed states is a bounded profile policy, not a universal format claim. |
 
 Exact rational identity is a bounded semantic profile, not a claim that every
 FactSage source coefficient has a `u64` rational representation. A future
@@ -124,8 +125,8 @@ declared. These observations do not establish a universal version default or
 a second-function allocation rule inside one group.
 
 User-supplied screenshots show functions opened in FactSage 7.3's combined
-Solution module. An unmarked and a bracket-plus group each have one same-named
-function and equal visible thermodynamic inputs. They corroborate separate UI
+Solution module. Negative-marked, unmarked and positive-marked groups each have
+one same-named function and equal visible thermodynamic inputs. They corroborate separate UI
 groups and reused local function names; the window title and status-bar path
 do not make these solution-only records. The screenshots do not show numeric
 charge entry, the composition editor, native FDB fields, FDB creation, or the
@@ -160,7 +161,7 @@ header field). No invented database ID is in the semantic plan.
 | `element_ids[7]` | UNRESOLVED_BLOCKER | `V0`: repeat on ID-1/ID-7/CP and remain identical across the declared neutral/charged groups. `V1`: strict simple integer labels matched atomic-number IDs. Input-linked fresh element ordering remains unproved. |
 | `element_coefficients[7]` | UNRESOLVED_BLOCKER | `V0`: group-wide repetition and equality across the neutral/charged groups. `V1`: bounded integer-label matches. Fresh input-to-slot scale remains unproved. |
 | `coefficient_padding` | UNRESOLVED_BLOCKER | `V0`/`V1`: observed stable pattern; versioned fresh assignment and writer acceptance remain unproved. |
-| `charge_raw` | UNRESOLVED_BLOCKER | `V0`: declared neutral/charged groups have different raw bytes with identical native element arrays; each byte repeats within its group. Neutral raw matches neither a direct cast nor `!0`; the pair differs in one bit, without proving a bitmask rule. Exact signed-charge coding is unknown. |
+| `charge_raw` | PROVIDER_GENERATED | Fresh-modern charge `-50..=50` maps to byte `charge + 50`, copied within each group. The observed central states support the offset; wider admitted values are user-selected profile policy. Legacy translation retains a separate blocker. |
 | `entry_number` | UNRESOLVED_BLOCKER | `V0`/`V1`: same group start and consecutive ID-1/ID-7/CP stream-order progression. Two fresh singleton groups independently restart the sequence; larger groups and rollover remain outside evidence. |
 | `reference[2]` | UNRESOLVED_BLOCKER | `V0`: group and CP slots remain zero when reference metadata is added, while phase slots change. No-reference pattern is supported; active input-to-slot mapping remains unproved. |
 | `timestamp_ole` | UNRESOLVED_BLOCKER | `V0`: ID-1/ID-7/CP timestamps agree within each group, and two groups in one file have distinct timestamps. ID-9 date stays fixed. `V1`: CP copies ID-1, but ID-7 can differ. Fresh clock source/rounding unknown. |
@@ -254,7 +255,7 @@ controlled experiments and dependencies, see
 | ID-9 padding 1/2/3 and unknown 1/2 | EVIDENCE_REQUIRED | Fresh padding is zero; both unknown regions are stable through edits, but the second differs from translation. Need versioned assignment and writer acceptance. | Yes, versioned fresh input | No |
 | Shared `element_ids[7]`, integer `element_coefficients[7]` | EVIDENCE_REQUIRED | Fresh group-wide copying and equality across neutral/charged groups are confirmed; input-linked code/order/scale remain. | Yes, recorded stoichiometry inputs | No |
 | Shared coefficient padding and unknown 2 bytes | EVIDENCE_REQUIRED | Stable by kind in fresh edits and matching translated counterparts; versioned writer assignment remains. | Yes | No |
-| Shared `charge_raw` | EVIDENCE_REQUIRED | Declared neutral/charged groups have distinct raw bytes despite equal native element arrays; neutral raw is nonzero. Exact signed-charge mapping needs recorded UI magnitude/sign. | Yes, provenance for existing pair | No |
+| Shared `charge_raw` | RESOLVED | Fresh-modern profile uses the checked `charge + 50` byte rule for `-50..=50` and repeats it on ID-1/ID-7/CP. Legacy translation is separate. | No for fresh profile | Yes for bounded fresh profile |
 | Shared `entry_number` | RESOLVED | Fresh and translated FDBs share group start and consecutive stream-order increments within the observed small profile; rollover remains outside it. | No for one-function profile | Yes for bounded small profile |
 | Shared `reference[2]` | EVIDENCE_REQUIRED | No-reference fresh group/CP slots are zero; active reference edit changes only phase slots. Input-to-slot assignment remains. | Yes for active references | No for active; bounded no-reference policy possible |
 | Shared `timestamp_ole` | POLICY_REQUIRED | Fresh ID-1/7/CP agree per group; two groups in one file differ while ID-9 date stays fixed. Clock source/rounding remain unproved. | Yes, versioned action times | No |

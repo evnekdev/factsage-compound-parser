@@ -131,11 +131,11 @@ const COMMON_GAPS: &[Gap] = &[
     Gap {
         field: "RawCommonHeader.charge_raw",
         class: FdbBlockerClass::NativeFormat,
-        reason: "the declared neutral and charged groups have different repeated signed bytes, but the neutral raw byte is nonzero and exact semantic charge encoding is unknown",
-        known: "the signed byte repeats on each fresh ID-1/ID-7/CP group; equal-element neutral/charged groups differ in one raw bit; neutral raw matches neither zero nor !0, refuting direct cast and bitwise complement rules for this pair",
-        missing: "recorded signed UI charges and a version-scoped semantic-to-raw mapping, including neutral charge",
+        reason: "the fresh-modern offset rule is profile-specific and does not establish Legacy-translation charge encoding",
+        known: "the bounded fresh-modern rule adds the neutral offset to signed charge and copies the result to ID-1/ID-7/CP; direct cast and complement rules fail on the fresh probe",
+        missing: "a source-to-native charge rule for Legacy translation",
         exact_evidence: Some(
-            "record exact signed UI charge inputs and FactSage version for the existing fresh neutral/charged pair in an ignored local receipt",
+            "controlled Legacy charge input matched to translated FDB shared headers",
         ),
         user_evidence_can_unblock: true,
     },
@@ -326,11 +326,13 @@ impl FdbBuildPlan {
                         }
                 });
             for gap in COMMON_GAPS {
-                if bounded_fresh_group
-                    && matches!(
-                        gap.field,
-                        "RawCommonHeader.entry_number" | "RawCommonHeader.reference[2]"
-                    )
+                if (self.profile == FdbConstructionProfile::FreshModern
+                    && gap.field == "RawCommonHeader.charge_raw")
+                    || (bounded_fresh_group
+                        && matches!(
+                            gap.field,
+                            "RawCommonHeader.entry_number" | "RawCommonHeader.reference[2]"
+                        ))
                 {
                     continue;
                 }

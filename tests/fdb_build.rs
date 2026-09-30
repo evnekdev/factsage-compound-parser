@@ -164,10 +164,63 @@ fn fresh_groups_keep_charge_identity_when_function_names_repeat() {
         built.groups()[0].functions[0].identity().target_name,
         built.groups()[1].functions[0].identity().target_name
     );
-    assert!(built.native_blockers().iter().any(|blocker| {
+    assert!(
+        !built
+            .native_blockers()
+            .iter()
+            .any(|blocker| blocker.field == "RawCommonHeader.charge_raw")
+    );
+}
+
+#[test]
+fn bounded_fresh_charge_uses_the_neutral_offset_rule() {
+    for (semantic, raw) in [(-50, 0), (-1, 49), (0, 50), (1, 51), (50, 100)] {
+        let charge = FdbChargeState::new(semantic);
+        assert_eq!(charge.fresh_modern_raw_byte(), Some(raw));
+        assert_eq!(
+            FdbChargeState::from_fresh_modern_raw_byte(raw),
+            Some(charge)
+        );
+    }
+    for unsupported in [i32::MIN, -51, 51, i32::MAX] {
+        assert_eq!(
+            FdbChargeState::new(unsupported).fresh_modern_raw_byte(),
+            None
+        );
+    }
+    for unsupported in [101, 127, 128, 255] {
+        assert_eq!(
+            FdbChargeState::from_fresh_modern_raw_byte(unsupported),
+            None
+        );
+    }
+
+    let function = FdbFunctionPlan::Ordinary(FdbOrdinaryFunctionPlan {
+        identity: FdbFunctionIdentity::fresh_modern("SyntheticSolid", PhaseState::Solid),
+        phase_enthalpy: -100.0,
+        phase_entropy: 10.0,
+        ranges: vec![range()],
+        auxiliary: FdbAuxiliaryIntent::Inactive,
+    });
+    let mut admitted = group(vec![function.clone()]);
+    admitted.charge = FdbChargeState::new(50);
+    let built = FdbBuildPlan::new_fresh_modern(metadata(), vec![admitted]).unwrap();
+    assert!(!built.native_blockers().iter().any(|blocker| {
         blocker.field == "RawCommonHeader.charge_raw"
-            && blocker.class == FdbBlockerClass::NativeFormat
+            || blocker.field == "RawCommonHeader.charge_raw range"
     }));
+
+    for unsupported in [-51, 51] {
+        let mut group = group(vec![function.clone()]);
+        group.charge = FdbChargeState::new(unsupported);
+        assert!(matches!(
+            FdbBuildPlan::new_fresh_modern(metadata(), vec![group]),
+            Err(FdbBuildError::InvalidField {
+                field: "charge",
+                ..
+            })
+        ));
+    }
 }
 
 #[test]

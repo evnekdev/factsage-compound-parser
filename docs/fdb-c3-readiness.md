@@ -100,7 +100,7 @@ not recorded in the receipt.
 | Object | Fresh-modern observation | Remaining rule |
 | --- | --- | --- |
 | ID-9 | One header exists even in the empty file. Read flag and all three padding regions are zero; the two unknown regions are stable and contain nonzero bytes, while date/comment remain unchanged through edits. The first unknown region agrees with the translated FDB; the second differs. | Version-specific initialization of unknowns, read flag and date/comment policy; equality across edits does not prove a universal constant. |
-| Shared headers | Element identifiers, integer coefficients, charge and coefficient padding repeat from ID-1 through ID-7 and CP. Per-kind unknown bytes are stable and agree with translated counterparts. Entry numbers advance with record order from a common group start, including added ranges. | Input-linked composition/charge mapping, versioned unknowns, larger-group counter limits and fresh writer acceptance. |
+| Shared headers | Element identifiers, integer coefficients, charge and coefficient padding repeat from ID-1 through ID-7 and CP. Per-kind unknown bytes are stable and agree with translated counterparts. Entry numbers advance with record order from a common group start, including added ranges. | Input-linked composition mapping, versioned unknowns, larger-group counter limits and fresh writer acceptance. The bounded charge rule is adopted below. |
 | Names and composition | The fresh ID-1 compound-name field is empty while its formula label is populated. Real coefficients, reserved strings, units and composition slots remain stable through these edits. The phase name remains a nonempty caller-style name. | Formula/compound alias policy and input-linked element order, scale, charge and unit assignment. A blank SLN formula qualifier never means absent FDB group metadata. |
 | Phase | Each nonempty snapshot has one solid-region ID-7. The ID stays fixed as ranges are added, its negative field is its arithmetic negative, and all CP ranges link to that same ID. The empty function has ID-7 but no CP. No hidden A companion appears. | Allocation for a second fresh function and non-solid states. Fresh empty-function form is observed; translated zero-object omission remains separate. |
 | Reference and density edit | The phase density and phase shared-reference fields change. The group and CP reference fields remain zero; the CP body otherwise remains unchanged apart from its timestamp. Other physical-tail fields remain the same. | Mapping of a user reference to the two native slots; no-reference and inactive-density policies can be bounded, but active metadata cannot yet be generated. |
@@ -120,23 +120,46 @@ earlier single-function snapshot and internally as a neutral/charged pair.
 The declared original function was matched uniquely by formula group plus
 phase name. Phase name alone matches both groups and cannot identify it.
 Provider parsing/serialization and an independent byte-offset probe agree on
-the categorical differences. No native values or names are retained here.
+the categorical differences. No per-fixture names or coefficients are retained
+in this comparison.
 
 | Comparison | Supported conclusion | Limit |
 | --- | --- | --- |
 | Original neutral function across snapshots | ID-9 is unchanged. ID-1 and ID-7 change only their timestamps. The original CP changes timestamp and upper temperature bound; its other fields remain unchanged. | The second snapshot is not a pure add-only delta because the original range bound also changed. Do not attribute that bound change to charge. |
 | Neutral vs charged within the new snapshot | Two ID-1 groups have the same element IDs, integer and real coefficients, units, reserved/compound-name fields, phase name, phase H/S and CP data. Only raw charge, formula label and per-group timestamp differ. | The user declares neutral versus charged, but the exact entered signed charge magnitude, formula-input semantics and FactSage version are not recorded. |
-| Charge representation | `charge_raw` differs between groups and repeats unchanged on each group's ID-1, ID-7 and CP. The declared neutral group's raw byte is nonzero. | A direct semantic charge-to-raw-byte cast, including neutral → zero, is disproved for this pair. The actual signed-charge encoding remains unknown. Formula spelling cannot supply that missing rule. |
+| Charge representation | `charge_raw` differs between groups and repeats unchanged on each group's ID-1, ID-7 and CP. The declared neutral group's raw byte is nonzero. | A direct semantic charge-to-raw-byte cast, including neutral → zero, is disproved for this pair. The bounded fresh-modern rule adopted below supersedes this initial uncertainty. Formula spelling alone remains insufficient evidence. |
 | Names and grouping | Equal native element coefficients with different declared charge occupy distinct ID-1 groups. The local function name is reused across those groups while formula labels differ; compound names remain empty. | A formula-qualified namespace is necessary to disambiguate these local function names. Optional unqualified SLN syntax does not establish how ambiguous references resolve. |
 | IDs, counters, references | Both groups start their entry counters alike and advance in ID-1/ID-7/CP order. Their solid phase IDs match across groups; negative IDs and CP links are group-local. References remain zero. | This confirms group-local reset for two fresh groups, not allocation of a second phase inside one group or active-reference encoding. |
 | Timestamps and CP | ID-1, ID-7 and CP share one timestamp within each group; the groups have distinct timestamps in the same file. Both nonzero-Cp ranges use ID-2. | Clock source/rounding and fresh zero-Cp kind remain open. The unchanged ID-9 date is not a per-group timestamp source. |
+
+### Added negative-charge follow-up
+
+A receipt-admitted fresh FDB now contains a third function group declared by
+the user as charge `-1`. Matching the earlier groups by formula label plus
+function name identifies one new group without relying on record order. The
+new group's charge byte repeats on ID-1, ID-7 and CP. Provider parsing and an
+independent byte-offset check agree that subtracting the observed neutral raw
+offset from the new byte yields `-1`; the earlier neutral yields zero, and the
+plus-marked group yields `+1` under the same arithmetic. No private formula or
+coefficient is retained in this tracked assessment.
+
+The user adopts the neutral offset as a **fresh-modern profile rule** for
+semantic charge `-50..=50`: write the native byte as `charge + 50`, and decode
+admitted raw bytes `0..=100` as `raw - 50`. The same byte is copied to ID-1,
+ID-7 and CP records. `FdbChargeState` now exposes both checked conversions;
+fresh-modern plan validation rejects charge outside this profile. All admitted
+bytes fit the parser's `i8` slot, so changing the raw struct's signedness is
+unnecessary. The observed groups establish the central states; extending the
+linear rule across the admitted range is an explicit profile decision, not a
+claim about every FactSage version or the Legacy translation profile.
 
 The proposed eight-bit complement rule `charge_raw = !semantic_charge` also
 fails: the declared neutral group's raw byte is not `!0`. If the bracket-plus
 label denotes numeric `+1`, the charged group's byte is not `!1` either. An
 independent byte-offset check agrees with the provider parser; the two observed
 raw bytes differ in exactly one bit. That difference does not establish a
-bitmask or signed-charge mapping without recorded numeric input.
+bitmask mapping. The adopted fresh-modern offset rule is separate from this
+rejected hypothesis.
 
 This probe strengthens the bounded one-function-per-group structural profile,
 but does not complete a native materializer. In particular, it establishes a
@@ -146,10 +169,10 @@ uninterpreted fields are still missing.
 
 ### Supplemental function-view screenshots
 
-Two user-supplied screenshots show functions opened in FactSage 7.3's
+User-supplied screenshots show functions opened in FactSage 7.3's
 **Solution** module, which displays both functions and solutions. They select
-an unmarked and a bracket-plus formula group. Each tree group shows one
-function; the selected functions have the same displayed name, range count
+negative-marked, unmarked and positive-marked formula groups. Each tree group
+shows one function; the selected functions have the same displayed name, range count
 and visible thermodynamic inputs. This independently corroborates that the
 function viewer displays separately qualified groups with a reused local
 function name. The screenshots are not stored in the repository.
@@ -234,7 +257,8 @@ policy/evidence blocker until those checks pass.
 | Object or capability | Class | Exact missing rule or action |
 | --- | --- | --- |
 | ID-9 and per-kind uninterpreted bytes | EVIDENCE_REQUIRED | Record the FactSage version and fresh initialization policy; observed stable bytes cannot be copied into a general constructor without provenance and independent acceptance. |
-| Shared composition and charge | EVIDENCE_REQUIRED | Fresh neutral/charged groups retain identical element IDs and integer/real coefficients while `charge_raw` differs and repeats within each group. Neutral raw charge is nonzero; signed-charge encoding and input-linked stoichiometry still need recorded UI authority. |
+| Shared charge | RESOLVED_FOR_FRESH_PROFILE | For admitted semantic charge `-50..=50`, encode one byte as `charge + 50` and copy it through ID-1/ID-7/CP. Legacy translation remains a separate profile. |
+| Shared composition | EVIDENCE_REQUIRED | Input-linked element IDs, integer and real coefficient order and scale remain unproved. |
 | Formula and compound names | EVIDENCE_REQUIRED | Fresh formula labels distinguish groups that reuse a local function name; compound names remain empty. Define input-to-label and ambiguous-reference policy separately from optional SLN qualification. |
 | Timestamp assignment | POLICY_REQUIRED | Two fresh groups in one file have distinct internally copied timestamps; ID-9 date stays fixed. Choose and validate clock source, rounding and deterministic assignment. |
 | More than one function within a group and non-solid states | EVIDENCE_REQUIRED | Two fresh singleton groups restart the same solid phase ID and entry sequence. Allocation of a second phase inside one group and non-solid states remains untested. A singleton-solid-group profile can exclude these. |
@@ -247,8 +271,8 @@ policy/evidence blocker until those checks pass.
 
 No nontrivial profile has every required native byte and input mapping. In
 particular, restricting to one solid function per group, nonzero Cp, no active
-references or density, and explicit H/S/Cp still leaves signed charge encoding,
-input-linked composition, timestamps, versioned uninterpreted bytes and fresh
+references or density, and explicit H/S/Cp still leaves input-linked
+composition, timestamps, versioned uninterpreted bytes and fresh
 label policy unresolved. The
 materializer is therefore not implemented. The semantic plan now explicitly
 separates fresh caller names from Legacy-derived names without weakening the
@@ -256,11 +280,9 @@ Legacy pairing contract.
 
 ## Smallest next controlled evidence action
 
-Capture the numeric charge and elemental-composition inputs used to create the
-existing **FDB** neutral/charged groups, with the FDB creation version and
-action recorded in one ignored local provenance receipt. The function tree
-and bracket-plus label do not supply those inputs. No new FDB is needed if
-the original inputs can be recovered. This single action can establish or
-reject a bounded numeric charge mapping and constrain the composition policy.
-It does not by itself settle timestamps, fresh zero-Cp serialization or
-independently accept a provider-built file.
+Create one directly authored fresh FDB with a controlled elemental-ratio
+change while keeping charge, function and thermodynamic inputs fixed. Record
+the entered composition and creation version in an ignored local receipt, then
+compare ID-1/ID-7/CP element IDs and integer/real coefficients. This is the
+smallest remaining input-linked composition experiment. It does not by itself
+settle timestamps, fresh zero-Cp serialization or provider-built acceptance.
