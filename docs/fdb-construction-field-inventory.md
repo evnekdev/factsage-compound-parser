@@ -331,8 +331,9 @@ before asking for new evidence. Missing advanced-family semantics do not block
 ordinary density or the bounded fresh writer.
 
 
-Phase-state raw ID allocation: **RESOLVED FROM PROVIDER/CORPUS EVIDENCE**.
-Use 101+ for solids, 801+ for liquids, 901+ for gases, and 991+ for aqueous
-(one-based index within the respective state band, allocated group-locally).
-Ordinary phase negative IDs are arithmetic negations; CP links use exact positive
-raw IDs.
+FDB Function raw-ID allocation: **CONFIRMED DOMAIN POLICY**. Generic CDB
+phase-state bands remain valid for CDB parsing, but the bounded FDB writer does
+not use them. Allocate FDB Function IDs as a group-local pseudo-solid series
+`101, 102, 103, ...` in encounter order regardless of source aggregate state.
+Write the negative ID as the arithmetic negation and link CP records to the exact
+positive Function ID.
