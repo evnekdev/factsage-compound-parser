@@ -31,7 +31,7 @@ pub struct FdbElementAmount {
 /// A database-global stoichiometry group containing ordered, distinct functions.
 #[derive(Debug, Clone, PartialEq)]
 pub struct FdbFormulaGroupPlan {
-    /// Target formula text.
+    /// Target formula label; its native composition encoding remains a C3 blocker.
     pub formula: String,
     /// Complete composition, in caller order; comparison canonicalizes symbol order.
     pub elements: Vec<FdbElementAmount>,
@@ -286,12 +286,19 @@ impl FdbBuildPlan {
             });
         }
         let mut group_keys = BTreeMap::new();
+        let mut formula_names = BTreeSet::new();
         let mut names = BTreeMap::<String, String>::new();
         let mut source_roles = BTreeSet::new();
         let mut bases = BTreeMap::<String, (String, usize, String)>::new();
         let mut additions = Vec::new();
         for group in &self.groups {
             check_text(&group.formula, "formula", &group.formula, 40, false)?;
+            if !formula_names.insert(group.formula.clone()) {
+                return Err(FdbBuildError::AmbiguousGroup {
+                    group: group.formula.clone(),
+                    reason: "formula label already belongs to another group".into(),
+                });
+            }
             let key = composition_key(group)?;
             if let Some(previous) = group_keys.insert(key.clone(), group.formula.clone()) {
                 return Err(FdbBuildError::AmbiguousGroup {

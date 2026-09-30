@@ -343,6 +343,17 @@ fn deterministic_order_and_global_stoichiometry_are_enforced() {
 }
 
 #[test]
+fn one_formula_label_cannot_claim_two_compositions() {
+    let first = group(pair("PHAS", "source", 0).to_vec());
+    let mut second = group(pair("OTHR", "other", 0).to_vec());
+    second.elements[0].amount = 2.0;
+    assert!(matches!(
+        FdbBuildPlan::new(metadata(), vec![first, second]),
+        Err(FdbBuildError::AmbiguousGroup { .. })
+    ));
+}
+
+#[test]
 fn unsupported_auxiliary_and_missing_a_fail_closed() {
     let mut functions = pair("PHAS", "source", 0).to_vec();
     let FdbFunctionPlan::Ordinary(base) = &mut functions[0] else {
