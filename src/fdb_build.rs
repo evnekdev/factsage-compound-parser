@@ -48,9 +48,12 @@ impl FdbChargeState {
         self.0
     }
 
-    /// Encodes the bounded fresh-modern charge profile as one native byte.
-    /// The admitted range is -50..=50; its output also fits the parser's `i8` slot.
-    pub const fn fresh_modern_raw_byte(self) -> Option<u8> {
+    /// Encodes semantic charge using the native FDB representation.
+    ///
+    /// FDB stores charge as semantic_charge + 50; the supported semantic
+    /// range is -50..=50, producing native values 0..=100. This encoding is
+    /// source-profile independent.
+    pub const fn fdb_raw_byte(self) -> Option<u8> {
         if self.0 < -50 || self.0 > 50 {
             None
         } else {
@@ -58,13 +61,23 @@ impl FdbChargeState {
         }
     }
 
-    /// Decodes one byte under the bounded fresh-modern charge rule.
-    pub const fn from_fresh_modern_raw_byte(raw: u8) -> Option<Self> {
+    /// Decodes one native FDB charge byte.
+    pub const fn from_fdb_raw_byte(raw: u8) -> Option<Self> {
         if raw > 100 {
             None
         } else {
             Some(Self(raw as i32 - 50))
         }
+    }
+
+    /// Backward-compatible alias for fdb_raw_byte.
+    pub const fn fresh_modern_raw_byte(self) -> Option<u8> {
+        self.fdb_raw_byte()
+    }
+
+    /// Backward-compatible alias for from_fdb_raw_byte.
+    pub const fn from_fresh_modern_raw_byte(raw: u8) -> Option<Self> {
+        Self::from_fdb_raw_byte(raw)
     }
 }
 
@@ -415,13 +428,11 @@ impl FdbBuildPlan {
         for group in &self.groups {
             let mut names = BTreeMap::<String, String>::new();
             check_text(&group.formula, "formula", &group.formula, 40, false)?;
-            if self.profile == FdbConstructionProfile::FreshModern
-                && group.charge.fresh_modern_raw_byte().is_none()
-            {
+            if group.charge.fdb_raw_byte().is_none() {
                 return Err(FdbBuildError::InvalidField {
                     object: group.formula.clone(),
                     field: "charge",
-                    reason: "fresh-modern charge must be within -50..=50".into(),
+                    reason: "FDB semantic charge must be within -50..=50".into(),
                 });
             }
             if !formula_names.insert(group.formula.clone()) {
