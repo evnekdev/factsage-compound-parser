@@ -365,3 +365,9 @@ CP(function 2) -> ...` in function/range encounter order.
 Cp range ordering and continuity: **CONFIRMED DOMAIN POLICY**. Preserve supplied
 range order and require `Tmax(i) == Tmin(i+1)` for adjacent ranges. Reject gaps,
 overlaps, and silent reordering.
+
+
+Empty fresh Function: **PROVISIONAL BOUNDED POLICY**. Emit ID-7 with no CP record,
+matching the observed direct-modern empty-function snapshot. Verify structurally
+rather than forcing an ordinary thermodynamic view that requires a range. If
+FactSage rejects the provider-built form, revisit this policy.
