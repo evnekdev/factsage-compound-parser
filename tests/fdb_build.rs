@@ -173,24 +173,24 @@ fn fresh_groups_keep_charge_identity_when_function_names_repeat() {
 }
 
 #[test]
-fn bounded_fresh_charge_uses_the_neutral_offset_rule() {
+fn fdb_charge_uses_the_native_neutral_offset_rule() {
     for (semantic, raw) in [(-50, 0), (-1, 49), (0, 50), (1, 51), (50, 100)] {
         let charge = FdbChargeState::new(semantic);
-        assert_eq!(charge.fresh_modern_raw_byte(), Some(raw));
+        assert_eq!(charge.fdb_raw_byte(), Some(raw));
         assert_eq!(
-            FdbChargeState::from_fresh_modern_raw_byte(raw),
+            FdbChargeState::from_fdb_raw_byte(raw),
             Some(charge)
         );
     }
     for unsupported in [i32::MIN, -51, 51, i32::MAX] {
         assert_eq!(
-            FdbChargeState::new(unsupported).fresh_modern_raw_byte(),
+            FdbChargeState::new(unsupported).fdb_raw_byte(),
             None
         );
     }
     for unsupported in [101, 127, 128, 255] {
         assert_eq!(
-            FdbChargeState::from_fresh_modern_raw_byte(unsupported),
+            FdbChargeState::from_fdb_raw_byte(unsupported),
             None
         );
     }
@@ -986,27 +986,22 @@ fn semantic_validity_is_separate_from_native_materialization_readiness() {
             && !blocker.user_evidence_can_unblock
             && blocker.exact_evidence.is_none()
     }));
-    assert!(blockers.iter().any(|blocker| {
-        blocker.class == FdbBlockerClass::NativeFormat
-            && blocker.user_evidence_can_unblock
-            && blocker.exact_evidence.is_some()
-    }));
-    assert!(blockers.iter().any(|blocker| {
-        blocker.field == "ID-9.read_flag" && blocker.class == FdbBlockerClass::MissingTestEvidence
+    assert!(!blockers.iter().any(|blocker| {
+        matches!(
+            blocker.field,
+            "ID-9.read_flag"
+                | "RawCommonHeader.entry_number"
+                | "RawCommonHeader.reference[2]"
+                | "RawCommonHeader.charge_raw"
+                | "CP unused coefficient/power slots"
+        )
     }));
     assert!(blockers.iter().any(|blocker| {
         blocker.field == "CP.kind selection for counted base range"
             && blocker.class == FdbBlockerClass::MissingTestEvidence
             && blocker.known.contains("zero-Cp")
     }));
-    assert!(blockers.iter().any(|blocker| {
-        blocker.field == "RawCommonHeader.entry_number"
-            && blocker.class == FdbBlockerClass::MissingTestEvidence
-    }));
-    assert!(blockers.iter().any(|blocker| {
-        blocker.field == "RawCommonHeader.reference[2]"
-            && blocker.class == FdbBlockerClass::NativeFormat
-    }));
+
     assert!(
         !blockers
             .iter()
@@ -1036,9 +1031,11 @@ fn semantic_validity_is_separate_from_native_materialization_readiness() {
 
     let mut wide_charge = group(pair("PHAS", "source", 0).to_vec());
     wide_charge.charge = FdbChargeState::new(200);
-    let valid_semantics = FdbBuildPlan::new(metadata(), vec![wide_charge]).unwrap();
-    assert!(valid_semantics.native_blockers().iter().any(|blocker| {
-        blocker.field == "RawCommonHeader.charge_raw range"
-            && blocker.class == FdbBlockerClass::NativeFormat
-    }));
+    assert!(matches!(
+        FdbBuildPlan::new(metadata(), vec![wide_charge]),
+        Err(FdbBuildError::InvalidField {
+            field: "charge",
+            ..
+        })
+    ));
 }
