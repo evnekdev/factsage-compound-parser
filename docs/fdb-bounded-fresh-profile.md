@@ -154,7 +154,10 @@ SLN formula qualifier are distinct concepts.
 
 For the bounded fresh profile:
 
-- formula label is caller/formula input validated by `chemformula`;
+- formula label is the caller-supplied formula spelling exactly as entered;
+- validate that spelling with `chemformula`;
+- if parsing fails, reject it and require a valid formula rather than silently repairing or canonicalizing it;
+- preserve the entered element order in the stored label and in native composition slots (for example, `O4Fe3` remains `O4Fe3`);
 - compound-name field may remain empty, matching the controlled fresh evidence;
 - local function names may repeat across distinct formula/charge groups;
 - formula-qualified identity disambiguates such groups;
