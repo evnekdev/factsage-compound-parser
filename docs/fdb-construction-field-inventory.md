@@ -355,3 +355,8 @@ Record-kind opaque fields: **CONFIRMED DOMAIN POLICY**. For unknown/reserved/pad
 fields outside ID-9, copy the values from the controlled fresh FDB template for
 the corresponding record kind. Do not infer meanings or request additional
 human input unless existing evidence falsifies the template rule.
+
+
+Function/CP stream order: **CONFIRMED DOMAIN POLICY**. Within a formula group,
+emit `ID-1 -> ID-7(function 1) -> CP(function 1) -> ID-7(function 2) ->
+CP(function 2) -> ...` in function/range encounter order.
