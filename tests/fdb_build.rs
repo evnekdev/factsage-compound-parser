@@ -976,10 +976,10 @@ fn semantic_validity_is_separate_from_native_materialization_readiness() {
     let built = plan(pair("PHAS", "source", 0).to_vec()).unwrap();
     assert!(built.validate().is_ok());
     assert!(
-        built
+        !built
             .native_blockers()
             .iter()
-            .any(|blocker| blocker.object == "PHAS_0000A" && blocker.field.contains("zero-A"))
+            .any(|blocker| blocker.field.contains("zero-A") || blocker.field.contains("zero-base"))
     );
 
     let blockers = built.native_blockers();
