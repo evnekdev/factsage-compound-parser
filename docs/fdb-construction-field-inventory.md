@@ -301,7 +301,7 @@ In particular:
 | Field/capability | Bounded fresh-modern disposition |
 | --- | --- |
 | ID-9 opaque/padding/read-flag bytes | Copy from the controlled empty-FDB template; change only established date/comment fields. |
-| ID-9 / entry timestamps | OLE Automation `f64`; explicit build timestamp or provider clock policy. |
+| ID-9 / entry timestamps | **CONFIRMED DOMAIN POLICY:** OLE Automation `f64`; update the timestamp for newly created/materially changed groups, preserve unchanged-group timestamps on edits, and copy one timestamp consistently across ID-1/ID-7/CP within the changed group. |
 | Formula parser | Use `chemformula`. |
 | Element IDs | Periodic-table atomic numbers encoded as `u8`. |
 | Element slot order | **CONFIRMED DOMAIN POLICY:** preserve first-appearance/parser encounter order exactly; verify against the existing local corpus as a regression check. |
