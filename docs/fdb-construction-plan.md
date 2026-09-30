@@ -165,7 +165,7 @@ identify the object and field. Semantic validity and `native_blockers()` are
 separate. The plan preserves explicit zero A objects and rejects active
 auxiliary physics in the Legacy translation profile. The fresh-modern profile
 uses caller-supplied names without Legacy source fields or an automatic A.
-FDB-C3 is not implemented; the inventory lists its exact native evidence gaps.
+FDB-C3 materialization is not implemented. The bounded FreshModern native rules are now resolved; the inventory retains historical evidence notes but current gates are the provider materializer, internal serialize/reparse/domain/thermo verification, and independent FactSage acceptance.
 
 FDB-C2 hardening replaced the floating ratio-bit key with exact rational
 element ratios plus explicit semantic charge. Formula text remains a separate
@@ -177,14 +177,14 @@ semantics and verification with exact affected objects. The local paired
 translation supports group-local solid ID and CP-link observations, but shows
 that base/A role alone cannot select CP ID-2 versus ID-5. Every paired FDB
 ID-2 has nonzero Cp and every ID-5 has zero Cp, including role exceptions.
-The direct-modern edit sequence has one named solid function, no hidden A,
-fresh ID-2 nonzero-Cp ranges, chained multi-range bounds and stream-order
-entry numbers. It confirms fresh header/shared-field patterns without
-supplying semantic charge/composition mapping, versioned unknown-byte and
-timestamp policies, or independent acceptance of a provider-built file.
-The [`FDB-C3 readiness review`](fdb-c3-readiness.md) therefore keeps native
-materialization blocked. A conditional canonical ID-2 policy for fresh
-zero-Cp ranges is described there; it is not a universal semantic equivalence.
+The direct-modern evidence plus confirmed construction policy now resolves the
+bounded FreshModern mapping for charge, composition, template-derived opaque
+bytes, timestamps, Function IDs, entry numbers, references, fresh ID-2
+zero/nonzero Cp, and unused-slot filling. The
+[`FDB-C3 readiness review`](fdb-c3-readiness.md) therefore permits
+implementation. Native materialization remains unfinished engineering, not an
+evidence-policy blocker; independent FactSage acceptance remains the external
+verification gate.
 
 ### FDB-C1 — construction inventory
 
@@ -245,9 +245,10 @@ Establish the exact native representation and verification profile for the
 paired A object used by solution FDB conversion. Test both nonzero and explicit
 zero construction.
 
-If current provider evidence cannot prove a zero A physical encoding, retain
-the requested identity in the construction plan and report a precise provider
-blocker rather than silently omitting it.
+For LegacyTranslation, retain the requested zero A identity in the rigorous
+semantic plan but omit a physically zero A native object under the confirmed
+NativeFactSage zero-object policy. Verify that all emitted SLN/native references
+remain consistent with the physically emitted object set.
 
 ### FDB-C6 — solution-provider integration
 
