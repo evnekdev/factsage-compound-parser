@@ -19,6 +19,8 @@ pub mod domain;
 pub mod edit;
 /// Errors emitted while parsing the fixed-width physical format.
 pub mod error;
+/// Validation-first plans for fresh Function Database construction.
+pub mod fdb_build;
 /// Lossless physical CDB chunk representations and serialization support.
 pub mod raw;
 /// Read-only thermodynamic decoding and stored-expression evaluation.

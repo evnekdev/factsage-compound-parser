@@ -468,7 +468,7 @@ fn validate_evaluation_temperature(
     Ok(())
 }
 
-fn integrate_power(temperature_k: f64, integrated_power: f64) -> f64 {
+pub(crate) fn integrate_power(temperature_k: f64, integrated_power: f64) -> f64 {
     let log_ratio = (temperature_k / STANDARD_REFERENCE_TEMPERATURE_K).ln();
     if integrated_power == 0.0 {
         log_ratio

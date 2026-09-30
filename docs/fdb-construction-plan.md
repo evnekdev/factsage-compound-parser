@@ -148,6 +148,15 @@ validated view for the admitted profile.
 
 ## Milestone sequence
 
+The FDB-C1 inventory is recorded in
+[`fdb-construction-field-inventory.md`](fdb-construction-field-inventory.md).
+FDB-C2 is represented by the sealed `fdb_build::FdbBuildPlan`: caller-provided
+ordered groups and objects are validated without native records; typed errors
+identify the object and field. Semantic validity and `native_blockers()` are
+separate. The plan preserves explicit zero A objects and rejects active
+auxiliary physics. FDB-C3 is not implemented; the inventory lists its exact
+native evidence gaps.
+
 ### FDB-C1 — construction inventory
 
 Map every field required to synthesize:

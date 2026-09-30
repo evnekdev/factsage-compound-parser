@@ -98,8 +98,9 @@ cannot enter this pure profile by silently selecting zero.
 | `coefficients[8]`, `powers[8]` | CALLER_PROVIDED | `CODE`: capacity of eight ordered Cp terms; `PAIR`: four fixed and three variable Legacy terms map to slots 0–6, with slot 7 zero in paired examples. The semantic plan takes ordered meaningful terms without native slot padding. Exact values/powers are retained; no refit, normalization, or tiny-term erasure. The native fill rule for unused slots remains `UNRESOLVED_BLOCKER` outside the paired seven-term profile. |
 | `unknown_1[4]`, `padding_remaining[56]` | UNRESOLVED_BLOCKER | `UNKNOWN`: no fresh-output default. |
 
-The rigorous plan always retains a base and A identity, even for a zero A.
-`ExplicitZero` has no fabricated ID-5 interval: native zero-block encoding or
+The rigorous plan always retains a base and A identity, even for zero base and
+zero A objects. `ExplicitZeroOrdinary` and `ExplicitZero` have no fabricated
+Cp interval: native zero-block encoding or
 versioned omission policy is unresolved. A nonzero A may carry explicit ordered
 H/S/Cp interval intent, but its Legacy leading-pair → ID-5 bounds, powers,
 phase anchors, and exceptional entropy-sign behavior are not yet a general rule.

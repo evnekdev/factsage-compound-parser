@@ -12,6 +12,8 @@ mod heat_capacity;
 mod phase_thermodynamics;
 mod units;
 
+pub(crate) use phase_thermodynamics::integrate_power;
+
 /// Re-export of OLE Automation date conversion.
 pub use date::OleAutomationDate;
 /// Re-export of the provisional density decoder.
