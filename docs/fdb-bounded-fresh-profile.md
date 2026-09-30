@@ -170,11 +170,15 @@ For the bounded fresh profile:
 ## Other native defaults
 
 For per-record unknown, reserved and padding fields whose semantics remain
-opaque, use the values observed in the controlled fresh profile/template for the
-corresponding record kind and validate them by independent FactSage acceptance.
+opaque, copy the corresponding values from the observed controlled fresh FDB
+record template for that native record kind.
 
-This is a versioned serialization policy. It is preferable to inventing meanings
-for opaque bytes.
+**Confirmed domain policy:** do not infer meanings for these fields in the
+bounded writer. Treat them as versioned template bytes and validate the resulting
+records by independent FactSage acceptance.
+
+This is a versioned serialization policy and supersedes older evidence requests
+for semantic interpretation of opaque fields.
 
 For the first profile, references are written as zero by default. These are
 internal FactSage ecosystem references and are not required for ordinary fresh
