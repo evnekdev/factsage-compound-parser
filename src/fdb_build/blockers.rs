@@ -70,9 +70,9 @@ impl FdbBuildPlan {
             object: "constructed FDB".into(),
             field: "independent FactSage acceptance",
             class: FdbBlockerClass::Verification,
-            reason: "one-function, hydrogen-only, multi-function/charged, and ID-2/ID-5 zero-added translated probes opened visibly in FactSage 7.3; complete bundle closure and wider shapes remain unverified",
-            known: "the bounded writer preserves ID-9, places hydrogen last, self-verifies, and has native acceptance across those synthetic shapes",
-            missing: "verify SLN target references and additional range/active-A shapes",
+            reason: "one-function, hydrogen-only, multi-function/charged, ID-2/ID-5 zero-added translated, and one paired SLN/FDB reference probe opened visibly in FactSage 7.3; wider shapes remain unverified",
+            known: "the bounded writer self-verifies, and one synthetic SLN CpXp term resolves uniquely against its generated FDB while the solution and endmember display natively",
+            missing: "verify native thermodynamic use of the SLN reference and additional range/active-A shapes",
             exact_evidence: Some("controlled FactSage acceptance of an unverified shape; keep proprietary bytes local"),
             user_evidence_can_unblock: true,
         });

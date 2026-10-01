@@ -35,7 +35,11 @@ the multi-group probe. A separate generated LegacyTranslation file with a
 physically omitted zero A also opened and displayed its base Function. A second
 LegacyTranslation probe used an ID-5 exact-zero Cp range with its native power
 slots copied from a version-compatible translated example; FactSage opened it
-and displayed the Function.
+and displayed the Function. A synthetic QKTO SLN paired with the generated FDB
+then opened with its solution and endmember visible; its single active `CpXp`
+term resolved uniquely to the generated Function in the bundle resolver. A
+wrong-FDB control failed that resolution. Native thermodynamic evaluation of
+the referenced solution remains a separate check.
 
 The bounded profile resolves the previously open fresh-writer choices by policy:
 copy opaque ID-9/default bytes from the controlled empty-FDB profile, use OLE
@@ -74,7 +78,7 @@ For the bounded fresh-modern profile:
 Additional user input required now: NO
 Additional domain-policy decisions required now: NO
 Additional controlled user-created evidence required now: NO
-Remaining work: verify broader native shapes, SLN references, and active-A reduction
+Remaining work: verify broader native shapes, SLN reference evaluation, and active-A reduction
 ```
 
 The reusable `fdb_native_rule_audit` executable tested every FDB fixture
@@ -331,7 +335,7 @@ native materialization when the target plan has not already been made explicit.
 | Fresh empty-function verification | IMPLEMENTED | The writer emits ID-7 without CP and verifies strict reparse/domain structure; it skips ordinary Cp-backed evaluation for this case. |
 | Legacy A conversion and zero-object omission | PARTIALLY_RESOLVED | Physically zero base/A Function objects may be omitted in `NativeFactSage`, while rigorous semantic identities remain internal. Matched constant ID-5 A objects have direct leading H, negated leading S and zero Cp after unit conversion. Eligible emitted A companions with counted ranges use observed native bounds of 298.15 K to the last ordinary upper bound. Combined nonzero-Cp A, zero-range A upper bounds and leading tails remain separate scientific work. The uncounted two-line A-leading block must not inherit ordinary counted-range semantics. |
 | Provider materializer and verification pipeline | IMPLEMENTED_FRESH_AND_BOUNDED_LEGACY | `materialize_fresh` uses controlled templates, serializes, strict-reparses, indexes and checks group/function/CP identity plus Cp/H/S/G over each admitted range. Bounded Legacy output omits explicit zero A and selects ID-2/ID-5 for nonzero/zero Cp; ID-5 uses a caller-supplied native example. |
-| Provider-built file acceptance | PASSED_CONTROLLED_OPEN_AND_ADDITIONAL_VISIBLE_FUNCTIONS | The corrected provider-built FDB opened, saved, and reopened in FactSage 7.3; the local FDB and SLN files were byte-identical before and after Save. Hydrogen-only, multiple/charged, and ID-2/ID-5 zero-added translated Functions opened visibly. SLN target references remain unverified. |
+| Provider-built file acceptance | PASSED_CONTROLLED_OPEN_AND_ADDITIONAL_VISIBLE_FUNCTIONS | The corrected provider-built FDB opened, saved, and reopened in FactSage 7.3; the local FDB and SLN files were byte-identical before and after Save. Hydrogen-only, multiple/charged, and ID-2/ID-5 zero-added translated Functions opened visibly. One paired SLN/FDB probe showed its solution and endmember, and its `CpXp` term resolved internally; native thermodynamic evaluation remains unverified. |
 
 The bounded FreshModern writer preserves the complete template ID-9 header and
 has one native open/save/reopen acceptance plus visible Function checks for
@@ -341,8 +345,9 @@ FreshModern target plan.
 
 ## Next implementation/verification action
 
-Verify SLN references to constructed Functions and further range/active-A
-shapes when their source-to-target semantics are established.
+Verify native thermodynamic evaluation of an SLN reference to a constructed
+Function, then further range/active-A shapes when their source-to-target
+semantics are established.
 
 The bounded `materialize_legacy_zero_added` method now emits an already
 reduced LegacyTranslation target when every base has at least one homogeneous Cp range and

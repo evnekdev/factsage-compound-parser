@@ -255,8 +255,10 @@ strict reparse -> DomainIndex -> thermodynamic verification`.
 After internal verification, a generated tiny FDB was opened in FactSage 7.3
 and survived load/open/save with byte-identical local FDB and SLN files.
 Additional hydrogen-only, multiple/charged, and translated zero-added ID-2/ID-5
-probes displayed their Functions. Verify SLN references before claiming complete
-bundle coverage.
+probes displayed their Functions. A paired synthetic SLN/FDB probe displayed its
+solution and endmember, and its one active `CpXp` term resolved uniquely against
+the generated Function in the bundle resolver. Native thermodynamic evaluation
+and broader reference shapes remain verification work.
 
 Independent FactSage acceptance is a **verification gate**, not a request for
 new domain knowledge. It should be automated from the local development
@@ -285,7 +287,8 @@ The internal post-serialization check now compares reparsed group composition,
 charge, formula, Function names/IDs, phase anchors, and CP links/bounds with the
 typed plan as well as sampled H/S/Cp/G. Synthetic multi-function/charged and
 hydrogen-only probes pass that check and their Functions opened visibly in
-FactSage 7.3. SLN target-reference closure remains a separate gate.
+FactSage 7.3. One synthetic SLN reference resolved internally and its solution
+and endmember displayed natively; calculation with that reference remains a gate.
 
 
 ## Advanced volumetric coefficients
