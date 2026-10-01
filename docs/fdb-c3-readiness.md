@@ -435,6 +435,16 @@ ID-7 phase anchors, CP-kind rule for combined active terms, or physical tails.
 The bounded Legacy zero-A writer is GO; only active-A and other out-of-profile
 LegacyTranslation extensions remain blocked on those policies and acceptance.
 
+Large paired-file differential verification now supports up to nine homogeneous
+ordinary Cp ranges in the zero-A LegacyTranslation route. Across 296 matched
+zero-A Functions with inactive per-range auxiliary fields, source and paired
+native output agree on range count, bounds, canonical Cp basis, and analytically
+reanchored H/S through eight ranges. Other Functions in the paired native file
+establish the repeated CP-record shape through nine ranges. The generated nine-range native stream passes strict reparse
+and domain indexing; a controlled FactSage GUI open of this new nine-range
+output remains a separate acceptance check. The direct FreshModern profile
+retains its three-range limit.
+
 
 **Paired unit-scaling evidence:** the leading pair is not merely an ordinary
 range with an omitted count. In the tracked paired fixtures, an ordinary

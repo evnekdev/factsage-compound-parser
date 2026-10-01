@@ -272,6 +272,65 @@ fn translated_mixed_cp_kinds_have_a_typed_refusal() {
 }
 
 #[test]
+fn translated_nine_range_zero_cp_reparses_and_tenth_is_refused() {
+    let source = translated_pair(vec![], FdbAddedContribution::ExplicitZero);
+    let mut groups = source.groups().to_vec();
+    let FdbFunctionPlan::Ordinary(base) = &mut groups[0].functions[0] else {
+        panic!("expected translated base");
+    };
+    base.ranges = (0..9)
+        .map(|index| FdbThermoRangePlan {
+            temperature_min_k: 298.15 + f64::from(index) * 100.0,
+            temperature_max_k: 398.15 + f64::from(index) * 100.0,
+            reference_enthalpy: -100.0,
+            reference_entropy: 10.0,
+            cp_terms: vec![],
+        })
+        .collect();
+    let plan = FdbBuildPlan::new(source.metadata().clone(), groups.clone()).unwrap();
+    let raw = plan
+        .materialize_legacy_zero_added(
+            &native_templates_with_id5(),
+            &FdbFreshMaterialization::new(45_001.0),
+        )
+        .unwrap();
+    let reopened = RawDatabase::from_bytes(&raw.to_bytes().unwrap()).unwrap();
+    assert_eq!(
+        reopened
+            .chunks()
+            .iter()
+            .filter(|chunk| chunk.id() == 5)
+            .count(),
+        9
+    );
+    assert!(
+        DomainIndex::build(&reopened)
+            .unwrap()
+            .diagnostics()
+            .is_empty()
+    );
+
+    let FdbFunctionPlan::Ordinary(base) = &mut groups[0].functions[0] else {
+        unreachable!();
+    };
+    base.ranges.push(FdbThermoRangePlan {
+        temperature_min_k: 1198.15,
+        temperature_max_k: 1298.15,
+        reference_enthalpy: -100.0,
+        reference_entropy: 10.0,
+        cp_terms: vec![],
+    });
+    let too_many = FdbBuildPlan::new(source.metadata().clone(), groups).unwrap();
+    assert!(matches!(
+        too_many.materialize_legacy_zero_added(
+            &native_templates_with_id5(),
+            &FdbFreshMaterialization::new(45_001.0)
+        ),
+        Err(FdbMaterializeError::Unsupported { .. })
+    ));
+}
+
+#[test]
 fn bounded_translated_writer_refuses_active_a() {
     let active = translated_pair(
         vec![FdbCpTerm {

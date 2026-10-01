@@ -50,6 +50,16 @@ The first writer may intentionally admit only:
 Features outside this profile remain explicit capability exclusions, not blockers
 for this profile.
 
+The separate zero-A `LegacyTranslation` materializer admits up to nine
+homogeneous ID-2 or ID-5 ranges per Function. A content-free differential audit
+of the large paired Legacy/Modern evidence found exact range counts, bounds,
+Cp basis, and reanchored H/S for all 296 matched zero-A ordinary Functions
+with inactive per-range auxiliary fields; these direct matches span one through
+eight ranges. Other Functions in the paired native file establish the repeated
+CP-record shape through nine ranges. A synthetic nine-range
+translated file strictly reparses and indexes; native FactSage acceptance of
+the newly generated nine-range shape is still pending.
+
 ## ID-9 database header
 
 Do **not** reverse-engineer opaque ID-9 fields for this profile.

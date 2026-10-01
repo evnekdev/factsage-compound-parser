@@ -576,10 +576,15 @@ fn write_group(
             FdbFunctionPlan::ExplicitZeroOrdinary(_) => (0.0, 0.0, &[][..]),
             FdbFunctionPlan::Added(_) => unreachable!("fresh plan validation excludes A"),
         };
-        if ranges.len() > 3 {
+        let range_limit = if legacy_zero_cp { 9 } else { 3 };
+        if ranges.len() > range_limit {
             return Err(FdbMaterializeError::Unsupported {
                 object: function.identity().target_name.clone(),
-                reason: "fresh profile permits at most three Cp ranges",
+                reason: if legacy_zero_cp {
+                    "paired Legacy translation evidence permits at most nine Cp ranges"
+                } else {
+                    "fresh profile permits at most three Cp ranges"
+                },
             });
         }
         let phase_id = 101 + function_index as i32;
