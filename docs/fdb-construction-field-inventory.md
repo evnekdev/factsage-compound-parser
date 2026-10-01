@@ -231,7 +231,7 @@ cannot enter this pure profile by silently selecting zero.
 | chunk ID | PROVIDER_GENERATED | FreshModern uses ID-2 for Cp ranges including zero-Cp. LegacyTranslation retains source-to-target reduction questions before final native kind selection. Wider IDs 3/4/6 remain outside the bounded fresh profile. |
 | shared header | UNRESOLVED_BLOCKER | See shared-entry table. |
 | `phase_id_raw` | PROVIDER_GENERATED | `CODE`: exact link to owning ID-7, conditional on resolving the native ID allocation rule. |
-| `temperature_min`, `temperature_max` | CALLER_PROVIDED | `CODE`: finite, positive, ordered, contiguous kelvin bounds. `LOCAL_PAIR`: identity-linked base objects preserve counted source-range cardinality and upper bounds in encounter order across represented models. First lower-bound and added-range rules remain unresolved. |
+| `temperature_min`, `temperature_max` | CALLER_PROVIDED | `CODE`: finite, positive, ordered, contiguous kelvin bounds. `LOCAL_PAIR`: identity-linked base objects preserve counted source-range cardinality and upper bounds in encounter order across represented models. Eligible emitted A companions with counted ordinary ranges start at 298.15 K and end at the last counted upper bound. Emitted zero-range A also starts at 298.15 K, while its upper bound varies. Base first lower bounds and zero-range A upper allocation remain unresolved. |
 | `enthalpy`, `entropy` | CALLER_PROVIDED | `CODE`: range-specific H/S constants at 298.15 K in group energy units. `PAIR`: direct conversion holds for a tested small-fixture subset, but larger translated base ranges include transformed H/S anchors. Their matched ordinary Cp bases agree after like-power aggregation despite differing native slots. Matched constant ID-5 A objects use source leading H with `×4.184` and negated source S with `×4.184`; zero source S in most small pairs was not sign evidence. Nonzero-Cp A reduction and general source-to-plan conversion remain unresolved. |
 | `coefficients[8]`, `powers[8]` | CALLER_PROVIDED | Preserve supplied term order and values. Unused native coefficient slots are zero and unused power slots are zero; zero-valued supplied coefficients may still retain a nonzero supplied power. |
 | `unknown_1[4]`, `padding_remaining[56]` | UNRESOLVED_BLOCKER | `V0`/`V1`: zero in observed fresh ID-2 and translated ID-2/ID-5 records; versioned writer acceptance remains open. |
@@ -292,7 +292,7 @@ blockers. Current blocker authority is
 | Explicit zero base/A physical form | EVIDENCE_REQUIRED | Fresh empty function has ID-7 without CP and no A; translated zero blocks may be emitted or omitted. Keep profile policies separate. | Yes for translation policy | Fresh empty form observed; translation blocked |
 | Fresh empty-function verification | IMPLEMENTED_FRESH_MODERN | The writer emits ID-7-only and verifies strict reparse/domain structure, skipping Cp-backed evaluation. | No | Yes |
 | General Legacy ordinary H/S/Cp source mapping | SCIENTIFIC_SEMANTICS_REQUIRED | Matched local base ranges preserve cardinality and upper bounds. Like-power aggregation preserves the ordinary Cp basis in the bounded checked subset. For matched multi-range entries, selecting the source H/S anchor in the interval containing 298.15 K and propagating analytic H/S continuity across common bounds predicts the target H/S/Cp/G function at sampled interior temperatures. Native Cp slots may differ; the plan accepts explicit target values. | Yes if conversion adapter is built | C3 builder yes; bounded ordinary scientific reduction only |
-| Legacy A leading pair → CP and entropy sign | PARTIALLY_RESOLVED | Matched constant ID-5 A objects use source leading H with `×4.184`, negated source S with `×4.184`, and zero Cp. The only nonzero small-pair S agrees with the larger translation; zero S did not test sign. ID-2 nonzero-Cp A, target bounds and leading tails remain unresolved. | Yes if full adapter is built | C3 builder yes; bounded A anchor rule only |
+| Legacy A leading pair → CP and entropy sign | PARTIALLY_RESOLVED | Matched constant ID-5 A objects use source leading H with `×4.184`, negated source S with `×4.184`, and zero Cp. The only nonzero small-pair S agrees with the larger translation; zero S did not test sign. Four isolated Gibbs terms have a provisional bounded H/S/Cp reduction, and eligible counted entries have a bounded A interval rule. Combined terms, zero-range A bounds, leading tails and native ID-2 policy remain unresolved. | Yes if full adapter is built | C3 builder yes; provisional counted A scientific target only |
 | Exact conversion of arbitrary source `f64` composition to rational identity | POLICY_REQUIRED | No tolerance is selected. An adapter must preserve source exact fractions or declare a conversion policy. | Domain input may be needed | C3 with exact-rational input yes |
 | NativeFactSage omission choice for zero objects | POLICY_REQUIRED | Only after version behavior is observed; do not silently omit in rigorous plan. | Domain/version policy later | No for zero-object native output |
 | Provider raw constructor and serialize/reparse/domain/thermo pipeline | IMPLEMENTED_FRESH_MODERN | Bounded writer constructs, serializes, strict-reparses, indexes and checks Cp/H/S/G at three temperatures per range. | No | Yes for FreshModern |
@@ -451,17 +451,22 @@ does not establish this candidate as the conversion rule.
 **ConfirmedByDomainExpert:** `Gadded` applies to all counted ranges of its G
 entry simultaneously. Controlled nonmagnetic and magnetic SUBL imports now
 establish isolated Gibbs responses for first leading line slots 1, 2, 3 and
-6. The added target spans the ordinary entry's full temperature domain.
+6. The controlled added target reaches the ordinary entry's final upper bound.
+An identity-linked audit of eligible paired translations supports native A
+bounds from 298.15 K to the last counted ordinary upper bound. Many ordinary
+bases start earlier. Zero-range A entries share the observed 298.15-K lower
+bound but have varying upper bounds and remain outside this rule.
 First-line slots 4–5 and second-line slots 1–6 remain without a general
 analytic mapping; magnetic activation did not change their isolated responses.
 The Legacy-to-Modern plan may provisionally zero those unresolved leading
 positions, preserve the raw source, and flag suppressed nonzero values. This is an
-explicit approximation; exact Legacy A construction and native bounds remain
-blocked.
+explicit approximation; exact Legacy A construction and zero-range A upper bounds
+remain blocked.
 
 The provider-neutral provisional A reducer supplies one explicit scientific
 interval with H/S at 298.15 K and constant/linear Cp coefficients. Its caller
-must provide independently established bounds; it propagates any suppressed
+may provide independently established bounds or use the observed counted-range
+profile; it propagates any suppressed
 source-slot loss. No native CP kind, ID-7 phase anchor, or physical-tail field
 is inferred by that reducer.
 

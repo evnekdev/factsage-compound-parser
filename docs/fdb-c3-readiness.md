@@ -317,7 +317,7 @@ native materialization when the target plan has not already been made explicit.
 | References and density | PARTIALLY_RESOLVED | References default to zero. Ordinary density is supported using the low/remainder density portion with no advanced family code; advanced volumetric-family mappings are extensions and active nonzero references remain outside the bounded profile. |
 | Fresh zero-Cp kind and shorter Cp term lists | RESOLVED_POLICY | Fresh ranges use ID-2, including zero Cp. Unused coefficient and power slots are written as zero. |
 | Fresh empty-function verification | IMPLEMENTED | The writer emits ID-7 without CP and verifies strict reparse/domain structure; it skips ordinary Cp-backed evaluation for this case. |
-| Legacy A conversion and zero-object omission | PARTIALLY_RESOLVED | Physically zero base/A Function objects may be omitted in `NativeFactSage`, while rigorous semantic identities remain internal. Matched constant ID-5 A objects have direct leading H, negated leading S and zero Cp after unit conversion. Nonzero-Cp A, bounds and leading tails remain separate scientific work. The uncounted two-line A-leading block must not inherit ordinary counted-range semantics. |
+| Legacy A conversion and zero-object omission | PARTIALLY_RESOLVED | Physically zero base/A Function objects may be omitted in `NativeFactSage`, while rigorous semantic identities remain internal. Matched constant ID-5 A objects have direct leading H, negated leading S and zero Cp after unit conversion. Eligible emitted A companions with counted ranges use observed native bounds of 298.15 K to the last ordinary upper bound. Combined nonzero-Cp A, zero-range A bounds and leading tails remain separate scientific work. The uncounted two-line A-leading block must not inherit ordinary counted-range semantics. |
 | Provider materializer and verification pipeline | IMPLEMENTED_FRESH_MODERN | `materialize_fresh` uses controlled templates, serializes, strict-reparses, indexes and checks Cp/H/S/G over each admitted range. LegacyTranslation emission remains separate. |
 | Provider-built file acceptance | PASSED_ONE_CONTROLLED_PROBE | The corrected provider-built FDB opened, saved, and reopened in FactSage 7.3; the local FDB and SLN files were byte-identical before and after Save. Broader topology, charge, hydrogen-only, and external reference checks remain. |
 
@@ -384,18 +384,23 @@ does not establish this candidate as the conversion rule.
 **ConfirmedByDomainExpert:** `Gadded` applies to all counted ranges of its G
 entry simultaneously. Controlled nonmagnetic and magnetic SUBL imports now
 establish isolated Gibbs responses for first leading line slots 1, 2, 3 and
-6. The added target spans the ordinary entry's full temperature domain.
+6. The controlled added target reaches the ordinary entry's final upper bound.
+An identity-linked audit of eligible paired translations supports native A
+bounds from 298.15 K to the last counted ordinary upper bound. Many ordinary
+bases start earlier. Zero-range A entries share the observed 298.15-K lower
+bound but have varying upper bounds and remain outside this rule.
 First-line slots 4–5 and second-line slots 1–6 remain without a general
 analytic mapping; magnetic activation did not change their isolated responses.
 The Legacy-to-Modern plan may provisionally zero those unresolved leading
 positions, preserve the raw source, and flag suppressed nonzero values. This is an
-explicit approximation; exact Legacy A construction and native bounds remain
-blocked.
+explicit approximation; exact Legacy A construction and zero-range A upper bounds
+remain blocked.
 
 The solution provider now exposes a bounded provisional scientific A target:
 with caller-established bounds containing 298.15 K, it derives H/S anchors and
 `Cp(T) = -c_TlnT - 2 c_T2 T` from the four retained Gibbs terms and carries a
-suppressed-slot loss flag. It checks finite thermodynamics at both bounds.
+suppressed-slot loss flag. It checks finite thermodynamics at both bounds. A
+counted-range helper applies the observed 298.15-K-to-last-upper-bound profile.
 This target does not allocate native A records or establish the ID-7 phase
 anchors, CP-kind rule for combined terms, or physical tails. The native
 LegacyTranslation writer remains blocked on those policies and application
