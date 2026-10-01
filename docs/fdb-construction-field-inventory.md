@@ -110,10 +110,11 @@ need a source-to-target reduction before their Cp content is known.
 Zero base/A objects can be emitted or omitted. Emitted objects have Modern SLN
 references and omitted objects do not, but that output relationship does not
 establish a source-side emission policy. The full local translation's emitted
-ID-5 A anchors show direct H and opposite-sign S for nonzero S, whereas the
-earlier small paired examples mostly showed direct S. A universal A sign rule
-is therefore unsupported. Native materialization remains blocked even for a
-bounded fresh profile.
+ID-5 A anchors show direct H and opposite-sign nonzero S; the earlier small
+paired examples agree because their only nonzero S also reverses. Zero S was
+not sign evidence. This is a bounded constant-A rule, while nonzero-Cp A and
+the remaining leading fields are unresolved. Fresh-modern native materialization
+is implemented for its separate bounded profile.
 
 ## Direct-modern audit and profile boundary
 
@@ -231,7 +232,7 @@ cannot enter this pure profile by silently selecting zero.
 | shared header | UNRESOLVED_BLOCKER | See shared-entry table. |
 | `phase_id_raw` | PROVIDER_GENERATED | `CODE`: exact link to owning ID-7, conditional on resolving the native ID allocation rule. |
 | `temperature_min`, `temperature_max` | CALLER_PROVIDED | `CODE`: finite, positive, ordered, contiguous kelvin bounds. `LOCAL_PAIR`: identity-linked base objects preserve counted source-range cardinality and upper bounds in encounter order across represented models. First lower-bound and added-range rules remain unresolved. |
-| `enthalpy`, `entropy` | CALLER_PROVIDED | `CODE`: range-specific H/S constants at 298.15 K in group energy units. `PAIR`: direct conversion holds for a tested small-fixture subset, but full local base ranges include transformed H/S anchors. The full local ID-5 A translation has opposite-sign nonzero S, unlike earlier small examples. Source-to-plan conversion is model/function dependent. |
+| `enthalpy`, `entropy` | CALLER_PROVIDED | `CODE`: range-specific H/S constants at 298.15 K in group energy units. `PAIR`: direct conversion holds for a tested small-fixture subset, but larger translated base ranges include transformed H/S anchors. Matched constant ID-5 A objects instead use source leading H with `×4.184` and negated source S with `×4.184`; zero source S in most small pairs was not sign evidence. Nonzero-Cp A reduction and general source-to-plan conversion remain unresolved. |
 | `coefficients[8]`, `powers[8]` | CALLER_PROVIDED | Preserve supplied term order and values. Unused native coefficient slots are zero and unused power slots are zero; zero-valued supplied coefficients may still retain a nonzero supplied power. |
 | `unknown_1[4]`, `padding_remaining[56]` | UNRESOLVED_BLOCKER | `V0`/`V1`: zero in observed fresh ID-2 and translated ID-2/ID-5 records; versioned writer acceptance remains open. |
 
@@ -241,9 +242,10 @@ ID-7 with no CP and no A companion; it does not establish the translation
 omission policy. `ExplicitZeroOrdinary` and `ExplicitZero` have no fabricated
 Cp interval: local translations emit some zero objects and omit others, so
 translated zero-block encoding or a versioned omission policy is unresolved. A
-nonzero A may carry explicit ordered H/S/Cp interval intent, but its Legacy
-leading-pair → CP bounds, powers, phase anchors, and exceptional entropy-sign
-behavior are not yet a general rule.
+nonzero A may carry explicit ordered H/S/Cp interval intent. Matched constant
+ID-5 A anchors follow the bounded H/direct and S/negated rule; Legacy
+leading-pair → CP bounds, nonzero-Cp A powers/anchors, and other tail fields
+remain unresolved.
 
 The fresh empty function needs a structural verification path: the ordinary
 thermodynamic view deliberately rejects a phase with no CP ranges. This is
@@ -290,7 +292,7 @@ blockers. Current blocker authority is
 | Explicit zero base/A physical form | EVIDENCE_REQUIRED | Fresh empty function has ID-7 without CP and no A; translated zero blocks may be emitted or omitted. Keep profile policies separate. | Yes for translation policy | Fresh empty form observed; translation blocked |
 | Fresh empty-function verification | IMPLEMENTED_FRESH_MODERN | The writer emits ID-7-only and verifies strict reparse/domain structure, skipping Cp-backed evaluation. | No | Yes |
 | General Legacy ordinary H/S/Cp source mapping | SCIENTIFIC_SEMANTICS_REQUIRED | Full local base ranges preserve cardinality and upper bounds but show direct and transformed H/S/Cp values by model/function; the plan accepts explicit target values. | Yes if conversion adapter is built | C3 builder yes; full conversion no |
-| Legacy A leading pair → CP and entropy sign | SCIENTIFIC_SEMANTICS_REQUIRED | In this full translation, emitted ID-5 A H is direct and nonzero S has opposite sign; earlier small paired examples mostly had direct S. ID-2 A source mapping also differs. Determine the governing source/version condition. | Yes if adapter is built | C3 builder yes; full conversion no |
+| Legacy A leading pair → CP and entropy sign | PARTIALLY_RESOLVED | Matched constant ID-5 A objects use source leading H with `×4.184`, negated source S with `×4.184`, and zero Cp. The only nonzero small-pair S agrees with the larger translation; zero S did not test sign. ID-2 nonzero-Cp A, target bounds and leading tails remain unresolved. | Yes if full adapter is built | C3 builder yes; bounded A anchor rule only |
 | Exact conversion of arbitrary source `f64` composition to rational identity | POLICY_REQUIRED | No tolerance is selected. An adapter must preserve source exact fractions or declare a conversion policy. | Domain input may be needed | C3 with exact-rational input yes |
 | NativeFactSage omission choice for zero objects | POLICY_REQUIRED | Only after version behavior is observed; do not silently omit in rigorous plan. | Domain/version policy later | No for zero-object native output |
 | Provider raw constructor and serialize/reparse/domain/thermo pipeline | IMPLEMENTED_FRESH_MODERN | Bounded writer constructs, serializes, strict-reparses, indexes and checks Cp/H/S/G at three temperatures per range. | No | Yes for FreshModern |
@@ -438,9 +440,9 @@ counted range's first field is the legacy `H / 1000` representation and maps
 to FDB enthalpy with `×4184` J/mol. The added leading pair's first field maps
 to the emitted `xxxxA` ID-7 and ID-5 enthalpy anchors with `×4.184` J/mol.
 That factor-of-1000 difference independently proves distinct field semantics
-for at least the first position. The second leading value maps directly with
-`×4.184` in 13/14 emitted A blocks, with one known opposite-sign exception,
-so it remains S-like evidence rather than a universal entropy rule.
+for at least the first position. The second leading value is zero in 13/14
+tracked emitted A blocks. The only nonzero tracked case and matched larger
+constant ID-5 A objects agree with `S_target = -4.184 × S_source`.
 
 
 ### Statistical evidence from existing paired Legacy records

@@ -110,8 +110,9 @@ members were not read.
   that behavior proves no fresh default.
 - **Tracked solution contract:** source charge is modeled separately from
   formula text (`i32` in solution models). Earlier paired examples establish
-  base/A naming and one exceptional A entropy sign, but do not establish a
-  universal CP kind or fresh native header initialization.
+  base/A naming; their only nonzero ID-5 A source entropy supports the same
+  negation as the larger translated evidence. They do not establish fresh
+  native header initialization.
 - **Local paired Legacy/Modern corpus:** receipt-admitted source G entries were
   matched by source identity and encounter index to FDB names and SLN external
   references. FILE phase ID, zero-based suffix and A naming held for matched
@@ -271,10 +272,11 @@ relationships support the FDB-specific pseudo-solid Function-ID rule; generic
 CDB aggregate-state bands are not projected onto FDB construction.
 
 The emitted ID-5 A objects in this translation retain the source leading H
-anchor and reverse the sign of nonzero source S. Earlier small paired examples
-mostly retained the S sign. ID-2 A objects do not follow that direct leading
-anchor mapping. No universal A sign condition follows from the combined
-evidence. Emitted objects are referenced by Modern SLN and omitted objects are not.
+anchor and reverse the sign of nonzero source S. The tracked small pairs agree:
+their only nonzero A source S also reverses, while zero S cannot distinguish
+either sign. This supports a bounded constant ID-5 A anchor rule, not a rule
+for ID-2 A objects with nonzero Cp or their unresolved source reduction.
+Emitted objects are referenced by Modern SLN and omitted objects are not.
 Physically zero Legacy base/A Function objects may be omitted in
 `NativeFactSage`; the rigorous semantic graph may retain their identities.
 The remaining uncertainty is the source-to-target scientific reduction for
@@ -313,7 +315,7 @@ native materialization when the target plan has not already been made explicit.
 | References and density | PARTIALLY_RESOLVED | References default to zero. Ordinary density is supported using the low/remainder density portion with no advanced family code; advanced volumetric-family mappings are extensions and active nonzero references remain outside the bounded profile. |
 | Fresh zero-Cp kind and shorter Cp term lists | RESOLVED_POLICY | Fresh ranges use ID-2, including zero Cp. Unused coefficient and power slots are written as zero. |
 | Fresh empty-function verification | IMPLEMENTED | The writer emits ID-7 without CP and verifies strict reparse/domain structure; it skips ordinary Cp-backed evaluation for this case. |
-| Legacy A conversion and zero-object omission | PARTIALLY_RESOLVED | **Zero-object omission policy resolved:** physically zero base/A Function objects may be omitted in `NativeFactSage`, while rigorous semantic identities remain internal. Remaining Legacy A source-to-target reduction/sign semantics are separate. Do not assume the uncounted two-line A-leading block has the same field semantics as the counted ordinary xxxx ranges merely because the layouts are similar. Their meanings and reduction rules must be established independently from parser/conversion evidence. |
+| Legacy A conversion and zero-object omission | PARTIALLY_RESOLVED | Physically zero base/A Function objects may be omitted in `NativeFactSage`, while rigorous semantic identities remain internal. Matched constant ID-5 A objects have direct leading H, negated leading S and zero Cp after unit conversion. Nonzero-Cp A, bounds and leading tails remain separate scientific work. The uncounted two-line A-leading block must not inherit ordinary counted-range semantics. |
 | Provider materializer and verification pipeline | IMPLEMENTED_FRESH_MODERN | `materialize_fresh` uses controlled templates, serializes, strict-reparses, indexes and checks Cp/H/S/G over each admitted range. LegacyTranslation emission remains separate. |
 | Provider-built file acceptance | PASSED_ONE_CONTROLLED_PROBE | The corrected provider-built FDB opened, saved, and reopened in FactSage 7.3; the local FDB and SLN files were byte-identical before and after Save. Broader topology, charge, hydrogen-only, and external reference checks remain. |
 
@@ -369,6 +371,9 @@ counted range's first field is the legacy `H / 1000` representation and maps
 to FDB enthalpy with `×4184` J/mol. The added leading pair's first field maps
 to the emitted `xxxxA` ID-7 and ID-5 enthalpy anchors with `×4.184` J/mol.
 That factor-of-1000 difference independently proves distinct field semantics
-for at least the first position. The second leading value maps directly with
-`×4.184` in 13/14 emitted A blocks, with one known opposite-sign exception,
-so it remains S-like evidence rather than a universal entropy rule.
+for at least the first position. The second leading value is zero in 13/14
+tracked emitted A blocks, so those matches do not distinguish direct copying
+from sign reversal. The sole nonzero tracked case and the admitted larger
+translation instead agree with `S_target = -4.184 × S_source` for matched
+zero-Cp ID-5 A objects. Their interval bounds, leading-tail fields and
+nonzero-Cp A counterparts still need a separate reduction rule.
