@@ -284,11 +284,13 @@ nonzero Legacy objects, not the zero-object serialization policy.
 
 For identity-linked base functions, counted source-range cardinality and
 upper-temperature bounds transfer in encounter order across represented
-models. Direct H/S/Cp numeric conversion holds for a subset, while other
-base ranges have transformed anchors or terms. The earlier small-fixture
-conversion table therefore remains a bounded observation, not a universal
-Legacy-to-FDB transform. The native builder can accept explicit target H/S/Cp
-without solving the later source-to-plan adapter.
+models. Direct native H/S/Cp slot copying holds for a subset; other matched
+base ranges have transformed H/S anchors or rearranged Cp slots. Their
+like-power aggregate Cp bases agree in the bounded checked subset, so a slot
+difference alone does not prove a different Cp function. The earlier
+small-fixture conversion table remains a bounded observation, not a universal
+Legacy-to-FDB record transform. The native builder can accept explicit target
+H/S/Cp without solving the later source-to-plan adapter.
 
 ## CP-kind decision and fresh-write policy
 
