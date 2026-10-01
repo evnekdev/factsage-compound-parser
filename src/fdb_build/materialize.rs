@@ -386,7 +386,7 @@ fn verify_thermodynamics(
         ));
     }
     for (group, compound) in plan.groups().iter().zip(view.compounds()) {
-        let (element_ids, coefficients) = parse_composition(group)?;
+        let (element_ids, coefficients) = parse_composition(group, legacy_zero_cp)?;
         let charge = group.charge.fdb_raw_byte().expect("validated charge") as i8;
         let header = &compound.raw().header;
         if compound
@@ -533,7 +533,7 @@ fn write_group(
     options: &FdbFreshMaterialization,
     legacy_zero_cp: bool,
 ) -> Result<(), FdbMaterializeError> {
-    let (element_ids, coefficients) = parse_composition(group)?;
+    let (element_ids, coefficients) = parse_composition(group, legacy_zero_cp)?;
     let charge = group.charge.fdb_raw_byte().expect("validated charge") as i8;
     let mut entry = templates.group_start_entry as usize;
     let total_records = 1
@@ -681,6 +681,7 @@ fn write_group(
 
 fn parse_composition(
     group: &FdbFormulaGroupPlan,
+    allow_zero_label_slots: bool,
 ) -> Result<([u8; 7], [u8; 7]), FdbMaterializeError> {
     let parsed =
         Formula::from_str(&group.formula).map_err(|reason| FdbMaterializeError::Formula {
@@ -688,7 +689,14 @@ fn parse_composition(
             reason,
         })?;
     if parsed.charge != f64::from(group.charge.value())
-        || parsed.pairs.len() != group.elements.len()
+        || parsed.pairs.len() > 7
+        || parsed
+            .pairs
+            .iter()
+            .filter(|(_, amount)| *amount != 0.0)
+            .count()
+            != group.elements.len()
+        || (!allow_zero_label_slots && parsed.pairs.iter().any(|(_, amount)| *amount == 0.0))
     {
         return Err(FdbMaterializeError::Formula {
             label: group.formula.clone(),
@@ -712,15 +720,20 @@ fn parse_composition(
         );
     for (slot, (element, amount)) in ordered.enumerate() {
         let symbol = format!("{element:?}");
-        let declared = group
-            .elements
-            .iter()
-            .find(|item| item.symbol == symbol)
-            .ok_or_else(|| FdbMaterializeError::Formula {
-                label: group.formula.clone(),
-                reason: "parsed element differs from declared composition".into(),
-            })?;
+        let declared = group.elements.iter().find(|item| item.symbol == symbol);
         let id = element.index();
+        if *amount == 0.0
+            && allow_zero_label_slots
+            && declared.is_none()
+            && (1..=u8::MAX as usize).contains(&id)
+        {
+            ids[slot] = id as u8;
+            continue;
+        }
+        let declared = declared.ok_or_else(|| FdbMaterializeError::Formula {
+            label: group.formula.clone(),
+            reason: "parsed element differs from declared composition".into(),
+        })?;
         if id == 0
             || id > u8::MAX as usize
             || !amount.is_finite()

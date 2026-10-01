@@ -66,6 +66,13 @@ dedicated translated constructor still rejects an exact duplicate composition
 and charge. A synthetic two-group file strictly reparses and indexes. Direct
 FreshModern construction retains ratio-based uniqueness.
 
+The same paired translated evidence contains formula labels with a zero
+coefficient element absent from their nonzero semantic composition. Its native
+ID-1 header retains the element ID in a zero-coefficient slot. The translated
+materializer now retains such label-only zero slots and verifies them after
+strict reparse. FreshModern continues to reject this spelling outside its
+controlled profile.
+
 ## ID-9 database header
 
 Do **not** reverse-engineer opaque ID-9 fields for this profile.

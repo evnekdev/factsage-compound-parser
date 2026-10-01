@@ -389,6 +389,45 @@ fn translated_distinct_formula_units_with_same_ratio_reparse_as_two_groups() {
 }
 
 #[test]
+fn translated_zero_coefficient_formula_label_slot_is_retained_in_native_header() {
+    let source = translated_pair(vec![], FdbAddedContribution::ExplicitZero);
+    let mut groups = source.groups().to_vec();
+    groups[0].formula = "NiS0".into();
+    groups[0].elements.retain(|element| element.symbol == "Ni");
+    let plan =
+        FdbBuildPlan::new_legacy_translation_distinct_units(source.metadata().clone(), groups)
+            .unwrap();
+    let raw = plan
+        .materialize_legacy_zero_added(
+            &native_templates_with_id5(),
+            &FdbFreshMaterialization::new(45_001.0),
+        )
+        .unwrap();
+    let reopened = RawDatabase::from_bytes(&raw.to_bytes().unwrap()).unwrap();
+    let index = DomainIndex::build(&reopened).unwrap();
+    assert!(index.diagnostics().is_empty());
+    let RawChunk::Compound(group) = &reopened.chunks()[1] else {
+        panic!("expected native formula group");
+    };
+    assert!(
+        group
+            .header
+            .element_ids
+            .iter()
+            .filter(|id| **id != 0)
+            .count()
+            == 2
+    );
+    assert_eq!(
+        group.header.element_coefficients[..2]
+            .iter()
+            .filter(|value| **value == 0)
+            .count(),
+        1
+    );
+}
+
+#[test]
 fn bounded_translated_writer_refuses_active_a() {
     let active = translated_pair(
         vec![FdbCpTerm {
