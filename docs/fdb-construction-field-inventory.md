@@ -459,6 +459,12 @@ positions, preserve the raw source, and flag suppressed nonzero values. This is 
 explicit approximation; exact Legacy A construction and native bounds remain
 blocked.
 
+The provider-neutral provisional A reducer supplies one explicit scientific
+interval with H/S at 298.15 K and constant/linear Cp coefficients. Its caller
+must provide independently established bounds; it propagates any suppressed
+source-slot loss. No native CP kind, ID-7 phase anchor, or physical-tail field
+is inferred by that reducer.
+
 
 **Paired unit-scaling evidence:** the leading pair is not merely an ordinary
 range with an omitted count. In the tracked paired fixtures, an ordinary

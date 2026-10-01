@@ -392,6 +392,15 @@ positions, preserve the raw source, and flag suppressed nonzero values. This is 
 explicit approximation; exact Legacy A construction and native bounds remain
 blocked.
 
+The solution provider now exposes a bounded provisional scientific A target:
+with caller-established bounds containing 298.15 K, it derives H/S anchors and
+`Cp(T) = -c_TlnT - 2 c_T2 T` from the four retained Gibbs terms and carries a
+suppressed-slot loss flag. It checks finite thermodynamics at both bounds.
+This target does not allocate native A records or establish the ID-7 phase
+anchors, CP-kind rule for combined terms, or physical tails. The native
+LegacyTranslation writer remains blocked on those policies and application
+acceptance.
+
 
 **Paired unit-scaling evidence:** the leading pair is not merely an ordinary
 range with an omitted count. In the tracked paired fixtures, an ordinary
