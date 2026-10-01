@@ -94,7 +94,7 @@ impl FdbNativeTemplates {
             ));
         };
         let [
-            RawChunk::DatabaseHeader(_),
+            RawChunk::DatabaseHeader(exemplar_database),
             RawChunk::Compound(compound),
             RawChunk::PhaseOrdinary(phase),
             RawChunk::HeatCapacity {
@@ -107,6 +107,11 @@ impl FdbNativeTemplates {
                 "range exemplar must contain ID-9, ID-1, ID-7, ID-2",
             ));
         };
+        if exemplar_database != database || database.comment.iter().any(|byte| *byte != 0) {
+            return Err(FdbMaterializeError::Template(
+                "bounded fresh templates must share an unchanged, empty-comment ID-9 header",
+            ));
+        }
         let start = compound.header.entry_number;
         if start > u8::MAX - 2
             || phase.header.entry_number != start + 1
@@ -141,6 +146,11 @@ impl FdbNativeTemplates {
     pub const fn group_start_entry(&self) -> u8 {
         self.group_start_entry
     }
+
+    /// Returns the creation date carried by the controlled empty FDB header.
+    pub const fn database_date_ole(&self) -> f64 {
+        self.database.date_ole
+    }
 }
 
 impl FdbBuildPlan {
@@ -160,6 +170,14 @@ impl FdbBuildPlan {
         }
         OleAutomationDate::from_raw(options.timestamp_ole)
             .map_err(|error| FdbMaterializeError::Verification(error.to_string()))?;
+        if !self.metadata().comment.is_empty()
+            || self.metadata().date_ole.to_bits() != templates.database.date_ole.to_bits()
+        {
+            return Err(FdbMaterializeError::Unsupported {
+                object: "database header".into(),
+                reason: "bounded fresh FDB construction preserves the controlled ID-9 date and empty comment",
+            });
+        }
         for ((formula, function), density) in &options.ordinary_density {
             if !density.is_finite() || *density <= 0.0 || *density >= 1_000_000.0 {
                 return Err(FdbMaterializeError::Unsupported {
@@ -180,10 +198,7 @@ impl FdbBuildPlan {
                 });
             }
         }
-        let mut database = templates.database.clone();
-        database.date_ole = self.metadata().date_ole;
-        write_ascii(&mut database.comment, &self.metadata().comment, 0);
-        let mut chunks = vec![RawChunk::DatabaseHeader(database)];
+        let mut chunks = vec![RawChunk::DatabaseHeader(templates.database.clone())];
         for group in self.groups() {
             write_group(&mut chunks, group, templates, options)?;
         }
@@ -435,7 +450,20 @@ fn parse_composition(
     }
     let mut ids = [0; 7];
     let mut coefficients = [0; 7];
-    for (slot, (element, amount)) in parsed.pairs.iter().enumerate() {
+    // In controlled FactSage 7.3 probes, hydrogen-first FDB Function groups
+    // opened without a visible function. Hydrogen-last groups were visible;
+    // the admitted native FDB hydrogen groups also put hydrogen last.
+    let ordered = parsed
+        .pairs
+        .iter()
+        .filter(|(element, _)| element.index() != 1)
+        .chain(
+            parsed
+                .pairs
+                .iter()
+                .filter(|(element, _)| element.index() == 1),
+        );
+    for (slot, (element, amount)) in ordered.enumerate() {
         let symbol = format!("{element:?}");
         let declared = group
             .elements

@@ -43,8 +43,8 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let timestamp = 25_569.0 + now.as_secs_f64() / 86_400.0;
     let plan = FdbBuildPlan::new_fresh_modern(
         FdbDatabaseMetadata {
-            comment: "Synthetic writer acceptance probe".into(),
-            date_ole: timestamp,
+            comment: String::new(),
+            date_ole: templates.database_date_ole(),
         },
         vec![FdbFormulaGroupPlan {
             formula: "H2O".into(),

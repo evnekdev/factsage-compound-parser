@@ -165,7 +165,13 @@ identify the object and field. Semantic validity and `native_blockers()` are
 separate. The plan preserves explicit zero A objects and rejects active
 auxiliary physics in the Legacy translation profile. The fresh-modern profile
 uses caller-supplied names without Legacy source fields or an automatic A.
-FDB-C3 materialization is not implemented. The bounded FreshModern native rules are now resolved; the inventory retains historical evidence notes but current gates are the provider materializer, internal serialize/reparse/domain/thermo verification, and independent FactSage acceptance.
+FDB-C3 has a bounded FreshModern materializer that serializes, strict-reparses,
+indexes, and checks thermodynamic values. The first FactSage 7.3 probe exposed
+invalid ID-9 date/comment mutations, so the writer now preserves the complete
+controlled empty-FDB header. Hydrogen-first Function groups were invisible in
+the controlled viewer, so the writer now places hydrogen last. A revised
+provider-built one-function FDB opened, saved, and reopened in FactSage 7.3;
+broader native coverage remains.
 
 FDB-C2 hardening replaced the floating ratio-bit key with exact rational
 element ratios plus explicit semantic charge. Formula text remains a separate
@@ -182,9 +188,10 @@ bounded FreshModern mapping for charge, composition, template-derived opaque
 bytes, timestamps, Function IDs, entry numbers, references, fresh ID-2
 zero/nonzero Cp, and unused-slot filling. The
 [`FDB-C3 readiness review`](fdb-c3-readiness.md) therefore permits
-implementation. Native materialization remains unfinished engineering, not an
-evidence-policy blocker; independent FactSage acceptance remains the external
-verification gate.
+implementation. Native FreshModern materialization is implemented for the
+bounded profile; LegacyTranslation emission remains separate. Independent
+One revised writer output passed FactSage 7.3 open/save/reopen verification.
+Broader output shapes and SLN references remain verification work.
 
 ### FDB-C1 — construction inventory
 

@@ -224,7 +224,17 @@ fn ordinary_formula_matches(compound: &factsage_compound_parser::RawCompoundChun
     }
     let mut ids = [0; 7];
     let mut coefficients = [0; 7];
-    for (index, (element, amount)) in formula.pairs.iter().enumerate() {
+    let ordered = formula
+        .pairs
+        .iter()
+        .filter(|(element, _)| element.index() != 1)
+        .chain(
+            formula
+                .pairs
+                .iter()
+                .filter(|(element, _)| element.index() == 1),
+        );
+    for (index, (element, amount)) in ordered.enumerate() {
         let id = element.index();
         if id == 0
             || id > u8::MAX as usize
@@ -260,13 +270,13 @@ mod tests {
         header[2..6].copy_from_slice(b"CMPD");
         let mut compound = [0_u8; 256];
         compound[0] = 1;
-        compound[1..3].copy_from_slice(&[1, 8]);
-        compound[9..11].copy_from_slice(&[2, 1]);
+        compound[1..3].copy_from_slice(&[8, 1]);
+        compound[9..11].copy_from_slice(&[1, 2]);
         compound[16] = 50;
         compound[112..152].fill(b' ');
         compound[112..115].copy_from_slice(b"H2O");
-        compound[176..184].copy_from_slice(&2.0_f64.to_le_bytes());
-        compound[184..192].copy_from_slice(&1.0_f64.to_le_bytes());
+        compound[176..184].copy_from_slice(&1.0_f64.to_le_bytes());
+        compound[184..192].copy_from_slice(&2.0_f64.to_le_bytes());
         let raw = RawDatabase::from_bytes(&[header, compound].concat()).unwrap();
         let RawChunk::Compound(correct) = &raw.chunks()[1] else {
             panic!()
@@ -277,6 +287,8 @@ mod tests {
         ));
         let mut reversed = correct.clone();
         reversed.header.element_ids.swap(0, 1);
+        reversed.header.element_coefficients.swap(0, 1);
+        reversed.real_stoichiometric_coefficients.swap(0, 1);
         assert!(matches!(
             ordinary_formula_matches(&reversed),
             FormulaCheck::Contradiction

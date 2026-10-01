@@ -20,9 +20,11 @@ pub use materialize::{FdbFreshMaterialization, FdbMaterializeError, FdbNativeTem
 /// Metadata actually represented by the FDB-compatible database header.
 #[derive(Debug, Clone, PartialEq)]
 pub struct FdbDatabaseMetadata {
-    /// Caller-selected header comment, limited to the native 80-byte ASCII field.
+    /// Caller-selected header comment. The bounded FreshModern writer accepts
+    /// only empty, matching the controlled empty-FDB template.
     pub comment: String,
-    /// Caller-supplied OLE Automation date; no current-clock default is inferred.
+    /// Caller-supplied OLE Automation date. The bounded FreshModern writer
+    /// requires exact agreement with the controlled empty-FDB template.
     pub date_ole: f64,
 }
 
@@ -86,7 +88,7 @@ impl FdbChargeState {
 /// One element and its exact, nonzero amount in a formula group.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FdbElementAmount {
-    /// Canonically cased one- or two-letter element symbol; native ID mapping is pending.
+    /// Canonically cased one- or two-letter element symbol.
     pub symbol: String,
     /// Positive exact stoichiometric amount.
     pub amount: FdbStoichiometricAmount,

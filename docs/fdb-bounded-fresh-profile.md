@@ -1,7 +1,7 @@
 # Bounded fresh-modern FDB construction profile
 
-**Status:** normative policy implemented by `FdbBuildPlan::materialize_fresh`;
-independent FactSage acceptance is pending.
+**Status:** bounded writer implemented; a revised provider-built one-function
+FDB opened, saved, and reopened in FactSage 7.3 with byte-identical local files.
 
 This profile deliberately avoids solving every historical CDB/FDB behavior before
 constructing a useful modern FDB. It captures the domain decisions and bounded
@@ -42,7 +42,8 @@ The first writer may intentionally admit only:
 - no advanced real-stoichiometry override;
 - semantic charge `-50..=50`;
 - caller-provided function name;
-- caller-provided database comment and OLE Automation date.
+- an unchanged ID-9 date and empty comment from one controlled empty FDB;
+  caller-supplied record timestamps remain separate.
 
 Features outside this profile remain explicit capability exclusions, not blockers
 for this profile.
@@ -52,12 +53,22 @@ for this profile.
 Do **not** reverse-engineer opaque ID-9 fields for this profile.
 
 Use the ID-9 record from the controlled empty fresh FDB as the versioned native
-template. Preserve all unknown/reserved/padding/read-flag bytes byte-for-byte.
+template. The one-range exemplar must carry the identical ID-9 record. Preserve
+the complete record byte-for-byte, including its date and empty comment.
+`materialize_fresh` rejects a plan that asks to change either field. In a
+controlled FactSage 7.3 test, changing only the native ID-9 date or only its
+comment caused rejection; changing only entry timestamps did not. The admitted
+fresh snapshots likewise retained one ID-9 date and empty comments. A broader
+database-creation or paired-SLN date/comment policy remains outside this
+bounded profile.
 
-Only fields whose meaning is established may be regenerated:
-
-- `date_ole`: OLE Automation date (`f64` day count);
-- `comment`: native 80-byte database comment.
+With the complete native header and composition retained, FactSage 7.3 opened
+a probe carrying generated thermodynamic fields and function name. A probe
+with a generated composition and the same native header opened but displayed
+no function while hydrogen occupied the first element slot. Moving hydrogen
+last made the Function visible; the corrected Rust writer then generated an
+FDB that FactSage opened, saved, and reopened. The local FDB and SLN files
+remained byte-identical after Save. Broader output shapes remain unverified.
 
 No dedicated database-name field is currently established in ID-9. Do not invent
 one. Database/file naming remains outside the opaque header unless later evidence
@@ -81,17 +92,23 @@ already provides:
 For the bounded profile:
 
 1. parse the formula with `chemformula`;
-2. preserve element first-appearance / parser encounter order as the native slot
-   order;
+2. preserve parser encounter order among non-hydrogen elements, then place
+   hydrogen in the last occupied native slot when present; retain the exact
+   caller formula label. Controlled FactSage 7.3 probes showed that a
+   hydrogen-first group opened without a visible Function, while the same
+   label and composition with hydrogen last displayed its Function. All
+   hydrogen-containing groups in the admitted native FDB corpus also put
+   hydrogen last. A hydrogen-only group remains an unverified edge case;
 3. encode each real element ID as its periodic-table atomic number in one `u8`;
 4. align integer and real coefficient slots with those element slots;
 5. verify this rule against the existing local fresh and translated FDB corpus as
    an implementation regression check.
 
-**Domain policy confirmed by the user:** equivalent formulas are not reordered or
-canonicalized for native element-slot construction. The native slot order follows
-the order in which elements first appear in the parsed formula. Corpus checking is
-verification of the implementation, not a remaining user-input blocker.
+The earlier first-appearance policy remains in force among non-hydrogen
+elements. Controlled FactSage behavior contradicted it for hydrogen-first FDB
+groups, so the bounded writer moves hydrogen to the last slot without changing
+the formula label or semantic composition. This revision is specific to FDB
+Function construction; it does not establish a CDB-wide ordering rule.
 
 Vacancies and phase electrons are outside this first ordinary-composition profile
 unless the native FDB encoding is already independently established.
@@ -147,8 +164,10 @@ changed group, copy the same timestamp consistently through its ID-1, ID-7 and
 CP records, matching the observed fresh-modern pattern.
 
 Do not require the ID-9 database date to equal every per-group timestamp; the
-fresh evidence shows they can differ. Exact FactSage clock/rounding behavior is
-not a human-in-the-loop blocker for the bounded profile.
+fresh evidence shows they differ. Keep the controlled ID-9 date unchanged while
+assigning a timestamp to newly written entry groups. Exact FactSage
+clock/rounding behavior is not a human-in-the-loop blocker for the bounded
+profile.
 
 ## Function/group names
 
@@ -230,9 +249,10 @@ The provider may now implement:
 `FdbBuildPlan -> bounded-profile validation -> RawDatabase -> serialize ->
 strict reparse -> DomainIndex -> thermodynamic verification`.
 
-After internal verification, the generated tiny FDB must be opened by the
-corresponding FactSage version and survive load/open/save without changing the
-intended function values or references.
+After internal verification, a generated tiny FDB was opened in FactSage 7.3
+and survived load/open/save with byte-identical local FDB and SLN files. Repeat
+this check for broader shapes and SLN references before claiming complete
+native coverage.
 
 Independent FactSage acceptance is a **verification gate**, not a request for
 new domain knowledge. It should be automated from the local development
@@ -253,8 +273,9 @@ by the policies above:
 - zero-reference/inactive-density policy;
 - nonzero-Cp ID-2 selection.
 
-`native_blockers()` now reports independent FactSage acceptance for FreshModern;
-it does not reopen the resolved native field policies.
+`native_blockers()` reports remaining native coverage for broader FreshModern
+shapes after the successful one-function open/save probe; it does not reopen
+the resolved native field policies.
 
 
 ## Advanced volumetric coefficients

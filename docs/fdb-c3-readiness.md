@@ -1,6 +1,6 @@
 # FDB-C3 readiness after joint fresh-modern and translation audit
 
-**Decision: BOUNDED IMPLEMENTED; FACTSAGE ACCEPTANCE PENDING.** FDB-C1 and FDB-C2
+**Decision: BOUNDED-GO for FreshModern construction and one-function native acceptance.** FDB-C1 and FDB-C2
 remain GO. The fresh-modern native writer uses the bounded
 construction policy in
 [`fdb-bounded-fresh-profile.md`](fdb-bounded-fresh-profile.md). No remaining
@@ -9,14 +9,28 @@ scientific/domain-policy question requires human input for that profile.
 controlled templates, serializes and strict-reparses, builds a `DomainIndex`,
 and checks Cp/H/S/G at the endpoints and midpoint of each range. A synthetic
 probe generated from receipt-admitted local templates passed these internal
-checks. FactSage 7.3 eventually started, but its Solution child window was not
-exposed as a targetable window to the available UI controller; native open/save
-acceptance remains unverified.
+checks. FactSage 7.3 rejected the first generated FDB when opened with a native
+empty-SLN companion. A native one-function control opened and displayed its
+function with the same companion. Controlled local mutations then showed that
+replacing only the native control's ID-9 date with the generated date makes
+FactSage reject the file, while replacing only its entry timestamps leaves
+the function visible. Replacing only composition/group fields makes the file
+open without showing a function. A further control that retained the complete
+native ID-9 header and composition but replaced thermo and function name with
+generated values opened and showed the function. A generated-composition probe
+with the native header opened without showing its function when hydrogen occupied
+the first element slot. Moving hydrogen to the last slot made that same
+synthetic composition and formula label visible in FactSage. The revised Rust
+writer then produced the same synthetic group. FactSage opened it, showed the
+Function, saved it and reopened it successfully. The FDB and SLN remained
+byte-identical to local pre-save copies. This establishes one controlled
+open/save acceptance, while additional shapes retain a verification blocker.
 
 The bounded profile resolves the previously open fresh-writer choices by policy:
 copy opaque ID-9/default bytes from the controlled empty-FDB profile, use OLE
 Automation dates, parse formulas with `chemformula`, encode periodic-table
-atomic numbers as one-byte element IDs, use formula encounter order subject to
+atomic numbers as one-byte element IDs, use formula encounter order among
+non-hydrogen elements and place hydrogen last in native slots, subject to
 automatic corpus confirmation, use integral formula coefficients with matching
 `f64` real coefficients, and retain the established bounded charge offset.
 Advanced real-stoichiometry, active nonzero references, advanced volumetric
@@ -25,15 +39,17 @@ profile rather than blocking it. Fresh zero-Cp is admitted as ID-2. Semantic
 aggregate state does not select FDB Function ID bands: FDB Functions use the
 group-local pseudo-solid 101+ series.
 
-FDB-C3 is not yet a completed GO because independent FactSage acceptance has
-not been executed. That is a verification gate, not a scientific blocker.
+FDB-C3 is BOUNDED-GO for the implemented FreshModern profile: the first native
+failure was isolated, corrected, and followed by a successful provider-built
+open/save/reopen probe. This does not establish native acceptance for every
+combination of groups, charges, ranges, or hydrogen-only composition.
 
 The field-level status checklist is
 [`fdb-construction-field-inventory.md`](fdb-construction-field-inventory.md).
 `FdbBuildPlan::native_blockers()` emits field-specific records with a
 provider-neutral class, exact object, known fact, missing rule, and smallest
 evidence artifact. The FreshModern plan now reports a verification blocker for
-independent FactSage acceptance; LegacyTranslation still reports an engineering
+broader native-shape acceptance; LegacyTranslation still reports an engineering
 blocker for explicit A and zero-object native emission. Caller
 H/S/Cp values, evidenced chunk IDs, native units and inactive physical tails
 are not misclassified as new evidence needs.
@@ -46,7 +62,7 @@ For the bounded fresh-modern profile:
 Additional user input required now: NO
 Additional domain-policy decisions required now: NO
 Additional controlled user-created evidence required now: NO
-Remaining work: FactSage acceptance
+Remaining work: broaden native acceptance coverage and implement LegacyTranslation emission
 ```
 
 The reusable `fdb_native_rule_audit` executable tested every FDB fixture
@@ -139,9 +155,9 @@ not recorded in the receipt.
 
 | Object | Fresh-modern observation | Remaining rule |
 | --- | --- | --- |
-| ID-9 | One header exists even in the empty file. Read flag and padding are stable; unknown regions are opaque. | Bounded writer copies the complete controlled empty-FDB ID-9 template and changes only established fields such as date/comment. No semantic interpretation is required. |
-| Shared headers | Element identifiers, coefficients, charge and per-kind opaque bytes repeat consistently within groups; entry numbers advance in physical record order from a common group start. | Bounded writer uses `chemformula`, first-appearance order, atomic-number IDs, native charge `semantic + 50`, template-derived opaque bytes, and rejects before entry-number rollover. |
-| Names and composition | Fresh ID-1 compound name is empty while the formula label is populated; simple integer cases align integer and real stoichiometry. | Preserve exact validated caller formula spelling, first-appearance element order, integral coefficients and matching `f64` coefficients; fresh `compound_name` defaults empty. |
+| ID-9 | One header exists even in the empty file. Read flag and padding are stable; unknown regions are opaque. Isolated date and comment edits caused FactSage 7.3 rejection. | Bounded writer copies the complete controlled empty-FDB ID-9 template unchanged and requires matching plan metadata. No semantic interpretation of opaque bytes is required. |
+| Shared headers | Element identifiers, coefficients, charge and per-kind opaque bytes repeat consistently within groups; entry numbers advance in physical record order from a common group start. | Bounded writer uses `chemformula`, non-hydrogen encounter order followed by hydrogen, atomic-number IDs, native charge `semantic + 50`, template-derived opaque bytes, and rejects before entry-number rollover. |
+| Names and composition | Fresh ID-1 compound name is empty while the formula label is populated; simple integer cases align integer and real stoichiometry. | Preserve exact validated caller formula spelling; move hydrogen to the last native slot while keeping other elements in encounter order; write integral and matching `f64` coefficients in that slot order; fresh `compound_name` defaults empty. |
 | Phase | Observed fresh Functions occupy the 100-series, negatives are arithmetic negations, and CP links use the exact positive Function ID. Empty fresh Function is ID-7 without CP. | FDB construction uses group-local pseudo-solid IDs `101, 102, 103, ...` in Function encounter order regardless of semantic aggregate state. |
 | Reference and density edit | Phase density is active in ordinary files; reference slots can be zero. | References default to zero. Ordinary density uses the low/remainder density portion with no advanced family code; advanced volumetric families and active references are extensions. |
 | Timestamps | Fresh ID-1, ID-7 and CP timestamps agree within each changed group; ID-9 date is independent. | OLE Automation dates. New/materially changed groups use current save/build time consistently; unchanged groups may preserve timestamps. |
@@ -288,9 +304,9 @@ native materialization when the target plan has not already been made explicit.
 
 | Object or capability | Class | Exact missing rule or action |
 | --- | --- | --- |
-| ID-9 and per-kind uninterpreted bytes | RESOLVED_FOR_BOUNDED_CONSTRUCTION | Copy opaque unknown/reserved/padding/read-flag bytes from the corresponding controlled fresh record templates; mutate only established fields. FactSage acceptance remains a verification gate. |
+| ID-9 and per-kind uninterpreted bytes | RESOLVED_FOR_BOUNDED_CONSTRUCTION | Preserve the complete ID-9 record from one controlled empty template and copy per-kind opaque bytes from matching fresh record templates. Isolated ID-9 date/comment mutations failed in FactSage 7.3. |
 | Shared charge | RESOLVED | FDB encodes semantic charge `-50..=50` as `charge + 50` and copies it through ID-1/ID-7/CP. This is source-profile independent and applies to both FreshModern and LegacyTranslation. |
-| Shared composition | RESOLVED_FOR_BOUNDED_CONSTRUCTION | Parse with `chemformula`; preserve first element appearance; use atomic numbers as one-byte IDs; mirror ordinary integral stoichiometry into integer and `f64` arrays. Advanced real-stoichiometry overrides remain outside scope. |
+| Shared composition | RESOLVED_FOR_BOUNDED_CONSTRUCTION | Parse with `chemformula`; preserve non-hydrogen encounter order and place hydrogen last; use atomic numbers as one-byte IDs; mirror ordinary integral stoichiometry into integer and `f64` arrays. Advanced real-stoichiometry overrides remain outside scope. |
 | Formula and compound names | RESOLVED_FOR_BOUNDED_CONSTRUCTION | Preserve exact validated caller formula spelling; fresh `compound_name` defaults empty. Formula-qualified semantic identity remains separate from local Function naming. |
 | Timestamp assignment | RESOLVED_POLICY | OLE Automation dates. New/materially changed groups use current save/build time consistently across ID-1/ID-7/CP; unchanged groups may preserve timestamps. |
 | Function ID allocation | RESOLVED_POLICY | FDB Functions use group-local pseudo-solid IDs `101, 102, 103, ...` in Function encounter order regardless of semantic aggregate state; negative IDs are arithmetic negations and CP links use exact positive IDs. |
@@ -299,20 +315,22 @@ native materialization when the target plan has not already been made explicit.
 | Fresh empty-function verification | IMPLEMENTED | The writer emits ID-7 without CP and verifies strict reparse/domain structure; it skips ordinary Cp-backed evaluation for this case. |
 | Legacy A conversion and zero-object omission | PARTIALLY_RESOLVED | **Zero-object omission policy resolved:** physically zero base/A Function objects may be omitted in `NativeFactSage`, while rigorous semantic identities remain internal. Remaining Legacy A source-to-target reduction/sign semantics are separate. Do not assume the uncounted two-line A-leading block has the same field semantics as the counted ordinary xxxx ranges merely because the layouts are similar. Their meanings and reduction rules must be established independently from parser/conversion evidence. |
 | Provider materializer and verification pipeline | IMPLEMENTED_FRESH_MODERN | `materialize_fresh` uses controlled templates, serializes, strict-reparses, indexes and checks Cp/H/S/G over each admitted range. LegacyTranslation emission remains separate. |
-| Provider-built file acceptance | EVIDENCE_REQUIRED | Open the constructed FDB in FactSage and verify reference/value stability through load/open/save. Self-reparse is insufficient. |
+| Provider-built file acceptance | PASSED_ONE_CONTROLLED_PROBE | The corrected provider-built FDB opened, saved, and reopened in FactSage 7.3; the local FDB and SLN files were byte-identical before and after Save. Broader topology, charge, hydrogen-only, and external reference checks remain. |
 
-The bounded FreshModern profile now has all required construction rules.
-Remaining FDB-C3 work is controlled FactSage open/load/save acceptance. Legacy
-source-to-target scientific conversion remains a separate upstream problem and
-does not block native serialization of an already explicit target plan.
+The bounded FreshModern writer preserves the complete template ID-9 header and
+has one native open/save/reopen acceptance. Broader native coverage is useful
+hardening. Legacy source-to-target scientific conversion remains a separate
+upstream problem and does not block native serialization of an already explicit
+FreshModern target plan.
 
 ## Next implementation/verification action
 
-Open/load/save the generated synthetic FDB in FactSage and
-confirm intended values and references remain stable.
+Extend native acceptance to multiple Functions and charged groups, then verify
+SLN references to constructed Functions. Keep hydrogen-only composition outside
+the proven native subset until independently checked.
 
-No additional composition, timestamp, charge, zero-Cp, Function-ID, opaque-byte,
-or unused-slot evidence experiment is required before this implementation step.
+No additional user/domain decision is required to continue this engineering
+and verification work.
 
 
 ### Historical `dbsolution` evidence for Legacy added-leading records

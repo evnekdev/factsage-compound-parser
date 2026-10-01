@@ -9,8 +9,11 @@ audit on `factsage-solution-parser` branch
 `architecture/legacy-modern-conversion-contract`. Database Compare's
 conversion-blocker contract controls the quality of the remaining questions.
 No private database bytes are included here. The bounded FreshModern materializer
-is implemented in `src/fdb_build/materialize.rs`; FactSage acceptance remains
-pending. The earlier inventory tables below are historical evidence status,
+is implemented in `src/fdb_build/materialize.rs`; after isolated native probes
+led to ID-9 preservation and hydrogen-last slots, a revised provider-built
+one-function FDB opened, saved, and reopened in FactSage 7.3 with unchanged
+local bytes. Broader native coverage remains.
+The earlier inventory tables below are historical evidence status,
 not the current implementation status.
 
 The reusable `examples/fdb_native_rule_audit.rs` checked every receipt-admitted
@@ -156,9 +159,9 @@ formula label or function name.
 | --- | --- | --- |
 | chunk ID | PROVIDER_GENERATED | `CODE`: ID 9 and first-record ordering are fixed. |
 | `magic` | EVIDENCED_DEFAULT | `CODE`: parser requires `CMPD`. |
-| `date_ole` | CALLER_PROVIDED | `CODE`: OLE date field; plan uses the existing representable-date validator. Whether native writer should use a particular clock source is a separate policy. |
+| `date_ole` | TEMPLATE_PRESERVED_FOR_BOUNDED_FRESH | Native fresh edits retain the empty-template date. Changing only this field made a controlled native file fail to open in FactSage 7.3. The bounded writer requires the plan date to match the template exactly. |
 | `read_flag` | UNRESOLVED_BLOCKER | `V0`/`V1`: zero throughout fresh edits and the translation; named-version initialization and provider-written acceptance remain unproved. |
-| `comment` | CALLER_PROVIDED | `CODE`: 80-byte fixed ASCII; empty is explicit and allowed. |
+| `comment` | TEMPLATE_PRESERVED_FOR_BOUNDED_FRESH | All receipt-admitted local FDB headers have an empty comment. Changing only this field made a controlled native file fail to open in FactSage 7.3. The bounded writer requires empty and preserves the template bytes. |
 | `padding_1`, `padding_2`, `padding_3` | UNRESOLVED_BLOCKER | `V0`/`V1`: all are zero across observed fresh and translated FDBs; this is a bounded observed pattern, pending versioned writer acceptance. |
 | `unknown_1`, `unknown_2` | UNRESOLVED_BLOCKER | `V0`: both remain stable through edits and contain nonzero bytes. `unknown_1` agrees with the translated FDB, `unknown_2` differs. Version/source policy is unknown. |
 
@@ -171,7 +174,7 @@ header field). No invented database ID is in the semantic plan.
 | Native field | Class | Evidence and required disposition |
 | --- | --- | --- |
 | `element_ids[7]` | PROVIDER_GENERATED | Parse with `chemformula`, preserve first element appearance, and store atomic number as one-byte ID. Existing corpus is a regression check, not a remaining policy blocker. |
-| `element_coefficients[7]` | PROVIDER_GENERATED | Ordinary integral formula coefficients follow parsed first-appearance element slots. |
+| `element_coefficients[7]` | PROVIDER_GENERATED | Ordinary integral formula coefficients follow the selected native element slots; hydrogen moves to the last occupied slot in the bounded FDB writer. |
 | `coefficient_padding` | UNRESOLVED_BLOCKER | `V0`/`V1`: observed stable pattern; versioned fresh assignment and writer acceptance remain unproved. |
 | `charge_raw` | PROVIDER_GENERATED | FDB semantic charge `-50..=50` maps to native value `charge + 50`, copied within each group. The encoding is source-profile independent. |
 | `entry_number` | RESOLVED_FOR_BOUNDED_PROFILE | `V0`/`V1` confirm the same group-start value and consecutive ID-1/ID-7/CP stream-order increments, with restart for each formula group. Use the controlled fresh template's start value; reject before rollover rather than inventing wraparound. |
@@ -263,7 +266,7 @@ blockers. Current blocker authority is
 
 | Field/capability | C3 disposition | Current evidence and exact remaining action | User/domain input? | Can native construction proceed without it? |
 | --- | --- | --- | --- | --- |
-| ID-9 chunk ID, `CMPD`, comment, caller OLE date | RESOLVED | Parser's required magic, fixed text and date validator; write supplied date/comment. | No | Yes |
+| ID-9 chunk ID, `CMPD`, comment, OLE date | BOUNDED_POLICY_REVISED | Preserve the complete controlled empty-template ID-9 header. FactSage 7.3 rejected isolated changes to its date and comment; broader initialization is outside this profile. | No | Yes, with matching template metadata |
 | ID-9 `read_flag` | EVIDENCE_REQUIRED | Fresh and translated FDBs agree on zero; named-version initialization and provider-written acceptance remain. | Yes, versioned acceptance | No |
 | ID-9 padding 1/2/3 and unknown 1/2 | EVIDENCE_REQUIRED | Fresh padding is zero; both unknown regions are stable through edits, but the second differs from translation. Need versioned assignment and writer acceptance. | Yes, versioned fresh input | No |
 | Shared `element_ids[7]`, integer `element_coefficients[7]` | EVIDENCE_REQUIRED | Fresh group-wide copying and equality across neutral/charged groups are confirmed; input-linked code/order/scale remain. | Yes, recorded stoichiometry inputs | No |
@@ -291,7 +294,7 @@ blockers. Current blocker authority is
 | Exact conversion of arbitrary source `f64` composition to rational identity | POLICY_REQUIRED | No tolerance is selected. An adapter must preserve source exact fractions or declare a conversion policy. | Domain input may be needed | C3 with exact-rational input yes |
 | NativeFactSage omission choice for zero objects | POLICY_REQUIRED | Only after version behavior is observed; do not silently omit in rigorous plan. | Domain/version policy later | No for zero-object native output |
 | Provider raw constructor and serialize/reparse/domain/thermo pipeline | IMPLEMENTED_FRESH_MODERN | Bounded writer constructs, serializes, strict-reparses, indexes and checks Cp/H/S/G at three temperatures per range. | No | Yes for FreshModern |
-| Independent FactSage acceptance of newly built file | EVIDENCE_REQUIRED | Verification-class gate: self-reparse is insufficient; open a tiny constructed FDB in the identified FactSage version. | Yes, controlled local check | Construction can be coded; GO publication cannot |
+| Independent FactSage acceptance of newly built file | PASSED_ONE_CONTROLLED_PROBE | The revised provider-built one-function FDB opened, saved, and reopened in FactSage 7.3; local FDB and SLN bytes were unchanged. Broader shapes and SLN references remain verification work. | No for this probe | Bounded GO for this profile |
 
 ID-8 transitions and active ID-11/auxiliary physics are
 `NOT_REQUIRED_FOR_ADMITTED_PROFILE`. They fail closed rather than acquiring
@@ -313,11 +316,11 @@ In particular:
 
 | Field/capability | Bounded fresh-modern disposition |
 | --- | --- |
-| ID-9 opaque/padding/read-flag bytes | Copy from the controlled empty-FDB template; change only established date/comment fields. |
+| ID-9 complete header | Copy the entire controlled empty-FDB ID-9 record unchanged; require the range exemplar's ID-9 to match. The first native acceptance probes rejected isolated date/comment changes. |
 | ID-9 / entry timestamps | **CONFIRMED DOMAIN POLICY:** OLE Automation `f64`; update the timestamp for newly created/materially changed groups, preserve unchanged-group timestamps on edits, and copy one timestamp consistently across ID-1/ID-7/CP within the changed group. |
 | Formula parser | Use `chemformula`. |
 | Element IDs | Periodic-table atomic numbers encoded as `u8`. |
-| Element slot order | **CONFIRMED DOMAIN POLICY:** preserve first-appearance/parser encounter order exactly; verify against the existing local corpus as a regression check. |
+| Element slot order | **REVISED AFTER FACTSAGE ACCEPTANCE PROBES:** preserve parser encounter order among non-hydrogen elements, then place hydrogen last. The formula label remains unchanged. Hydrogen-first synthetic FDB groups opened without a visible Function; the same groups with hydrogen last displayed it. All admitted native FDB hydrogen groups have hydrogen last. |
 | Integer stoichiometry | Parsed integral formula coefficients. |
 | Real stoichiometry | **CONFIRMED NATIVE TYPE:** `f8[7]` / `[f64; 7]`. Default to the same formula coefficients as `f64`; advanced real-stoichiometry overrides are outside the first profile. |
 | Charge | `raw = semantic + 50` for semantic `-50..=50`. |

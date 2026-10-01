@@ -68,10 +68,10 @@ impl FdbBuildPlan {
             object: "constructed FDB".into(),
             field: "independent FactSage acceptance",
             class: FdbBlockerClass::Verification,
-            reason: "self-reparse alone cannot prove FactSage accepts a newly constructed FDB",
-            known: "provider parser/domain/thermo can verify internal consistency after serialization",
-            missing: "a controlled FactSage open/import and target-reference resolution check",
-            exact_evidence: Some("FactSage acceptance of one tiny provider-built FDB, with version and action recorded; keep proprietary bytes local"),
+            reason: "one corrected provider-built FDB opened and saved byte-identically in FactSage 7.3; other admitted shapes lack native coverage",
+            known: "the bounded writer preserves ID-9, places hydrogen last, self-verifies, and has one native open/save/reopen acceptance",
+            missing: "native checks for additional function and charge-group shapes, hydrogen-only composition, and target-reference resolution",
+            exact_evidence: Some("controlled FactSage acceptance of an unverified shape; keep proprietary bytes local"),
             user_evidence_can_unblock: true,
         });
 

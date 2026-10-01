@@ -89,8 +89,8 @@ fn range(min: f64, max: f64, coefficient: f64) -> FdbThermoRangePlan {
 fn plan(groups: Vec<FdbFormulaGroupPlan>) -> FdbBuildPlan {
     FdbBuildPlan::new_fresh_modern(
         FdbDatabaseMetadata {
-            comment: "synthetic".into(),
-            date_ole: 45_000.0,
+            comment: String::new(),
+            date_ole: 0.0,
         },
         groups,
     )
@@ -107,6 +107,47 @@ fn empty_fresh_plan_emits_only_versioned_database_header() {
         [9]
     );
     assert!(DomainIndex::build(&raw).unwrap().diagnostics().is_empty());
+}
+
+#[test]
+fn bounded_writer_rejects_changes_to_the_native_database_header() {
+    let templates = native_templates();
+    for metadata in [
+        FdbDatabaseMetadata {
+            comment: "changed".into(),
+            date_ole: templates.database_date_ole(),
+        },
+        FdbDatabaseMetadata {
+            comment: String::new(),
+            date_ole: templates.database_date_ole() + 1.0,
+        },
+    ] {
+        let plan = FdbBuildPlan::new_fresh_modern(metadata, vec![]).unwrap();
+        assert!(matches!(
+            plan.materialize_fresh(&templates, &FdbFreshMaterialization::new(45_001.0)),
+            Err(FdbMaterializeError::Unsupported { .. })
+        ));
+    }
+}
+
+#[test]
+fn template_pair_must_share_the_same_database_header() {
+    let raw = plan(vec![group(
+        "NiS",
+        &["Ni", "S"],
+        0,
+        vec![function("Only", vec![range(298.15, 1000.0, 1.0)])],
+    )])
+    .materialize_fresh(&native_templates(), &FdbFreshMaterialization::new(45_001.0))
+    .unwrap();
+    let mut bytes = raw.to_bytes().unwrap();
+    let empty = RawDatabase::from_bytes(&bytes[..256]).unwrap();
+    bytes[8..16].copy_from_slice(&1.0_f64.to_le_bytes());
+    let changed_exemplar = RawDatabase::from_bytes(&bytes).unwrap();
+    assert!(matches!(
+        FdbNativeTemplates::from_examples(&empty, &changed_exemplar),
+        Err(FdbMaterializeError::Template(_))
+    ));
 }
 
 #[test]
@@ -176,6 +217,56 @@ fn builds_multiple_functions_and_charge_groups_in_physical_order() {
     assert_eq!(charged.header.charge_raw, 51);
     assert_eq!(charged.header.entry_number, 1);
     assert_eq!(charged.header.timestamp_ole, 45_001.0);
+}
+
+#[test]
+fn hydrogen_uses_the_last_native_slot_without_rewriting_the_formula_label() {
+    let plan = plan(vec![FdbFormulaGroupPlan {
+        formula: "H2O".into(),
+        elements: vec![
+            FdbElementAmount {
+                symbol: "H".into(),
+                amount: FdbStoichiometricAmount {
+                    numerator: 2,
+                    denominator: 1,
+                },
+            },
+            FdbElementAmount {
+                symbol: "O".into(),
+                amount: FdbStoichiometricAmount {
+                    numerator: 1,
+                    denominator: 1,
+                },
+            },
+        ],
+        charge: FdbChargeState::new(0),
+        energy_unit: EnergyUnit::Joules,
+        pressure_unit: PressureUnit::Bars,
+        functions: vec![function("Only", vec![range(298.15, 1000.0, 1.0)])],
+    }]);
+    let raw = plan
+        .materialize_fresh(&native_templates(), &FdbFreshMaterialization::new(45_001.0))
+        .unwrap();
+    let RawChunk::Compound(compound) = &raw.chunks()[1] else {
+        panic!()
+    };
+    assert_eq!(compound.formula_name_lossy(), "H2O");
+    assert_eq!(compound.header.element_ids[..2], [8, 1]);
+    assert_eq!(compound.header.element_coefficients[..2], [1, 2]);
+    assert_eq!(compound.real_stoichiometric_coefficients[..2], [1.0, 2.0]);
+    for chunk in &raw.chunks()[2..] {
+        match chunk {
+            RawChunk::PhaseOrdinary(phase) => {
+                assert_eq!(phase.header.element_ids[..2], [8, 1]);
+                assert_eq!(phase.header.element_coefficients[..2], [1, 2]);
+            }
+            RawChunk::HeatCapacity { chunk, .. } => {
+                assert_eq!(chunk.header.element_ids[..2], [8, 1]);
+                assert_eq!(chunk.header.element_coefficients[..2], [1, 2]);
+            }
+            _ => panic!(),
+        }
+    }
 }
 
 #[test]
