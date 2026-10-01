@@ -51,14 +51,16 @@ impl FdbBuildPlan {
     /// blocked from native materialization by those upstream questions.
     pub fn native_blockers(&self) -> Vec<FdbBuildBlocker> {
         let mut blockers = Vec::new();
-        if self.profile == FdbConstructionProfile::LegacyTranslation {
+        if self.profile == FdbConstructionProfile::LegacyTranslation
+            && self.legacy_zero_added_physical_plan().is_err()
+        {
             blockers.push(FdbBuildBlocker {
                 object: "LegacyTranslation FDB materializer".into(),
                 field: "explicit target A and zero-object native emission",
                 class: FdbBlockerClass::Engineering,
-                reason: "the implemented bounded writer accepts FreshModern plans only",
-                known: "the shared FDB charge, composition, phase ID and entry policies are resolved",
-                missing: "apply the explicit target A and physical zero-object omission policy in a Legacy writer",
+                reason: "the bounded translated writer accepts only nonzero-Cp ID-2 bases with explicitly zero, physically omitted A companions",
+                known: "the shared FDB charge, composition, phase ID and entry policies are resolved; the zero-added translated subset has an emitter",
+                missing: "add native ID-5/active-A and zero-base policies for this plan's unsupported objects",
                 exact_evidence: None,
                 user_evidence_can_unblock: false,
             });
@@ -68,9 +70,9 @@ impl FdbBuildPlan {
             object: "constructed FDB".into(),
             field: "independent FactSage acceptance",
             class: FdbBlockerClass::Verification,
-            reason: "one corrected provider-built FDB opened and saved byte-identically in FactSage 7.3; other admitted shapes lack native coverage",
-            known: "the bounded writer preserves ID-9, places hydrogen last, self-verifies, and has one native open/save/reopen acceptance",
-            missing: "native checks for additional function and charge-group shapes, hydrogen-only composition, and target-reference resolution",
+            reason: "a corrected one-function FDB opened and saved byte-identically, and a hydrogen-only Function opened in FactSage 7.3; other admitted shapes lack native coverage",
+            known: "the bounded writer preserves ID-9, places hydrogen last, self-verifies, and has native one-function and hydrogen-only acceptance",
+            missing: "native checks for additional function and charge-group shapes and target-reference resolution",
             exact_evidence: Some("controlled FactSage acceptance of an unverified shape; keep proprietary bytes local"),
             user_evidence_can_unblock: true,
         });

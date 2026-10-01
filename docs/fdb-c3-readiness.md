@@ -29,8 +29,9 @@ open/save acceptance, while additional shapes retain a verification blocker.
 The materializer now also compares reparsed formula, charge, element IDs and
 coefficients, function names and IDs, phase anchors, and CP identity/bounds
 against the plan. Synthetic multi-function/charged-group and hydrogen-only
-probes pass this stricter internal check. Their FactSage open results remain
-the native acceptance gate for those shapes.
+probes pass this stricter internal check. The provider-built hydrogen-only
+Function opened visibly in FactSage 7.3; multi-function/charged-group
+acceptance is still pending.
 
 The bounded profile resolves the previously open fresh-writer choices by policy:
 copy opaque ID-9/default bytes from the controlled empty-FDB profile, use OLE
@@ -323,9 +324,9 @@ native materialization when the target plan has not already been made explicit.
 | References and density | PARTIALLY_RESOLVED | References default to zero. Ordinary density is supported using the low/remainder density portion with no advanced family code; advanced volumetric-family mappings are extensions and active nonzero references remain outside the bounded profile. |
 | Fresh zero-Cp kind and shorter Cp term lists | RESOLVED_POLICY | Fresh ranges use ID-2, including zero Cp. Unused coefficient and power slots are written as zero. |
 | Fresh empty-function verification | IMPLEMENTED | The writer emits ID-7 without CP and verifies strict reparse/domain structure; it skips ordinary Cp-backed evaluation for this case. |
-| Legacy A conversion and zero-object omission | PARTIALLY_RESOLVED | Physically zero base/A Function objects may be omitted in `NativeFactSage`, while rigorous semantic identities remain internal. Matched constant ID-5 A objects have direct leading H, negated leading S and zero Cp after unit conversion. Eligible emitted A companions with counted ranges use observed native bounds of 298.15 K to the last ordinary upper bound. Combined nonzero-Cp A, zero-range A bounds and leading tails remain separate scientific work. The uncounted two-line A-leading block must not inherit ordinary counted-range semantics. |
+| Legacy A conversion and zero-object omission | PARTIALLY_RESOLVED | Physically zero base/A Function objects may be omitted in `NativeFactSage`, while rigorous semantic identities remain internal. Matched constant ID-5 A objects have direct leading H, negated leading S and zero Cp after unit conversion. Eligible emitted A companions with counted ranges use observed native bounds of 298.15 K to the last ordinary upper bound. Combined nonzero-Cp A, zero-range A upper bounds and leading tails remain separate scientific work. The uncounted two-line A-leading block must not inherit ordinary counted-range semantics. |
 | Provider materializer and verification pipeline | IMPLEMENTED_FRESH_MODERN | `materialize_fresh` uses controlled templates, serializes, strict-reparses, indexes and checks group/function/CP identity plus Cp/H/S/G over each admitted range. LegacyTranslation emission remains separate. |
-| Provider-built file acceptance | PASSED_ONE_CONTROLLED_PROBE | The corrected provider-built FDB opened, saved, and reopened in FactSage 7.3; the local FDB and SLN files were byte-identical before and after Save. Broader topology, charge, hydrogen-only, and external reference checks remain. |
+| Provider-built file acceptance | PASSED_ONE_CONTROLLED_PROBE_PLUS_HYDROGEN_ONLY_OPEN | The corrected provider-built FDB opened, saved, and reopened in FactSage 7.3; the local FDB and SLN files were byte-identical before and after Save. A separate provider-built hydrogen-only Function opened visibly. Broader topology, charge, and external reference checks remain. |
 
 The bounded FreshModern writer preserves the complete template ID-9 header and
 has one native open/save/reopen acceptance. Broader native coverage is useful
@@ -336,8 +337,14 @@ FreshModern target plan.
 ## Next implementation/verification action
 
 Extend native acceptance to multiple Functions and charged groups, then verify
-SLN references to constructed Functions. Keep hydrogen-only composition outside
-the proven native subset until independently checked.
+SLN references to constructed Functions.
+
+The bounded `materialize_legacy_zero_added` method now emits an already
+reduced LegacyTranslation target when every base has nonzero ID-2 Cp and its
+paired A contribution is explicitly zero. It omits those zero A records in the
+physical FDB, strictly reparses, and uses the same identity and thermodynamic
+checks. Empty/zero-Cp bases, active A, and SLN bundle closure remain typed
+refusals or separate gates; this does not generalize the raw Legacy G reduction.
 
 No additional user/domain decision is required to continue this engineering
 and verification work.
@@ -395,6 +402,8 @@ An identity-linked audit of eligible paired translations supports native A
 bounds from 298.15 K to the last counted ordinary upper bound. Many ordinary
 bases start earlier. Zero-range A entries share the observed 298.15-K lower
 bound but have varying upper bounds and remain outside this rule.
+Nearest preceding/following counted upper bounds and solution-wide extrema
+are not universal zero-range A upper-bound rules in the paired corpus.
 First-line slots 4–5 and second-line slots 1–6 remain without a general
 analytic mapping; magnetic activation did not change their isolated responses.
 The Legacy-to-Modern plan may provisionally zero those unresolved leading

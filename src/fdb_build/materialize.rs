@@ -6,7 +6,8 @@ use std::str::FromStr;
 use chemformula::Formula;
 
 use super::{
-    FdbBuildError, FdbBuildPlan, FdbConstructionProfile, FdbFormulaGroupPlan, FdbFunctionPlan,
+    FdbAddedContribution, FdbBuildError, FdbBuildPlan, FdbConstructionProfile, FdbFormulaGroupPlan,
+    FdbFunctionIdentity, FdbFunctionPlan, FdbThermoRangePlan,
 };
 use crate::raw::{
     HeatCapacityKind, RawChunk, RawCommonHeader, RawCompoundChunk, RawDatabaseHeaderChunk,
@@ -82,6 +83,15 @@ impl std::fmt::Display for FdbMaterializeError {
 
 impl std::error::Error for FdbMaterializeError {}
 
+fn has_nonzero_cp(range: &FdbThermoRangePlan) -> bool {
+    let mut by_power = BTreeMap::<u64, f64>::new();
+    for term in &range.cp_terms {
+        let power = if term.power == 0.0 { 0.0 } else { term.power };
+        *by_power.entry(power.to_bits()).or_default() += term.coefficient;
+    }
+    by_power.values().any(|coefficient| *coefficient != 0.0)
+}
+
 impl FdbNativeTemplates {
     /// Extracts only the four needed record kinds from controlled native examples.
     /// The empty source must contain only ID-9; the exemplar must contain
@@ -156,6 +166,74 @@ impl FdbNativeTemplates {
 }
 
 impl FdbBuildPlan {
+    /// Emits the evidenced translated subset with ordinary ID-2 ranges and
+    /// physically omitted, explicitly zero A companions.
+    ///
+    /// This accepts an already reduced target plan. It does not translate raw
+    /// Legacy G fields or construct matching SLN references.
+    pub fn materialize_legacy_zero_added(
+        &self,
+        templates: &FdbNativeTemplates,
+        options: &FdbFreshMaterialization,
+    ) -> Result<RawDatabase, FdbMaterializeError> {
+        self.legacy_zero_added_physical_plan()?
+            .materialize_fresh(templates, options)
+    }
+
+    pub(super) fn legacy_zero_added_physical_plan(
+        &self,
+    ) -> Result<FdbBuildPlan, FdbMaterializeError> {
+        self.validate().map_err(FdbMaterializeError::Plan)?;
+        if self.profile() != FdbConstructionProfile::LegacyTranslation {
+            return Err(FdbMaterializeError::Unsupported {
+                object: "database".into(),
+                reason: "zero-added translated emitter requires LegacyTranslation",
+            });
+        }
+        let mut physical_groups = Vec::with_capacity(self.groups().len());
+        for group in self.groups() {
+            let mut physical = group.clone();
+            physical.functions.clear();
+            for function in &group.functions {
+                match function {
+                    FdbFunctionPlan::Ordinary(ordinary) => {
+                        if ordinary.ranges.is_empty()
+                            || ordinary.ranges.iter().any(|range| !has_nonzero_cp(range))
+                        {
+                            return Err(FdbMaterializeError::Unsupported {
+                                object: ordinary.identity.target_name.clone(),
+                                reason: "translated zero/empty Cp needs the separate ID-5 or omitted-base policy",
+                            });
+                        }
+                        let mut target = ordinary.clone();
+                        target.identity = FdbFunctionIdentity::fresh_modern(
+                            &ordinary.identity.target_name,
+                            ordinary.identity.target_state,
+                        );
+                        physical.functions.push(FdbFunctionPlan::Ordinary(target));
+                    }
+                    FdbFunctionPlan::Added(added)
+                        if added.contribution == FdbAddedContribution::ExplicitZero => {}
+                    FdbFunctionPlan::Added(added) => {
+                        return Err(FdbMaterializeError::Unsupported {
+                            object: added.identity.target_name.clone(),
+                            reason: "active translated A needs a native CP-kind and phase policy",
+                        });
+                    }
+                    FdbFunctionPlan::ExplicitZeroOrdinary(identity) => {
+                        return Err(FdbMaterializeError::Unsupported {
+                            object: identity.target_name.clone(),
+                            reason: "zero translated base needs a native omission policy",
+                        });
+                    }
+                }
+            }
+            physical_groups.push(physical);
+        }
+        FdbBuildPlan::new_fresh_modern(self.metadata().clone(), physical_groups)
+            .map_err(FdbMaterializeError::Plan)
+    }
+
     /// Builds the bounded fresh profile and verifies serialization, strict reparse,
     /// and domain indexing before returning its raw stream.
     pub fn materialize_fresh(

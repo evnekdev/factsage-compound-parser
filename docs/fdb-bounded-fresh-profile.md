@@ -98,7 +98,8 @@ For the bounded profile:
    hydrogen-first group opened without a visible Function, while the same
    label and composition with hydrogen last displayed its Function. All
    hydrogen-containing groups in the admitted native FDB corpus also put
-   hydrogen last. A hydrogen-only group remains an unverified edge case;
+   hydrogen last. A provider-built hydrogen-only Function also opened visibly
+   in FactSage 7.3;
 3. encode each real element ID as its periodic-table atomic number in one `u8`;
 4. align integer and real coefficient slots with those element slots;
 5. verify this rule against the existing local fresh and translated FDB corpus as

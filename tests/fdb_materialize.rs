@@ -1,8 +1,9 @@
 use factsage_compound_parser::fdb_build::{
-    FdbAuxiliaryIntent, FdbBuildPlan, FdbChargeState, FdbCpTerm, FdbDatabaseMetadata,
-    FdbElementAmount, FdbFormulaGroupPlan, FdbFreshMaterialization, FdbFunctionIdentity,
-    FdbFunctionPlan, FdbMaterializeError, FdbNativeTemplates, FdbOrdinaryFunctionPlan,
-    FdbStoichiometricAmount, FdbThermoRangePlan,
+    FdbAddedContribution, FdbAddedFunctionPlan, FdbAuxiliaryIntent, FdbBlockerClass, FdbBuildPlan,
+    FdbChargeState, FdbCpTerm, FdbDatabaseMetadata, FdbElementAmount, FdbFormulaGroupPlan,
+    FdbFreshMaterialization, FdbFunctionIdentity, FdbFunctionPlan, FdbFunctionRole,
+    FdbMaterializeError, FdbNativeTemplates, FdbOrdinaryFunctionPlan, FdbStoichiometricAmount,
+    FdbThermoRangePlan,
 };
 use factsage_compound_parser::{
     DomainIndex, EnergyUnit, PhaseState, PressureUnit, RawChunk, RawDatabase,
@@ -95,6 +96,132 @@ fn plan(groups: Vec<FdbFormulaGroupPlan>) -> FdbBuildPlan {
         groups,
     )
     .unwrap()
+}
+
+fn translated_pair(cp_terms: Vec<FdbCpTerm>, added: FdbAddedContribution) -> FdbBuildPlan {
+    let base_identity = FdbFunctionIdentity {
+        source_phase_id: "SYNX".into(),
+        source_token: "synthetic".into(),
+        source_g_index: 0,
+        target_state: PhaseState::Solid,
+        target_name: "SYNX_0000".into(),
+        role: FdbFunctionRole::Base,
+    };
+    let added_identity = FdbFunctionIdentity {
+        target_name: "SYNX_0000A".into(),
+        role: FdbFunctionRole::Added,
+        ..base_identity.clone()
+    };
+    let mut base = match function("unused", vec![range(298.15, 1000.0, 100.0)]) {
+        FdbFunctionPlan::Ordinary(base) => base,
+        _ => unreachable!(),
+    };
+    base.identity = base_identity.clone();
+    base.ranges[0].cp_terms = cp_terms;
+    let added = FdbAddedFunctionPlan {
+        identity: added_identity,
+        base: base_identity,
+        contribution: added,
+        auxiliary: FdbAuxiliaryIntent::Inactive,
+    };
+    FdbBuildPlan::new(
+        FdbDatabaseMetadata {
+            comment: String::new(),
+            date_ole: 0.0,
+        },
+        vec![group(
+            "NiS",
+            &["Ni", "S"],
+            0,
+            vec![
+                FdbFunctionPlan::Ordinary(base),
+                FdbFunctionPlan::Added(added),
+            ],
+        )],
+    )
+    .unwrap()
+}
+
+#[test]
+fn bounded_translated_writer_omits_explicit_zero_a_and_keeps_base_identity() {
+    let plan = translated_pair(
+        vec![FdbCpTerm {
+            coefficient: 100.0,
+            power: 0.0,
+        }],
+        FdbAddedContribution::ExplicitZero,
+    );
+    assert!(
+        !plan
+            .native_blockers()
+            .iter()
+            .any(|blocker| { blocker.class == FdbBlockerClass::Engineering })
+    );
+    let raw = plan
+        .materialize_legacy_zero_added(&native_templates(), &FdbFreshMaterialization::new(45_001.0))
+        .unwrap();
+    assert_eq!(
+        raw.chunks().iter().map(RawChunk::id).collect::<Vec<_>>(),
+        [9, 1, 7, 2]
+    );
+    let RawChunk::PhaseOrdinary(phase) = &raw.chunks()[2] else {
+        panic!("expected one translated base");
+    };
+    assert_eq!(phase.physical.phase_name_lossy(), "SYNX_0000");
+}
+
+#[test]
+fn bounded_translated_writer_refuses_zero_cp_and_active_a() {
+    let zero_cp = translated_pair(
+        vec![
+            FdbCpTerm {
+                coefficient: 1.0,
+                power: 0.0,
+            },
+            FdbCpTerm {
+                coefficient: -1.0,
+                power: 0.0,
+            },
+        ],
+        FdbAddedContribution::ExplicitZero,
+    );
+    assert!(
+        zero_cp
+            .native_blockers()
+            .iter()
+            .any(|blocker| blocker.class == FdbBlockerClass::Engineering)
+    );
+    assert!(matches!(
+        zero_cp.materialize_legacy_zero_added(
+            &native_templates(),
+            &FdbFreshMaterialization::new(45_001.0)
+        ),
+        Err(FdbMaterializeError::Unsupported { .. })
+    ));
+    let active = translated_pair(
+        vec![FdbCpTerm {
+            coefficient: 100.0,
+            power: 0.0,
+        }],
+        FdbAddedContribution::Thermodynamic {
+            phase_enthalpy: 1.0,
+            phase_entropy: 0.0,
+            ranges: vec![range(298.15, 1000.0, 1.0)],
+        },
+    );
+    assert!(
+        active
+            .native_blockers()
+            .iter()
+            .any(|blocker| blocker.class == FdbBlockerClass::Engineering)
+    );
+    assert!(matches!(
+        active.materialize_legacy_zero_added(
+            &native_templates(),
+            &FdbFreshMaterialization::new(45_001.0)
+        ),
+        Err(FdbMaterializeError::Unsupported { .. })
+    ));
 }
 
 #[test]
