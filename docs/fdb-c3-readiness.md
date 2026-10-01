@@ -1,6 +1,6 @@
 # FDB-C3 readiness after joint fresh-modern and translation audit
 
-**Decision: BOUNDED-GO for FreshModern construction and multiple native acceptance probes.** FDB-C1 and FDB-C2
+**Decision: BOUNDED-GO for FreshModern construction and bounded Legacy zero-A construction, with multiple native acceptance probes.** FDB-C1 and FDB-C2
 remain GO. The fresh-modern native writer uses the bounded
 construction policy in
 [`fdb-bounded-fresh-profile.md`](fdb-bounded-fresh-profile.md). No remaining
@@ -54,31 +54,32 @@ profile rather than blocking it. Fresh zero-Cp is admitted as ID-2. Semantic
 aggregate state does not select FDB Function ID bands: FDB Functions use the
 group-local pseudo-solid 101+ series.
 
-FDB-C3 is BOUNDED-GO for the implemented FreshModern profile: the first native
-failure was isolated, corrected, and followed by a successful provider-built
-open/save/reopen probe. Hydrogen-only and multiple/charged Function probes
-also opened visibly. This does not establish native acceptance for every
-combination of groups, charges, and ranges.
+FDB-C3 is BOUNDED-GO for the implemented FreshModern profile and the admitted
+Legacy zero-A subset. The first native failure was isolated, corrected, and
+followed by successful provider-built acceptance. Hydrogen-only,
+multiple/charged, translated zero-A ID-2/ID-5, and paired SLN/FDB reference
+probes also opened visibly. This does not establish native acceptance for every
+combination of groups, charges, ranges, or active-A forms.
 
 The field-level status checklist is
 [`fdb-construction-field-inventory.md`](fdb-construction-field-inventory.md).
 `FdbBuildPlan::native_blockers()` emits field-specific records with a
 provider-neutral class, exact object, known fact, missing rule, and smallest
-evidence artifact. The FreshModern plan now reports a verification blocker for
-broader native-shape acceptance; LegacyTranslation still reports an engineering
-blocker for active A and zero-base native emission. Caller
+evidence artifact. FreshModern now has only broader verification/hardening work. LegacyTranslation
+reports an engineering blocker only when a plan falls outside the bounded
+zero-A subset, such as active A, zero-base, empty-range, or mixed-kind cases. Caller
 H/S/Cp values, evidenced chunk IDs, native units and inactive physical tails
 are not misclassified as new evidence needs.
 
 ## Human-in-the-loop assessment
 
-For the bounded fresh-modern profile:
+For the bounded FreshModern and bounded Legacy zero-A profiles:
 
 ```text
 Additional user input required now: NO
 Additional domain-policy decisions required now: NO
 Additional controlled user-created evidence required now: NO
-Remaining work: verify broader native shapes, SLN reference evaluation, and active-A reduction
+Remaining work: verification hardening plus out-of-profile extensions (not bounded-GO blockers), including native SLN thermodynamic evaluation and active-A reduction
 ```
 
 The reusable `fdb_native_rule_audit` executable tested every FDB fixture
@@ -429,10 +430,10 @@ with caller-established bounds containing 298.15 K, it derives H/S anchors and
 `Cp(T) = -c_TlnT - 2 c_T2 T` from the four retained Gibbs terms and carries a
 suppressed-slot loss flag. It checks finite thermodynamics at both bounds. A
 counted-range helper applies the observed 298.15-K-to-last-upper-bound profile.
-This target does not allocate native A records or establish the ID-7 phase
-anchors, CP-kind rule for combined terms, or physical tails. The native
-LegacyTranslation writer remains blocked on those policies and application
-acceptance.
+This target does not yet allocate active native A records or establish the
+ID-7 phase anchors, CP-kind rule for combined active terms, or physical tails.
+The bounded Legacy zero-A writer is GO; only active-A and other out-of-profile
+LegacyTranslation extensions remain blocked on those policies and acceptance.
 
 
 **Paired unit-scaling evidence:** the leading pair is not merely an ordinary
