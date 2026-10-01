@@ -381,7 +381,7 @@ Cp-only checks; some multipliers were not identifiable. Per-slot scaling alone
 does not establish this candidate as the conversion rule.
 **ConfirmedByDomainExpert:** `Gadded` applies to all counted ranges of its G
 entry simultaneously. A synthetic multi-range probe varies one leading
-coefficient at a time; FactSage import evidence remains pending.
+numerical field at a time; FactSage import evidence remains pending.
 
 
 **Paired unit-scaling evidence:** the leading pair is not merely an ordinary
