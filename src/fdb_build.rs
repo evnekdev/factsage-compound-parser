@@ -358,6 +358,7 @@ impl std::error::Error for FdbBuildError {}
 #[derive(Debug, Clone, PartialEq)]
 pub struct FdbBuildPlan {
     profile: FdbConstructionProfile,
+    allow_distinct_formula_units: bool,
     metadata: FdbDatabaseMetadata,
     groups: Vec<FdbFormulaGroupPlan>,
 }
@@ -368,7 +369,26 @@ impl FdbBuildPlan {
         metadata: FdbDatabaseMetadata,
         groups: Vec<FdbFormulaGroupPlan>,
     ) -> Result<Self, FdbBuildError> {
-        Self::with_profile(FdbConstructionProfile::LegacyTranslation, metadata, groups)
+        Self::with_profile(
+            FdbConstructionProfile::LegacyTranslation,
+            false,
+            metadata,
+            groups,
+        )
+    }
+
+    /// Seals a translated native plan that retains differently scaled formula
+    /// units under distinct labels. Exact duplicate compositions still refuse.
+    pub fn new_legacy_translation_distinct_units(
+        metadata: FdbDatabaseMetadata,
+        groups: Vec<FdbFormulaGroupPlan>,
+    ) -> Result<Self, FdbBuildError> {
+        Self::with_profile(
+            FdbConstructionProfile::LegacyTranslation,
+            true,
+            metadata,
+            groups,
+        )
     }
 
     /// Seals direct-modern intent with caller-supplied function names and no Legacy A pairing.
@@ -376,16 +396,18 @@ impl FdbBuildPlan {
         metadata: FdbDatabaseMetadata,
         groups: Vec<FdbFormulaGroupPlan>,
     ) -> Result<Self, FdbBuildError> {
-        Self::with_profile(FdbConstructionProfile::FreshModern, metadata, groups)
+        Self::with_profile(FdbConstructionProfile::FreshModern, false, metadata, groups)
     }
 
     fn with_profile(
         profile: FdbConstructionProfile,
+        allow_distinct_formula_units: bool,
         metadata: FdbDatabaseMetadata,
         groups: Vec<FdbFormulaGroupPlan>,
     ) -> Result<Self, FdbBuildError> {
         let plan = Self {
             profile,
+            allow_distinct_formula_units,
             metadata,
             groups,
         };
@@ -445,7 +467,27 @@ impl FdbBuildPlan {
                     reason: "formula label already belongs to another group".into(),
                 });
             }
-            let key = composition_key(group)?;
+            // Translated native FDB can retain distinct formula units such as
+            // AB and A2B2 under separate labels. Fresh construction keeps its
+            // conservative ratio-based uniqueness contract.
+            let mut key = composition_key(group)?;
+            if self.allow_distinct_formula_units {
+                key.elements = group
+                    .elements
+                    .iter()
+                    .map(|element| {
+                        let numerator = u128::from(element.amount.numerator);
+                        let denominator = u128::from(element.amount.denominator);
+                        let divisor = gcd_u128(numerator, denominator);
+                        (
+                            element.symbol.clone(),
+                            numerator / divisor,
+                            denominator / divisor,
+                        )
+                    })
+                    .collect();
+                key.elements.sort_by(|left, right| left.0.cmp(&right.0));
+            }
             if let Some(previous) = group_keys.insert(key.clone(), group.formula.clone()) {
                 return Err(FdbBuildError::AmbiguousGroup {
                     group: group.formula.clone(),

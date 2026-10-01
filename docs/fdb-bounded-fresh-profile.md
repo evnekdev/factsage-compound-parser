@@ -60,6 +60,12 @@ CP-record shape through nine ranges. A synthetic nine-range
 translated file strictly reparses and indexes; native FactSage acceptance of
 the newly generated nine-range shape is still pending.
 
+Translated plans may explicitly preserve two differently scaled formula units
+with the same reduced stoichiometric ratio under distinct native labels. The
+dedicated translated constructor still rejects an exact duplicate composition
+and charge. A synthetic two-group file strictly reparses and indexes. Direct
+FreshModern construction retains ratio-based uniqueness.
+
 ## ID-9 database header
 
 Do **not** reverse-engineer opaque ID-9 fields for this profile.

@@ -288,8 +288,13 @@ impl FdbBuildPlan {
             }
             physical_groups.push(physical);
         }
-        FdbBuildPlan::new_fresh_modern(self.metadata().clone(), physical_groups)
-            .map_err(FdbMaterializeError::Plan)
+        FdbBuildPlan::with_profile(
+            FdbConstructionProfile::FreshModern,
+            self.allow_distinct_formula_units,
+            self.metadata().clone(),
+            physical_groups,
+        )
+        .map_err(FdbMaterializeError::Plan)
     }
 
     /// Builds the bounded fresh profile and verifies serialization, strict reparse,

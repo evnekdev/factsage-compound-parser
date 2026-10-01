@@ -331,6 +331,64 @@ fn translated_nine_range_zero_cp_reparses_and_tenth_is_refused() {
 }
 
 #[test]
+fn translated_distinct_formula_units_with_same_ratio_reparse_as_two_groups() {
+    let source = translated_pair(vec![], FdbAddedContribution::ExplicitZero);
+    let mut groups = source.groups().to_vec();
+    let mut second = groups[0].clone();
+    second.formula = "Ni2S2".into();
+    for element in &mut second.elements {
+        element.amount.numerator = 2;
+    }
+    for function in &mut second.functions {
+        match function {
+            FdbFunctionPlan::Ordinary(base) => {
+                base.identity.source_g_index = 1;
+                base.identity.source_token = "synthetic-two".into();
+                base.identity.target_name = "SYNX_0001".into();
+            }
+            FdbFunctionPlan::Added(added) => {
+                added.identity.source_g_index = 1;
+                added.identity.source_token = "synthetic-two".into();
+                added.identity.target_name = "SYNX_0001A".into();
+                added.base.source_g_index = 1;
+                added.base.source_token = "synthetic-two".into();
+                added.base.target_name = "SYNX_0001".into();
+            }
+            FdbFunctionPlan::ExplicitZeroOrdinary(_) => unreachable!(),
+        }
+    }
+    groups.push(second);
+    let plan =
+        FdbBuildPlan::new_legacy_translation_distinct_units(source.metadata().clone(), groups)
+            .unwrap();
+    let raw = plan
+        .materialize_legacy_zero_added(
+            &native_templates_with_id5(),
+            &FdbFreshMaterialization::new(45_001.0),
+        )
+        .unwrap();
+    let reopened = RawDatabase::from_bytes(&raw.to_bytes().unwrap()).unwrap();
+    let index = DomainIndex::build(&reopened).unwrap();
+    assert!(index.diagnostics().is_empty());
+    assert_eq!(
+        reopened
+            .chunks()
+            .iter()
+            .filter(|chunk| chunk.id() == 1)
+            .count(),
+        2
+    );
+    assert_eq!(
+        reopened
+            .chunks()
+            .iter()
+            .filter(|chunk| chunk.id() == 7)
+            .count(),
+        2
+    );
+}
+
+#[test]
 fn bounded_translated_writer_refuses_active_a() {
     let active = translated_pair(
         vec![FdbCpTerm {
