@@ -436,8 +436,9 @@ thermodynamics from evidence, rather than reusing the ordinary range decoder.
 The sign reversal seen for nonzero source second fields in constant A targets
 also supports a possible Gibbs-energy interpretation: the source value may be a
 linear-in-temperature coefficient whose thermodynamic entropy is its negative
-derivative. This is not yet a rule. A local derivative test of conventional
-Gibbs terms and variable powers did not match the admitted nonzero-Cp A targets
+derivative. That was a hypothesis before the controlled imports below. An
+earlier derivative test of conventional Gibbs terms and variable powers did
+not match the admitted coupled nonzero-Cp A targets
 under the tested slot assignments and temperature bases. Keep nonzero-Cp A
 construction blocked until its actual source basis and any matrix-level
 reduction are established.
@@ -446,9 +447,17 @@ constant multiplier for each leading, fixed and variable slot. That conventional
 basis still failed the fit subset for combined H/S/Cp and for the H/S-only and
 Cp-only checks; some multipliers were not identifiable. Per-slot scaling alone
 does not establish this candidate as the conversion rule.
+
 **ConfirmedByDomainExpert:** `Gadded` applies to all counted ranges of its G
-entry simultaneously. A synthetic multi-range probe varies one leading
-numerical field at a time; FactSage import evidence remains pending.
+entry simultaneously. Controlled nonmagnetic and magnetic SUBL imports now
+establish isolated Gibbs responses for first leading line slots 1, 2, 3 and
+6. The added target spans the ordinary entry's full temperature domain.
+First-line slots 4–5 and second-line slots 1–6 remain without a general
+analytic mapping; magnetic activation did not change their isolated responses.
+The Legacy-to-Modern plan may provisionally zero those unresolved leading
+positions, preserve the raw source, and flag suppressed nonzero values. This is an
+explicit approximation; exact Legacy A construction and native bounds remain
+blocked.
 
 
 **Paired unit-scaling evidence:** the leading pair is not merely an ordinary
