@@ -374,6 +374,14 @@ Gibbs terms and variable powers did not match the admitted nonzero-Cp A targets
 under the tested slot assignments and temperature bases. Keep nonzero-Cp A
 construction blocked until its actual source basis and any matrix-level
 reduction are established.
+An additional fit retained the source coefficient order and allowed a distinct
+constant multiplier for each leading, fixed and variable slot. That conventional
+basis still failed the fit subset for combined H/S/Cp and for the H/S-only and
+Cp-only checks; some multipliers were not identifiable. Per-slot scaling alone
+does not establish this candidate as the conversion rule.
+**ConfirmedByDomainExpert:** `Gadded` applies to all counted ranges of its G
+entry simultaneously. A synthetic multi-range probe varies one leading
+coefficient at a time; FactSage import evidence remains pending.
 
 
 **Paired unit-scaling evidence:** the leading pair is not merely an ordinary
