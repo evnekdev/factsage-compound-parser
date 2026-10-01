@@ -2,6 +2,8 @@
 
 **Status:** bounded writer implemented; a revised provider-built one-function
 FDB opened, saved, and reopened in FactSage 7.3 with byte-identical local files.
+Hydrogen-only and multiple/charged FreshModern Functions and ID-2/ID-5
+zero-added LegacyTranslation Functions also opened visibly.
 
 This profile deliberately avoids solving every historical CDB/FDB behavior before
 constructing a useful modern FDB. It captures the domain decisions and bounded
@@ -251,9 +253,10 @@ The provider may now implement:
 strict reparse -> DomainIndex -> thermodynamic verification`.
 
 After internal verification, a generated tiny FDB was opened in FactSage 7.3
-and survived load/open/save with byte-identical local FDB and SLN files. Repeat
-this check for broader shapes and SLN references before claiming complete
-native coverage.
+and survived load/open/save with byte-identical local FDB and SLN files.
+Additional hydrogen-only, multiple/charged, and translated zero-added ID-2/ID-5
+probes displayed their Functions. Verify SLN references before claiming complete
+bundle coverage.
 
 Independent FactSage acceptance is a **verification gate**, not a request for
 new domain knowledge. It should be automated from the local development
@@ -274,14 +277,15 @@ by the policies above:
 - zero-reference/inactive-density policy;
 - nonzero-Cp ID-2 selection.
 
-`native_blockers()` reports remaining native coverage for broader FreshModern
-shapes after the successful one-function open/save probe; it does not reopen
+`native_blockers()` reports remaining native coverage after the successful
+one-function open/save probe and visible Function checks; it does not reopen
 the resolved native field policies.
 
 The internal post-serialization check now compares reparsed group composition,
 charge, formula, Function names/IDs, phase anchors, and CP links/bounds with the
 typed plan as well as sampled H/S/Cp/G. Synthetic multi-function/charged and
-hydrogen-only probes pass that check; native GUI acceptance is a separate gate.
+hydrogen-only probes pass that check and their Functions opened visibly in
+FactSage 7.3. SLN target-reference closure remains a separate gate.
 
 
 ## Advanced volumetric coefficients

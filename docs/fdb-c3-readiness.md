@@ -1,6 +1,6 @@
 # FDB-C3 readiness after joint fresh-modern and translation audit
 
-**Decision: BOUNDED-GO for FreshModern construction and one-function native acceptance.** FDB-C1 and FDB-C2
+**Decision: BOUNDED-GO for FreshModern construction and multiple native acceptance probes.** FDB-C1 and FDB-C2
 remain GO. The fresh-modern native writer uses the bounded
 construction policy in
 [`fdb-bounded-fresh-profile.md`](fdb-bounded-fresh-profile.md). No remaining
@@ -29,9 +29,13 @@ open/save acceptance, while additional shapes retain a verification blocker.
 The materializer now also compares reparsed formula, charge, element IDs and
 coefficients, function names and IDs, phase anchors, and CP identity/bounds
 against the plan. Synthetic multi-function/charged-group and hydrogen-only
-probes pass this stricter internal check. The provider-built hydrogen-only
-Function opened visibly in FactSage 7.3; multi-function/charged-group
-acceptance is still pending.
+probes pass this stricter internal check. Both generated files opened visibly
+in FactSage 7.3, including two neutral Functions and one charged Function in
+the multi-group probe. A separate generated LegacyTranslation file with a
+physically omitted zero A also opened and displayed its base Function. A second
+LegacyTranslation probe used an ID-5 exact-zero Cp range with its native power
+slots copied from a version-compatible translated example; FactSage opened it
+and displayed the Function.
 
 The bounded profile resolves the previously open fresh-writer choices by policy:
 copy opaque ID-9/default bytes from the controlled empty-FDB profile, use OLE
@@ -48,8 +52,9 @@ group-local pseudo-solid 101+ series.
 
 FDB-C3 is BOUNDED-GO for the implemented FreshModern profile: the first native
 failure was isolated, corrected, and followed by a successful provider-built
-open/save/reopen probe. This does not establish native acceptance for every
-combination of groups, charges, ranges, or hydrogen-only composition.
+open/save/reopen probe. Hydrogen-only and multiple/charged Function probes
+also opened visibly. This does not establish native acceptance for every
+combination of groups, charges, and ranges.
 
 The field-level status checklist is
 [`fdb-construction-field-inventory.md`](fdb-construction-field-inventory.md).
@@ -57,7 +62,7 @@ The field-level status checklist is
 provider-neutral class, exact object, known fact, missing rule, and smallest
 evidence artifact. The FreshModern plan now reports a verification blocker for
 broader native-shape acceptance; LegacyTranslation still reports an engineering
-blocker for explicit A and zero-object native emission. Caller
+blocker for active A and zero-base native emission. Caller
 H/S/Cp values, evidenced chunk IDs, native units and inactive physical tails
 are not misclassified as new evidence needs.
 
@@ -69,7 +74,7 @@ For the bounded fresh-modern profile:
 Additional user input required now: NO
 Additional domain-policy decisions required now: NO
 Additional controlled user-created evidence required now: NO
-Remaining work: broaden native acceptance coverage and implement LegacyTranslation emission
+Remaining work: verify broader native shapes, SLN references, and active-A reduction
 ```
 
 The reusable `fdb_native_rule_audit` executable tested every FDB fixture
@@ -325,26 +330,29 @@ native materialization when the target plan has not already been made explicit.
 | Fresh zero-Cp kind and shorter Cp term lists | RESOLVED_POLICY | Fresh ranges use ID-2, including zero Cp. Unused coefficient and power slots are written as zero. |
 | Fresh empty-function verification | IMPLEMENTED | The writer emits ID-7 without CP and verifies strict reparse/domain structure; it skips ordinary Cp-backed evaluation for this case. |
 | Legacy A conversion and zero-object omission | PARTIALLY_RESOLVED | Physically zero base/A Function objects may be omitted in `NativeFactSage`, while rigorous semantic identities remain internal. Matched constant ID-5 A objects have direct leading H, negated leading S and zero Cp after unit conversion. Eligible emitted A companions with counted ranges use observed native bounds of 298.15 K to the last ordinary upper bound. Combined nonzero-Cp A, zero-range A upper bounds and leading tails remain separate scientific work. The uncounted two-line A-leading block must not inherit ordinary counted-range semantics. |
-| Provider materializer and verification pipeline | IMPLEMENTED_FRESH_MODERN | `materialize_fresh` uses controlled templates, serializes, strict-reparses, indexes and checks group/function/CP identity plus Cp/H/S/G over each admitted range. LegacyTranslation emission remains separate. |
-| Provider-built file acceptance | PASSED_ONE_CONTROLLED_PROBE_PLUS_HYDROGEN_ONLY_OPEN | The corrected provider-built FDB opened, saved, and reopened in FactSage 7.3; the local FDB and SLN files were byte-identical before and after Save. A separate provider-built hydrogen-only Function opened visibly. Broader topology, charge, and external reference checks remain. |
+| Provider materializer and verification pipeline | IMPLEMENTED_FRESH_AND_BOUNDED_LEGACY | `materialize_fresh` uses controlled templates, serializes, strict-reparses, indexes and checks group/function/CP identity plus Cp/H/S/G over each admitted range. Bounded Legacy output omits explicit zero A and selects ID-2/ID-5 for nonzero/zero Cp; ID-5 uses a caller-supplied native example. |
+| Provider-built file acceptance | PASSED_CONTROLLED_OPEN_AND_ADDITIONAL_VISIBLE_FUNCTIONS | The corrected provider-built FDB opened, saved, and reopened in FactSage 7.3; the local FDB and SLN files were byte-identical before and after Save. Hydrogen-only, multiple/charged, and ID-2/ID-5 zero-added translated Functions opened visibly. SLN target references remain unverified. |
 
 The bounded FreshModern writer preserves the complete template ID-9 header and
-has one native open/save/reopen acceptance. Broader native coverage is useful
-hardening. Legacy source-to-target scientific conversion remains a separate
+has one native open/save/reopen acceptance plus visible Function checks for
+hydrogen-only and multiple/charged groups. Legacy source-to-target scientific conversion remains a separate
 upstream problem and does not block native serialization of an already explicit
 FreshModern target plan.
 
 ## Next implementation/verification action
 
-Extend native acceptance to multiple Functions and charged groups, then verify
-SLN references to constructed Functions.
+Verify SLN references to constructed Functions and further range/active-A
+shapes when their source-to-target semantics are established.
 
 The bounded `materialize_legacy_zero_added` method now emits an already
-reduced LegacyTranslation target when every base has nonzero ID-2 Cp and its
-paired A contribution is explicitly zero. It omits those zero A records in the
-physical FDB, strictly reparses, and uses the same identity and thermodynamic
-checks. Empty/zero-Cp bases, active A, and SLN bundle closure remain typed
-refusals or separate gates; this does not generalize the raw Legacy G reduction.
+reduced LegacyTranslation target when every base has at least one homogeneous Cp range and
+its paired A contribution is explicitly zero. It selects ID-2 for nonzero Cp
+and ID-5 for exact-zero Cp, taking canonical zero-Cp power slots from a
+caller-supplied translated native example. It omits zero A records, strictly
+reparses, and uses the same identity and thermodynamic checks. Empty-range
+bases, mixed ID-2/ID-5 ranges, active A, and SLN bundle closure remain typed refusals or separate
+gates; this does not generalize the raw Legacy G reduction. A generated ID-5
+probe opened with its Function visible in FactSage 7.3.
 
 No additional user/domain decision is required to continue this engineering
 and verification work.

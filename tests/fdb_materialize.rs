@@ -39,6 +39,34 @@ fn native_templates() -> FdbNativeTemplates {
     FdbNativeTemplates::from_examples(&empty, &source).unwrap()
 }
 
+fn native_templates_with_id5() -> FdbNativeTemplates {
+    let mut header = [0; 256];
+    header[0] = 9;
+    header[2..6].copy_from_slice(b"CMPD");
+    let mut compound = [0; 256];
+    compound[0] = 1;
+    compound[17] = 1;
+    compound[32..72].fill(b' ');
+    compound[112..152].fill(b' ');
+    let mut phase = [0; 256];
+    phase[0] = 7;
+    phase[17] = 2;
+    phase[48..52].copy_from_slice(&(-101_i32).to_le_bytes());
+    phase[52..56].copy_from_slice(&101_i32.to_le_bytes());
+    phase[136..176].fill(b' ');
+    let mut cp = [0; 256];
+    cp[0] = 5;
+    cp[17] = 3;
+    cp[48..52].copy_from_slice(&101_i32.to_le_bytes());
+    put_f64(&mut cp, 56, 298.15);
+    put_f64(&mut cp, 64, 1000.0);
+    put_f64(&mut cp, 136, 1.0);
+    let example = RawDatabase::from_bytes(&[header, compound, phase, cp].concat()).unwrap();
+    native_templates()
+        .with_legacy_id5_example(&example)
+        .unwrap()
+}
+
 fn group(
     formula: &str,
     symbols: &[&str],
@@ -171,7 +199,7 @@ fn bounded_translated_writer_omits_explicit_zero_a_and_keeps_base_identity() {
 }
 
 #[test]
-fn bounded_translated_writer_refuses_zero_cp_and_active_a() {
+fn bounded_translated_writer_selects_id5_for_zero_cp() {
     let zero_cp = translated_pair(
         vec![
             FdbCpTerm {
@@ -186,7 +214,7 @@ fn bounded_translated_writer_refuses_zero_cp_and_active_a() {
         FdbAddedContribution::ExplicitZero,
     );
     assert!(
-        zero_cp
+        !zero_cp
             .native_blockers()
             .iter()
             .any(|blocker| blocker.class == FdbBlockerClass::Engineering)
@@ -196,8 +224,55 @@ fn bounded_translated_writer_refuses_zero_cp_and_active_a() {
             &native_templates(),
             &FdbFreshMaterialization::new(45_001.0)
         ),
+        Err(FdbMaterializeError::Template(_))
+    ));
+    let raw = zero_cp
+        .materialize_legacy_zero_added(
+            &native_templates_with_id5(),
+            &FdbFreshMaterialization::new(45_001.0),
+        )
+        .unwrap();
+    assert_eq!(
+        raw.chunks().iter().map(RawChunk::id).collect::<Vec<_>>(),
+        [9, 1, 7, 5]
+    );
+    let RawChunk::HeatCapacity { chunk, .. } = &raw.chunks()[3] else {
+        panic!("expected ID-5 range");
+    };
+    assert_eq!(chunk.coefficients, [0.0; 8]);
+    assert_eq!(chunk.powers[0], 1.0);
+}
+
+#[test]
+fn translated_mixed_cp_kinds_have_a_typed_refusal() {
+    let source = translated_pair(vec![], FdbAddedContribution::ExplicitZero);
+    let mut groups = source.groups().to_vec();
+    let FdbFunctionPlan::Ordinary(base) = &mut groups[0].functions[0] else {
+        panic!("expected translated base");
+    };
+    base.ranges[0].temperature_max_k = 500.0;
+    base.ranges.push(FdbThermoRangePlan {
+        temperature_min_k: 500.0,
+        temperature_max_k: 1000.0,
+        reference_enthalpy: -100.0 - 100.0 * (500.0 - 298.15),
+        reference_entropy: 10.0 - 100.0 * (500.0_f64 / 298.15).ln(),
+        cp_terms: vec![FdbCpTerm {
+            coefficient: 100.0,
+            power: 0.0,
+        }],
+    });
+    let plan = FdbBuildPlan::new(source.metadata().clone(), groups).unwrap();
+    assert!(matches!(
+        plan.materialize_legacy_zero_added(
+            &native_templates_with_id5(),
+            &FdbFreshMaterialization::new(45_001.0)
+        ),
         Err(FdbMaterializeError::Unsupported { .. })
     ));
+}
+
+#[test]
+fn bounded_translated_writer_refuses_active_a() {
     let active = translated_pair(
         vec![FdbCpTerm {
             coefficient: 100.0,

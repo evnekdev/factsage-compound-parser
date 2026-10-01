@@ -1,9 +1,10 @@
 //! Build a synthetic translated base with a physically omitted zero A.
 //!
-//! Usage: cargo run --example fdb_legacy_zero_added_probe -- <empty.fdb> <one-range.fdb> <output.fdb>
+//! Usage: cargo run --example fdb_legacy_zero_added_probe -- <empty.fdb> <one-range.fdb> <output.fdb> [--zero-cp <translated-id5-example.fdb>]
 //! Keep all paths under ignored local evidence storage.
 
 use std::env;
+use std::ffi::OsStr;
 use std::process::ExitCode;
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -16,16 +17,18 @@ use factsage_compound_parser::fdb_build::{
 use factsage_compound_parser::{EnergyUnit, PhaseState, PressureUnit, RawDatabase};
 
 fn run() -> Result<(), Box<dyn std::error::Error>> {
-    let mut args = env::args_os().skip(1);
-    let (Some(empty), Some(one_range), Some(output), None) =
-        (args.next(), args.next(), args.next(), args.next())
-    else {
-        return Err("expected three local paths".into());
-    };
-    let templates = FdbNativeTemplates::from_examples(
-        &RawDatabase::from_path(empty)?,
-        &RawDatabase::from_path(one_range)?,
+    let args = env::args_os().skip(1).collect::<Vec<_>>();
+    if args.len() != 3 && (args.len() != 5 || args[3] != OsStr::new("--zero-cp")) {
+        return Err("expected three local paths and optional --zero-cp native example".into());
+    }
+    let zero_cp = args.len() == 5;
+    let mut templates = FdbNativeTemplates::from_examples(
+        &RawDatabase::from_path(&args[0])?,
+        &RawDatabase::from_path(&args[1])?,
     )?;
+    if zero_cp {
+        templates = templates.with_legacy_id5_example(&RawDatabase::from_path(&args[4])?)?;
+    }
     let base_identity = FdbFunctionIdentity {
         source_phase_id: "SYNX".into(),
         source_token: "synthetic".into(),
@@ -70,7 +73,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                         reference_enthalpy: -10_000.0,
                         reference_entropy: 99.0,
                         cp_terms: vec![FdbCpTerm {
-                            coefficient: 30.0,
+                            coefficient: if zero_cp { 0.0 } else { 30.0 },
                             power: 0.0,
                         }],
                     }],
@@ -89,7 +92,7 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
     let timestamp = 25_569.0 + now.as_secs_f64() / 86_400.0;
     let raw =
         plan.materialize_legacy_zero_added(&templates, &FdbFreshMaterialization::new(timestamp))?;
-    raw.write_to_path(output)?;
+    raw.write_to_path(&args[2])?;
     Ok(())
 }
 

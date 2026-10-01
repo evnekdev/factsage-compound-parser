@@ -977,11 +977,11 @@ fn semantic_validity_is_separate_from_native_materialization_readiness() {
     );
 
     let blockers = built.native_blockers();
-    assert!(blockers.iter().any(|blocker| {
-        blocker.class == FdbBlockerClass::Engineering
-            && !blocker.user_evidence_can_unblock
-            && blocker.exact_evidence.is_none()
-    }));
+    assert!(
+        !blockers
+            .iter()
+            .any(|blocker| blocker.class == FdbBlockerClass::Engineering)
+    );
     assert!(!blockers.iter().any(|blocker| {
         matches!(
             blocker.field,

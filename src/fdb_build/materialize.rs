@@ -28,6 +28,7 @@ pub struct FdbNativeTemplates {
     compound: RawCompoundChunk,
     phase: RawOrdinaryPhaseChunk,
     cp: RawHeatCapacityChunk,
+    legacy_zero_cp: Option<RawHeatCapacityChunk>,
     group_start_entry: u8,
 }
 
@@ -150,8 +151,49 @@ impl FdbNativeTemplates {
             compound: compound.clone(),
             phase: phase.clone(),
             cp: cp.clone(),
+            legacy_zero_cp: None,
             group_start_entry: start,
         })
+    }
+
+    /// Adds the native ID-5 shape observed in a translated FDB of the same
+    /// FactSage version. Only its zero-Cp power slots and opaque defaults are
+    /// used; identity, bounds, H/S, and timestamps are filled from the plan.
+    pub fn with_legacy_id5_example(
+        mut self,
+        example: &RawDatabase,
+    ) -> Result<Self, FdbMaterializeError> {
+        let mut found = None::<RawHeatCapacityChunk>;
+        for chunk in example.chunks() {
+            let RawChunk::HeatCapacity {
+                kind: HeatCapacityKind::Id5,
+                chunk,
+            } = chunk
+            else {
+                continue;
+            };
+            if chunk.coefficients.iter().any(|value| *value != 0.0)
+                || chunk.unknown_1 != [0; 4]
+                || chunk.padding_remaining != [0; 56]
+            {
+                return Err(FdbMaterializeError::Template(
+                    "legacy ID-5 example has unexpected coefficients or opaque bytes",
+                ));
+            }
+            if let Some(previous) = &found {
+                if chunk.powers.map(f64::to_bits) != previous.powers.map(f64::to_bits) {
+                    return Err(FdbMaterializeError::Template(
+                        "legacy ID-5 example has multiple power-slot patterns",
+                    ));
+                }
+            } else {
+                found = Some(chunk.clone());
+            }
+        }
+        self.legacy_zero_cp = Some(found.ok_or(FdbMaterializeError::Template(
+            "legacy ID-5 example contains no ID-5 record",
+        ))?);
+        Ok(self)
     }
 
     /// Returns the observed group-start entry number without revealing template bytes.
@@ -177,7 +219,7 @@ impl FdbBuildPlan {
         options: &FdbFreshMaterialization,
     ) -> Result<RawDatabase, FdbMaterializeError> {
         self.legacy_zero_added_physical_plan()?
-            .materialize_fresh(templates, options)
+            .materialize_bounded(templates, options, true)
     }
 
     pub(super) fn legacy_zero_added_physical_plan(
@@ -197,15 +239,31 @@ impl FdbBuildPlan {
             for function in &group.functions {
                 match function {
                     FdbFunctionPlan::Ordinary(ordinary) => {
-                        if ordinary.ranges.is_empty()
-                            || ordinary.ranges.iter().any(|range| !has_nonzero_cp(range))
+                        if ordinary.ranges.is_empty() {
+                            return Err(FdbMaterializeError::Unsupported {
+                                object: ordinary.identity.target_name.clone(),
+                                reason: "translated empty Cp needs a separate omitted-base policy",
+                            });
+                        }
+                        let first_has_cp = has_nonzero_cp(&ordinary.ranges[0]);
+                        if ordinary
+                            .ranges
+                            .iter()
+                            .any(|range| has_nonzero_cp(range) != first_has_cp)
                         {
                             return Err(FdbMaterializeError::Unsupported {
                                 object: ordinary.identity.target_name.clone(),
-                                reason: "translated zero/empty Cp needs the separate ID-5 or omitted-base policy",
+                                reason: "mixed ID-2/ID-5 ranges need a separate thermodynamic-view policy",
                             });
                         }
                         let mut target = ordinary.clone();
+                        for range in &mut target.ranges {
+                            if !has_nonzero_cp(range) {
+                                // The ID-5 exemplar supplies its canonical
+                                // zero-Cp power slots, not source padding.
+                                range.cp_terms.clear();
+                            }
+                        }
                         target.identity = FdbFunctionIdentity::fresh_modern(
                             &ordinary.identity.target_name,
                             ordinary.identity.target_state,
@@ -240,6 +298,15 @@ impl FdbBuildPlan {
         &self,
         templates: &FdbNativeTemplates,
         options: &FdbFreshMaterialization,
+    ) -> Result<RawDatabase, FdbMaterializeError> {
+        self.materialize_bounded(templates, options, false)
+    }
+
+    fn materialize_bounded(
+        &self,
+        templates: &FdbNativeTemplates,
+        options: &FdbFreshMaterialization,
+        legacy_zero_cp: bool,
     ) -> Result<RawDatabase, FdbMaterializeError> {
         self.validate().map_err(FdbMaterializeError::Plan)?;
         if self.profile() != FdbConstructionProfile::FreshModern {
@@ -280,7 +347,7 @@ impl FdbBuildPlan {
         }
         let mut chunks = vec![RawChunk::DatabaseHeader(templates.database.clone())];
         for group in self.groups() {
-            write_group(&mut chunks, group, templates, options)?;
+            write_group(&mut chunks, group, templates, options, legacy_zero_cp)?;
         }
         let raw = RawDatabase::from_chunks(chunks);
         let bytes = raw
@@ -295,7 +362,7 @@ impl FdbBuildPlan {
                 "constructed stream has domain diagnostics or changed on strict reparse".into(),
             ));
         }
-        verify_thermodynamics(self, &reparsed, &index)?;
+        verify_thermodynamics(self, &reparsed, &index, legacy_zero_cp)?;
         Ok(raw)
     }
 }
@@ -304,6 +371,7 @@ fn verify_thermodynamics(
     plan: &FdbBuildPlan,
     raw: &RawDatabase,
     index: &DomainIndex,
+    legacy_zero_cp: bool,
 ) -> Result<(), FdbMaterializeError> {
     let view = DatabaseView::new(raw, index)
         .map_err(|error| FdbMaterializeError::Verification(error.to_string()))?;
@@ -389,7 +457,12 @@ fn verify_thermodynamics(
                 .zip(phase_view.heat_capacity_ranges())
             {
                 let cp = parsed_range.raw();
-                if parsed_range.kind() != HeatCapacityKind::Id2
+                let expected_kind = if legacy_zero_cp && !has_nonzero_cp(source) {
+                    HeatCapacityKind::Id5
+                } else {
+                    HeatCapacityKind::Id2
+                };
+                if parsed_range.kind() != expected_kind
                     || cp.phase_id_raw != expected_id
                     || cp.header.charge_raw != charge
                     || cp.header.element_ids != element_ids
@@ -453,6 +526,7 @@ fn write_group(
     group: &FdbFormulaGroupPlan,
     templates: &FdbNativeTemplates,
     options: &FdbFreshMaterialization,
+    legacy_zero_cp: bool,
 ) -> Result<(), FdbMaterializeError> {
     let (element_ids, coefficients) = parse_composition(group)?;
     let charge = group.charge.fdb_raw_byte().expect("validated charge") as i8;
@@ -544,7 +618,22 @@ fn write_group(
         chunks.push(RawChunk::PhaseOrdinary(phase));
         entry += 1;
         for range in ranges {
-            let mut cp = templates.cp.clone();
+            let kind = if legacy_zero_cp && !has_nonzero_cp(range) {
+                HeatCapacityKind::Id5
+            } else {
+                HeatCapacityKind::Id2
+            };
+            let mut cp = match kind {
+                HeatCapacityKind::Id5 => {
+                    templates
+                        .legacy_zero_cp
+                        .clone()
+                        .ok_or(FdbMaterializeError::Template(
+                            "legacy zero-Cp output needs an ID-5 example",
+                        ))?
+                }
+                _ => templates.cp.clone(),
+            };
             fill_header(
                 &mut cp.header,
                 element_ids,
@@ -558,16 +647,15 @@ fn write_group(
             cp.entropy = range.reference_entropy;
             cp.temperature_min = range.temperature_min_k;
             cp.temperature_max = range.temperature_max_k;
-            cp.coefficients = [0.0; 8];
-            cp.powers = [0.0; 8];
-            for (slot, term) in range.cp_terms.iter().enumerate() {
-                cp.coefficients[slot] = term.coefficient;
-                cp.powers[slot] = term.power;
+            if kind == HeatCapacityKind::Id2 {
+                cp.coefficients = [0.0; 8];
+                cp.powers = [0.0; 8];
+                for (slot, term) in range.cp_terms.iter().enumerate() {
+                    cp.coefficients[slot] = term.coefficient;
+                    cp.powers[slot] = term.power;
+                }
             }
-            cp_chunks.push(RawChunk::HeatCapacity {
-                kind: HeatCapacityKind::Id2,
-                chunk: cp,
-            });
+            cp_chunks.push(RawChunk::HeatCapacity { kind, chunk: cp });
         }
     }
     // Entry numbers follow physical stream order, not the phase/range walk above.
