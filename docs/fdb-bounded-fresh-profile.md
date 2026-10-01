@@ -277,6 +277,11 @@ by the policies above:
 shapes after the successful one-function open/save probe; it does not reopen
 the resolved native field policies.
 
+The internal post-serialization check now compares reparsed group composition,
+charge, formula, Function names/IDs, phase anchors, and CP links/bounds with the
+typed plan as well as sampled H/S/Cp/G. Synthetic multi-function/charged and
+hydrogen-only probes pass that check; native GUI acceptance is a separate gate.
+
 
 ## Advanced volumetric coefficients
 

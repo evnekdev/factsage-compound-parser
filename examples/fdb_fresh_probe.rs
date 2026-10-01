@@ -1,6 +1,6 @@
 //! Generate a small synthetic FreshModern FDB using local, controlled templates.
 //!
-//! Usage: cargo run --example fdb_fresh_probe -- <empty.fdb> <one-range.fdb> <output.fdb>
+//! Usage: cargo run --example fdb_fresh_probe -- <empty.fdb> <one-range.fdb> <output.fdb> [--hydrogen-only]
 //! Inputs and output should stay under ignored local evidence storage. The caller
 //! must validate fixture admission against its local receipt before running this.
 
@@ -31,10 +31,19 @@ fn main() -> ExitCode {
 
 fn run() -> Result<(), Box<dyn std::error::Error>> {
     let mut args = env::args_os().skip(1);
-    let (Some(empty), Some(one_range), Some(output), None) =
-        (args.next(), args.next(), args.next(), args.next())
-    else {
-        return Err("expected three local paths".into());
+    let (Some(empty), Some(one_range), Some(output), mode, None) = (
+        args.next(),
+        args.next(),
+        args.next(),
+        args.next(),
+        args.next(),
+    ) else {
+        return Err("expected three local paths and optional --hydrogen-only".into());
+    };
+    let hydrogen_only = match mode {
+        None => false,
+        Some(flag) if flag == "--hydrogen-only" => true,
+        _ => return Err("unknown probe mode".into()),
     };
     let empty = RawDatabase::from_path(empty)?;
     let one_range = RawDatabase::from_path(one_range)?;
@@ -47,8 +56,8 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
             date_ole: templates.database_date_ole(),
         },
         vec![FdbFormulaGroupPlan {
-            formula: "H2O".into(),
-            elements: vec![
+            formula: if hydrogen_only { "H2" } else { "H2O" }.into(),
+            elements: [
                 FdbElementAmount {
                     symbol: "H".into(),
                     amount: FdbStoichiometricAmount {
@@ -63,7 +72,10 @@ fn run() -> Result<(), Box<dyn std::error::Error>> {
                         denominator: 1,
                     },
                 },
-            ],
+            ]
+            .into_iter()
+            .take(if hydrogen_only { 1 } else { 2 })
+            .collect(),
             charge: FdbChargeState::new(0),
             energy_unit: EnergyUnit::Joules,
             pressure_unit: PressureUnit::Bars,

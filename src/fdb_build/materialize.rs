@@ -12,7 +12,9 @@ use crate::raw::{
     HeatCapacityKind, RawChunk, RawCommonHeader, RawCompoundChunk, RawDatabaseHeaderChunk,
     RawHeatCapacityChunk, RawOrdinaryPhaseChunk,
 };
-use crate::{DatabaseView, DomainIndex, OleAutomationDate, PhaseThermodynamicView, RawDatabase};
+use crate::{
+    DatabaseView, DomainIndex, OleAutomationDate, PhaseThermodynamicView, RawDatabase, RawPhase,
+};
 
 /// Versioned opaque defaults extracted from a controlled empty FDB and a fresh
 /// single-function, one-range FDB of the same FactSage version.
@@ -233,12 +235,60 @@ fn verify_thermodynamics(
         ));
     }
     for (group, compound) in plan.groups().iter().zip(view.compounds()) {
+        let (element_ids, coefficients) = parse_composition(group)?;
+        let charge = group.charge.fdb_raw_byte().expect("validated charge") as i8;
+        let header = &compound.raw().header;
+        if compound
+            .formula()
+            .map_err(|error| FdbMaterializeError::Verification(error.to_string()))?
+            != group.formula
+            || header.charge_raw != charge
+            || header.element_ids != element_ids
+            || header.element_coefficients != coefficients
+            || compound.raw().real_stoichiometric_coefficients != coefficients.map(f64::from)
+        {
+            return Err(FdbMaterializeError::Verification(
+                "formula group identity changed on reparse".into(),
+            ));
+        }
         if compound.phases().count() != group.functions.len() {
             return Err(FdbMaterializeError::Verification(
                 "function count changed on reparse".into(),
             ));
         }
         for (phase_index, function) in group.functions.iter().enumerate() {
+            let phase_view = compound.phases().nth(phase_index).ok_or_else(|| {
+                FdbMaterializeError::Verification("function disappeared on reparse".into())
+            })?;
+            let RawPhase::Ordinary(parsed_phase) = phase_view.raw() else {
+                return Err(FdbMaterializeError::Verification(
+                    "function became a transition on reparse".into(),
+                ));
+            };
+            let expected_id = 101 + phase_index as i32;
+            let (expected_h, expected_s) = match function {
+                FdbFunctionPlan::Ordinary(ordinary) => {
+                    (ordinary.phase_enthalpy, ordinary.phase_entropy)
+                }
+                FdbFunctionPlan::ExplicitZeroOrdinary(_) => (0.0, 0.0),
+                FdbFunctionPlan::Added(_) => unreachable!("fresh plan validation excludes A"),
+            };
+            if phase_view
+                .name()
+                .map_err(|error| FdbMaterializeError::Verification(error.to_string()))?
+                != function.identity().target_name
+                || parsed_phase.header.charge_raw != charge
+                || parsed_phase.header.element_ids != element_ids
+                || parsed_phase.header.element_coefficients != coefficients
+                || parsed_phase.phase_id_raw != expected_id
+                || parsed_phase.phase_id_raw_neg != -expected_id
+                || parsed_phase.enthalpy.to_bits() != expected_h.to_bits()
+                || parsed_phase.entropy.to_bits() != expected_s.to_bits()
+            {
+                return Err(FdbMaterializeError::Verification(
+                    "function identity or phase anchors changed on reparse".into(),
+                ));
+            }
             let FdbFunctionPlan::Ordinary(ordinary) = function else {
                 continue;
             };
@@ -254,6 +304,27 @@ fn verify_thermodynamics(
                 return Err(FdbMaterializeError::Verification(
                     "Cp range count changed on reparse".into(),
                 ));
+            }
+            for (source, parsed_range) in ordinary
+                .ranges
+                .iter()
+                .zip(phase_view.heat_capacity_ranges())
+            {
+                let cp = parsed_range.raw();
+                if parsed_range.kind() != HeatCapacityKind::Id2
+                    || cp.phase_id_raw != expected_id
+                    || cp.header.charge_raw != charge
+                    || cp.header.element_ids != element_ids
+                    || cp.header.element_coefficients != coefficients
+                    || cp.temperature_min.to_bits() != source.temperature_min_k.to_bits()
+                    || cp.temperature_max.to_bits() != source.temperature_max_k.to_bits()
+                    || cp.enthalpy.to_bits() != source.reference_enthalpy.to_bits()
+                    || cp.entropy.to_bits() != source.reference_entropy.to_bits()
+                {
+                    return Err(FdbMaterializeError::Verification(
+                        "Cp identity or anchors changed on reparse".into(),
+                    ));
+                }
             }
             for (source, parsed) in ordinary.ranges.iter().zip(phase.heat_capacity_ranges()) {
                 for temperature in [
