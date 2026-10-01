@@ -366,6 +366,15 @@ Consequently, Legacy conversion must model the uncounted added-leading pair as a
 distinct raw source structure and derive any target `xxxxA` Function/ID-5
 thermodynamics from evidence, rather than reusing the ordinary range decoder.
 
+The sign reversal seen for nonzero source second fields in constant A targets
+also supports a possible Gibbs-energy interpretation: the source value may be a
+linear-in-temperature coefficient whose thermodynamic entropy is its negative
+derivative. This is not yet a rule. A local derivative test of conventional
+Gibbs terms and variable powers did not match the admitted nonzero-Cp A targets
+under the tested slot assignments and temperature bases. Keep nonzero-Cp A
+construction blocked until its actual source basis and any matrix-level
+reduction are established.
+
 
 **Paired unit-scaling evidence:** the leading pair is not merely an ordinary
 range with an omitted count. In the tracked paired fixtures, an ordinary
