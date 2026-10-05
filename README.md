@@ -16,6 +16,11 @@ Native CDB/FDB facts are owned in this repository. Start with [`docs/knowledge-b
 
 ## Ownership and API layers
 
+`Database::retain_compound_groups` accepts selected compound encounter positions
+and owns native chunk-group retention. Scientific selection belongs to the
+caller. The operation preserves retained bytes and preamble metadata, leaves
+the source unchanged, rejects invalid positions, and rebuilds the native index.
+
 The crate uses owned raw parsing and zero-duplication semantic views:
 
 - `raw::RawDatabase` owns the contiguous authoritative physical chunk stream. It preserves known and unknown chunks, reserved fields, padding, text bytes, and original CP IDs 2 through 6.

@@ -7,6 +7,9 @@
 //! deterministically before borrowing semantic views.
 
 mod error;
+mod selection;
+/// Typed failure for native compound-group retention.
+pub use selection::CompoundSelectionError;
 
 use std::io::{Read, Write};
 use std::path::Path;
