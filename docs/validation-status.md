@@ -49,7 +49,7 @@ Bounded `proptest` cases cover generated raw round trips, float bit patterns, un
 - Energy code 0 uses 4.184 conversion; code 1 is joule-based.
 - Pressure code 0 is atmospheres and code 1 is bars; no conversion is provided.
 - Phase state/index follows the existing Python threshold rules.
-- Density exposes the Python-compatible floating remainder modulo 1,000,000; its unit and encoded high portion remain unknown.
+- Density exposes the Python-compatible floating remainder modulo 1,000,000. **Domain-expert evidence establishes that the packed high portion is an advanced volumetric/physical equation-family selector**, while exact family-code mapping, coefficient semantics and units remain unresolved.
 - At adjacent shared CP endpoints, phase-level evaluation selects the lower-temperature interval. Individual raw range containment remains closed/inclusive.
 
 ## Unresolved semantics
@@ -57,7 +57,7 @@ Bounded `proptest` cases cover generated raw round trips, float bit patterns, un
 - Physical meaning of unknown and reserved bytes;
 - semantic distinction among CP IDs 2 through 6;
 - magnetic, pressure-volume, transition, and ID-11 effective-G equations;
-- density unit and high-order encoding;
+- density unit, exact high-order family-code mapping, and advanced-family coefficient/equation semantics;
 - unusual phase-ID validity and negative field meaning;
 - ID-11/kappa physical equation, units, and coefficient meanings;
 - compound and phase writing semantics outside the controlled setters.
