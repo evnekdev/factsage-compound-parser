@@ -14,7 +14,7 @@ ID-11 physical-property equations.
 | Ordinary phase record H/S versus CP H/S | partially established | Both pairs are preserved and unit-convertible. They cannot be universally equated from the available evidence, so the provider thermodynamic view uses CP-range constants. |
 | CP IDs 2–6 | partially established | Every examined FDB phase used one homogeneous kind; ID 2 had multi-range sequences and IDs 4/5 were observed as single-range sequences. The kind's wider provider meaning remains unknown. |
 | Transition effective G | unresolved | Parent linkage is structural; an entropy-jump rule and chaining behavior are not established. |
-| Pressure, magnetic, volume and ID-11 contributions | unresolved | Materially active values block complete effective-G eligibility; no equation is guessed. Exact-zero fixed physical-tail slots are inactive. |
+| Pressure, magnetic, volume and ID-11 contributions | unresolved/partial | **Domain-expert evidence:** the packed high portion of density selects an advanced volumetric/physical equation family; exact family-code mapping and equations remain unresolved. Materially active values block complete effective-G eligibility; no equation is guessed. Exact-zero fixed physical-tail slots are inactive. |
 
 The local evidence survey read installed files without embedding, printing, or
 committing database records. It compared 298.15 K and 298 K integration
