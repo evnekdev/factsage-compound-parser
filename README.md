@@ -10,6 +10,10 @@ This is an independent, reverse-engineered open-source project. It is not
 affiliated with, endorsed by, or supported by the FactSage developers or
 distributors. FactSage is a trademark of its respective owners.
 
+## Architecture knowledge ownership
+
+Native CDB/FDB facts are owned in this repository. Start with [`docs/knowledge-base.md`](docs/knowledge-base.md) and the structured [`docs/native-format-records.md`](docs/native-format-records.md). Downstream projects such as `database-compare` should consume these records rather than maintaining a second copy of CDB/FDB field semantics.
+
 ## Ownership and API layers
 
 The crate uses owned raw parsing and zero-duplication semantic views:
