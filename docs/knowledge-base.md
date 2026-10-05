@@ -21,6 +21,7 @@ Use CONFIRMED, EVIDENCED, PARTIAL, HYPOTHESIS, UNKNOWN, WARNING_ONLY, OPAQUE_MET
 ## Canonical files
 
 - `native-format-records.md` — structured native facts, unresolved meanings and CDB/FDB role evidence.
+- `fdb-construction-evidence.md` — bounded native FDB construction observations migrated from downstream experiments.
 - `format-overview.md` — physical chunk grammar.
 - `domain-model.md` — native structural grouping and relationships.
 - `semantic-rules.md` — established field decoding and units.
