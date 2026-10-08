@@ -92,6 +92,15 @@ impl PartialEq for RawDatabase {
 }
 
 impl RawDatabase {
+    /// Creates a fresh native stream from caller-owned typed chunks.
+    /// The semantic index validates ordering and the required database header.
+    /// Callers must still serialize, reparse and verify their scientific intent.
+    pub fn from_native_chunks(chunks: Vec<RawChunk>) -> Result<Self, domain::DomainError> {
+        let raw = Self::from_chunks(chunks);
+        DomainIndex::build(&raw)?;
+        Ok(raw)
+    }
+
     fn from_chunks(chunks: Vec<RawChunk>) -> Self {
         Self {
             chunks,
@@ -297,6 +306,29 @@ fn read_record<R: Read>(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn fresh_typed_stream_validates_header_and_survives_writer_reparse() {
+        assert!(matches!(
+            RawDatabase::from_native_chunks(vec![]),
+            Err(DomainError::EmptyRawDatabase)
+        ));
+        let header = RawChunk::DatabaseHeader(RawDatabaseHeaderChunk {
+            padding_1: 0,
+            magic: *b"CMPD",
+            padding_2: [0; 2],
+            date_ole: 0.0,
+            read_flag: 0,
+            unknown_1: [0; 11],
+            comment: [0; 80],
+            padding_3: [0; 136],
+            unknown_2: [0; 12],
+        });
+        let raw = RawDatabase::from_native_chunks(vec![header.clone()]).unwrap();
+        let parsed = RawDatabase::from_bytes(&raw.to_bytes().unwrap()).unwrap();
+        assert_eq!(parsed.chunks(), &[header]);
+        assert!(DomainIndex::build(&parsed).is_ok());
+    }
 
     #[test]
     fn constants_match_format() {
