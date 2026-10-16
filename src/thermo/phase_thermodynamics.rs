@@ -832,6 +832,32 @@ impl std::error::Error for PhaseThermodynamicViewError {
 }
 
 impl<'a> CompoundView<'a> {
+    /// Recognizes the evidenced zero-counted ordinary Function declaration.
+    /// Callers must independently assign the FDB role. This establishes a zero
+    /// base, not a temperature interval or an ordinary physical CDB phase.
+    /// No tiny nonzero anchor/control is rounded away.
+    pub fn is_zero_counted_fdb_function(self, phase_index: usize) -> bool {
+        let Some(phase) = self.phases().nth(phase_index) else {
+            return false;
+        };
+        let RawPhase::Ordinary(raw) = phase.raw() else {
+            return false;
+        };
+        let p = &raw.physical;
+        self.database_profile_evidence() == CompoundDatabaseProfileEvidence::FunctionCompatible
+            && phase.state() == crate::PhaseState::Solid
+            && phase.heat_capacity_ranges().next().is_none()
+            && phase.physical_property_ranges().next().is_none()
+            && raw.enthalpy == 0.0
+            && raw.entropy == 0.0
+            && p.density_raw == 0.0
+            && [p.magnetic_temperature, p.magnetic_moment, p.p_factor]
+                .into_iter()
+                .chain(p.thermal_expansion_coefficients)
+                .chain(p.compressibility_coefficients)
+                .chain(p.bulk_modulus_derivative_coefficients)
+                .all(|v| v == 0.0)
+    }
     /// Returns typed CMPD header evidence for the Function Database role.
     ///
     /// A compatible result is deliberately not treated as proof that a file is
@@ -1220,6 +1246,30 @@ mod tests {
             compound.fdb_phase_thermodynamic_view(0),
             Err(PhaseThermodynamicViewError::MissingHeatCapacityRanges { phase_id_raw: 101 })
         ));
+    }
+
+    #[test]
+    fn zero_counted_function_keeps_absent_domain_and_rejects_nonzero_science() {
+        for case in 0..5 {
+            let mut zero = ordinary(101);
+            zero[32..48].fill(0);
+            zero[56..116].fill(0);
+            match case {
+                1 => zero[32..40].copy_from_slice(&1e-30_f64.to_le_bytes()),
+                2 => zero[40..48].copy_from_slice(&1e-30_f64.to_le_bytes()),
+                3 => zero[108..112].copy_from_slice(&1e-30_f32.to_le_bytes()),
+                4 => zero[56..64].copy_from_slice(&f64::NAN.to_le_bytes()),
+                _ => (),
+            }
+            let db = database(vec![header(), compound(), zero]);
+            let view = db.view().unwrap().compounds().next().unwrap();
+            assert_eq!(view.is_zero_counted_fdb_function(0), case == 0);
+            assert!(!view.is_zero_counted_fdb_function(1));
+            assert!(matches!(
+                view.fdb_phase_thermodynamic_view(0),
+                Err(PhaseThermodynamicViewError::MissingHeatCapacityRanges { .. })
+            ));
+        }
     }
 
     #[test]

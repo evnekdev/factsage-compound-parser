@@ -43,3 +43,17 @@ A generated artifact is not accepted merely because it serializes. The evidence 
 ## Source provenance
 
 These bounded observations were migrated from `database-compare` architecture/evidence ledgers so native CDB/FDB knowledge has one authoritative home. Downstream Database Compare documents may retain historical experiment results, but current native claims should reference this file.
+## Zero-counted ordinary Function declarations
+
+A local paired translation audit establishes 439 distinct ordinary Function
+headers corresponding to Legacy zero-counted base entries. All 439 have no Cp
+records, exact-zero H/S anchors and inactive physical controls. Native declarations
+and the existing correspondence audit were cross-checked independently; no names
+or values from private evidence are recorded here.
+
+`is_zero_counted_fdb_function` recognizes this evidenced solid Function shape
+only under an explicitly assigned FDB role. It establishes an explicit-zero base
+without inventing an interval, a physical phase, or a Cp record. The ordinary
+Cp-backed view remains unchanged. Nonzero anchors or controls, non-solid records,
+physical-property records and transition records do not qualify. Zero-counted
+function identities and every referring coefficient must remain distinct.
