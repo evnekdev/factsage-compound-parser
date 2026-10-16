@@ -482,7 +482,7 @@ fn integrate_power(temperature_k: f64, integrated_power: f64) -> f64 {
 /// A validated ordinary-phase provider thermodynamic definition.
 ///
 /// It supports only finite, positive, contiguous source-order CP ranges of one
-/// preserved CP kind. Gaps, overlaps, reordered ranges, mixed kinds, and
+/// preserved CP kinds. Gaps, overlaps, reordered ranges, unsupported mixed kinds, and
 /// missing ranges remain typed failures rather than receiving invented
 /// extrapolation or reordering.
 #[derive(Debug, Clone)]
@@ -922,11 +922,22 @@ fn validate_ordinary_ranges(
         return Err(PhaseThermodynamicViewError::MissingHeatCapacityRanges { phase_id_raw });
     };
     let first_kind = first.kind();
+    // Established translated FDB streams may switch between ordinary ID-2
+    // Cp and exact-zero-Cp ID-5 intervals. Both retain their native kind and
+    // their own H298/S298 anchors. This is not permission to reinterpret other
+    // mixed native kinds or round a tiny ID-5 coefficient to zero.
+    let translated_zero_mix = ranges.iter().all(|range| match range.kind() {
+        HeatCapacityKind::Id2 => true,
+        HeatCapacityKind::Id5 => range
+            .heat_capacity_terms()
+            .all(|(coefficient, _)| coefficient == 0.0),
+        _ => false,
+    });
     let mut previous: Option<PhaseHeatCapacityRangeView<'_>> = None;
 
     for range in ranges {
         validate_range(*range)?;
-        if range.kind() != first_kind {
+        if range.kind() != first_kind && !translated_zero_mix {
             return Err(PhaseThermodynamicViewError::MixedHeatCapacityKinds {
                 phase_id_raw,
                 first_kind,
@@ -1414,6 +1425,57 @@ mod tests {
             compound_view.fdb_phase_thermodynamic_view(0),
             Err(PhaseThermodynamicViewError::EntropyDiscontinuity { .. })
         ));
+    }
+
+    #[test]
+    fn ordinary_view_preserves_contiguous_id2_and_zero_cp_id5_ranges() {
+        let boundary = 500.0_f64;
+        let h = boundary - 298.15;
+        let entropy = (boundary / 298.15).ln();
+        for (id5_cp, enthalpy_delta, expected) in [
+            (0.0, 0.0, "valid"),
+            (1e-30, 0.0, "kind"),
+            (0.0, 1.0, "enthalpy"),
+        ] {
+            let native = database(vec![
+                header(),
+                compound(),
+                ordinary(101),
+                cp(2, 101, 0.0, 0.0, 298.15, boundary, &[(0, 1.0, 0.0)]),
+                cp(
+                    5,
+                    101,
+                    h + enthalpy_delta,
+                    entropy,
+                    boundary,
+                    1000.0,
+                    &[(0, id5_cp, 0.0)],
+                ),
+            ]);
+            let bytes = native.raw().to_bytes().unwrap();
+            let reparsed = Database::from_bytes(&bytes).unwrap();
+            let compound = reparsed.view().unwrap().compounds().next().unwrap();
+            match (expected, compound.fdb_phase_thermodynamic_view(0)) {
+                ("valid", Ok(PhaseThermodynamicView::Ordinary(view))) => {
+                    assert_eq!(
+                        view.heat_capacity_ranges()
+                            .iter()
+                            .map(|r| r.kind())
+                            .collect::<Vec<_>>(),
+                        [HeatCapacityKind::Id2, HeatCapacityKind::Id5]
+                    );
+                    assert_eq!(
+                        view.heat_capacity_ranges()[1]
+                            .heat_capacity_raw_at(600.0)
+                            .unwrap(),
+                        0.0
+                    );
+                }
+                ("kind", Err(PhaseThermodynamicViewError::MixedHeatCapacityKinds { .. }))
+                | ("enthalpy", Err(PhaseThermodynamicViewError::EnthalpyDiscontinuity { .. })) => {}
+                (_, result) => panic!("unexpected synthetic result {result:?}"),
+            }
+        }
     }
 
     #[test]

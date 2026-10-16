@@ -140,10 +140,17 @@ public evaluation never extrapolates.
 The validated view treats individual bounds as closed. At a shared boundary,
 the lower range is selected by the legacy direct evaluator; the established H/S
 continuity makes either range's derived G equal there. It rejects zero-width,
-nonfinite, overlapping, reordered, mixed-kind, and gapped ranges for
+nonfinite, overlapping, reordered, unsupported mixed-kind, and gapped ranges for
 ordinary-phase effective-G use. It never extrapolates outside stored support.
 The lower-bound/upper-bound behavior of arbitrary malformed or future files is
 therefore a typed validation result, not a repaired function.
+
+A bounded mixed-kind case is admitted: contiguous ID-2 ranges and ID-5 ranges
+whose Cp coefficients are all exactly zero. Their shared H/S/Cp body and the
+translated FDB zero-Cp convention are established provider evidence. Each native
+kind and each H298/S298 anchor remain intact; the same boundary continuity checks
+still apply. Tiny nonzero ID-5 coefficients and other mixed kinds are refused.
+This does not assign zero Cp to an ordinary declaration with no range records.
 
 The general stored-CP evaluator retains its existing inclusive-bound behavior:
 `t_min <= T <= t_max`; it reports true overlaps and no matching range rather
