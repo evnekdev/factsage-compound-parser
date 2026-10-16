@@ -60,10 +60,10 @@ pub enum OrdinaryFdbEffectiveGEligibility {
 pub(super) fn ordinary_effective_g_eligibility(
     phase: PhaseView<'_>,
 ) -> OrdinaryFdbEffectiveGEligibility {
-    let RawPhase::Ordinary(chunk) = phase.raw() else {
-        unreachable!("ordinary thermodynamic view always contains ID-7")
+    let physical = match phase.raw() {
+        RawPhase::Ordinary(chunk) => &chunk.physical,
+        RawPhase::Transition(chunk) => &chunk.physical,
     };
-    let physical = &chunk.physical;
 
     let scalar_fields = [
         ("density_raw", physical.density_raw),

@@ -479,21 +479,24 @@ fn integrate_power(temperature_k: f64, integrated_power: f64) -> f64 {
     }
 }
 
-/// A validated ordinary-phase provider thermodynamic definition.
+/// A validated Cp branch owned by an ordinary or transition phase record.
 ///
-/// It supports only finite, positive, contiguous source-order CP ranges of one
+/// It supports only finite, positive, contiguous source-order CP ranges of
 /// preserved CP kinds. Gaps, overlaps, reordered ranges, unsupported mixed kinds, and
 /// missing ranges remain typed failures rather than receiving invented
 /// extrapolation or reordering.
 #[derive(Debug, Clone)]
-pub struct OrdinaryPhaseThermodynamicView<'a> {
+pub struct CpBackedPhaseThermodynamicView<'a> {
     phase: PhaseView<'a>,
     energy_unit: EnergyUnit,
     heat_capacity_ranges: Vec<PhaseHeatCapacityRangeView<'a>>,
 }
 
-impl<'a> OrdinaryPhaseThermodynamicView<'a> {
-    /// Returns the ordinary phase that owns this provider definition.
+/// Backward-compatible name for ordinary ID-7 Cp-backed views.
+pub type OrdinaryPhaseThermodynamicView<'a> = CpBackedPhaseThermodynamicView<'a>;
+
+impl<'a> CpBackedPhaseThermodynamicView<'a> {
+    /// Returns the native phase that owns these exact Cp ranges.
     pub fn phase(&self) -> PhaseView<'a> {
         self.phase
     }
@@ -526,6 +529,17 @@ impl<'a> OrdinaryPhaseThermodynamicView<'a> {
     /// [`OrdinaryFdbEffectiveGEligibility::PureCpBacked`] means downstream code
     /// must not present the CP-only Gibbs expression as complete.
     pub fn effective_g_eligibility(&self) -> OrdinaryFdbEffectiveGEligibility {
+        if matches!(self.phase.raw(), RawPhase::Transition(_)) {
+            return OrdinaryFdbEffectiveGEligibility::PendingProviderEvidence {
+                field: "transition branch requires its independently retained event relation",
+            };
+        }
+        self.physical_g_eligibility()
+    }
+
+    /// Classifies only the physical controls accompanying the Cp branch.
+    /// A transition event remains a separate authority, even for zero controls.
+    pub fn physical_g_eligibility(&self) -> OrdinaryFdbEffectiveGEligibility {
         ordinary_effective_g_eligibility(self.phase)
     }
 }
@@ -832,6 +846,31 @@ impl std::error::Error for PhaseThermodynamicViewError {
 }
 
 impl<'a> CompoundView<'a> {
+    /// Validates the stored Cp branch owned by either an ordinary or transition
+    /// phase. ID-8 ranges carry their own H/S anchors; the transition header is
+    /// never substituted for those anchors. This does not orient a transition
+    /// or invent its entropy jump or physical correction.
+    pub fn cp_backed_phase_thermodynamic_view(
+        self,
+        phase_index: usize,
+    ) -> Result<CpBackedPhaseThermodynamicView<'a>, PhaseThermodynamicViewError> {
+        let phase = self
+            .phases()
+            .nth(phase_index)
+            .ok_or(PhaseThermodynamicViewError::InvalidPhaseIndex { phase_index })?;
+        let energy_unit = self.energy_unit();
+        let ranges = phase
+            .heat_capacity_ranges()
+            .map(|range| PhaseHeatCapacityRangeView::new(range, energy_unit))
+            .collect::<Vec<_>>();
+        validate_ordinary_ranges(phase.phase_id_raw(), &ranges)?;
+        Ok(CpBackedPhaseThermodynamicView {
+            phase,
+            energy_unit,
+            heat_capacity_ranges: ranges,
+        })
+    }
+
     /// Recognizes the evidenced zero-counted ordinary Function declaration.
     /// Callers must independently assign the FDB role. This establishes a zero
     /// base, not a temperature interval or an ordinary physical CDB phase.
@@ -1270,6 +1309,47 @@ mod tests {
                 Err(PhaseThermodynamicViewError::MissingHeatCapacityRanges { .. })
             ));
         }
+    }
+
+    #[test]
+    fn transition_cp_branch_keeps_its_own_anchors_and_parent_event_separate() {
+        let db = database(vec![
+            header(),
+            compound(),
+            ordinary(101),
+            transition(201, 101),
+            cp(2, 101, -100.0, 20.0, 298.15, 1000.0, &[(0, 2.0, 0.0)]),
+            cp(2, 201, -88.0, 23.0, 298.15, 1200.0, &[(0, 2.0, 0.0)]),
+        ]);
+        let compound = db.view().unwrap().compounds().next().unwrap();
+        let branch = compound.cp_backed_phase_thermodynamic_view(1).unwrap();
+        assert_eq!(branch.phase_id_raw(), 201);
+        assert_eq!(
+            branch.heat_capacity_ranges()[0].reference_enthalpy_raw(),
+            -88.0
+        );
+        assert_eq!(
+            branch.heat_capacity_ranges()[0].reference_entropy_raw(),
+            23.0
+        );
+        assert!(matches!(
+            branch.effective_g_eligibility(),
+            OrdinaryFdbEffectiveGEligibility::PendingProviderEvidence { .. }
+        ));
+        assert_eq!(
+            branch.physical_g_eligibility(),
+            OrdinaryFdbEffectiveGEligibility::PureCpBacked
+        );
+        let PhaseThermodynamicView::Transition(event) =
+            compound.fdb_phase_thermodynamic_view(1).unwrap()
+        else {
+            panic!("transition retained")
+        };
+        assert_eq!(event.transition_enthalpy_raw(), 12.0);
+        assert_eq!(event.transition_temperature_k(), 900.0);
+        assert!(
+            matches!(event.parent_relation(), TransitionParentRelation::Ordinary(parent) if parent.phase_id_raw() == 101)
+        );
     }
 
     #[test]

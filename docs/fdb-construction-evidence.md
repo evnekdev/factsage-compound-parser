@@ -57,3 +57,19 @@ without inventing an interval, a physical phase, or a Cp record. The ordinary
 Cp-backed view remains unchanged. Nonzero anchors or controls, non-solid records,
 physical-property records and transition records do not qualify. Zero-counted
 function identities and every referring coefficient must remain distinct.
+
+## Transition-owned Cp branches
+
+Native ID-8 records can own Cp ranges with independent H298/S298 anchors.
+The provider now exposes these through `cp_backed_phase_thermodynamic_view`,
+without replacing their anchors with the ID-8 event enthalpy/temperature. The
+existing structural transition view and exact parent relation remain separate.
+A Cp-only view does not establish a complete transition correction, endpoint
+orientation, or an entropy-jump rule.
+
+A local maintained-BASE audit observed 152 transition records, all owning Cp
+ranges; 83 also have active physical controls. Of 145 with both parent and child
+ranges covering the event temperature, the child-minus-parent H difference
+agrees numerically with the stored event enthalpy. Seven lack that overlapping
+coverage and are not extrapolated by this observation. These aggregate findings
+are evidence for further source admission, not a complete materialisation claim.

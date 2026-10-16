@@ -24,11 +24,12 @@ pub use error::{
 };
 /// Re-exports for evidence-backed FDB/CMPD provider thermodynamic views.
 pub use phase_thermodynamics::{
-    CompoundDatabaseProfileEvidence, FdbThermodynamicEvaluationError, FdbThermodynamicQuantity,
-    HeatCapacityAnchorSemantics, OrdinaryPhaseThermodynamicView,
-    PROVIDER_RANGE_CONTINUITY_ABSOLUTE_TOLERANCE, PROVIDER_RANGE_CONTINUITY_RELATIVE_TOLERANCE,
-    PhaseHeatCapacityRangeView, PhaseThermodynamicView, PhaseThermodynamicViewError,
-    STANDARD_REFERENCE_TEMPERATURE_K, TransitionParentRelation, TransitionPhaseThermodynamicView,
+    CompoundDatabaseProfileEvidence, CpBackedPhaseThermodynamicView,
+    FdbThermodynamicEvaluationError, FdbThermodynamicQuantity, HeatCapacityAnchorSemantics,
+    OrdinaryPhaseThermodynamicView, PROVIDER_RANGE_CONTINUITY_ABSOLUTE_TOLERANCE,
+    PROVIDER_RANGE_CONTINUITY_RELATIVE_TOLERANCE, PhaseHeatCapacityRangeView,
+    PhaseThermodynamicView, PhaseThermodynamicViewError, STANDARD_REFERENCE_TEMPERATURE_K,
+    TransitionParentRelation, TransitionPhaseThermodynamicView,
 };
 /// Re-exports for stored compound unit codes.
 pub use units::{EnergyUnit, PressureUnit};
